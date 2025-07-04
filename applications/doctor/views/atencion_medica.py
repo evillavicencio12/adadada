@@ -84,6 +84,7 @@ class AtencionCreateView(PermissionMixin, CreateViewMixin, CreateView):
             context['detalle_formset'] = DetalleAtencionFormSet(prefix='detalles')
 
         context['medicamentos_existentes'] = Medicamento.objects.filter(activo=True).order_by('nombre') # Para el modal de selección
+        context['tipos_medicamento_existentes'] = TipoMedicamento.objects.filter(activo=True).order_by('nombre') # Para el modal de creación rápida
         return context
 
     def form_valid(self, form):
@@ -173,6 +174,7 @@ class AtencionUpdateView(PermissionMixin, UpdateViewMixin, UpdateView):
 
         context['selected_paciente'] = self.object.paciente # Para mostrar info del paciente
         context['medicamentos_existentes'] = Medicamento.objects.filter(activo=True).order_by('nombre')
+        context['tipos_medicamento_existentes'] = TipoMedicamento.objects.filter(activo=True).order_by('nombre') # Para el modal de creación rápida
         return context
 
     def form_valid(self, form):
@@ -317,7 +319,94 @@ def previsualizar_atencion_ajax(request):
         # else:
         #     return JsonResponse({'status': 'error', 'message': 'Datos inválidos para previsualización.'})
 
-        return JsonResponse({'status': 'info', 'message': 'Previsualización no implementada.'})
+        # return JsonResponse({'status': 'info', 'message': 'Previsualización no implementada.'})
+        # --- INICIO IMPLEMENTACIÓN ---
+        from django.template.loader import render_to_string
+        from applications.doctor.forms.atencion import AtencionForm, DetalleAtencionFormSet
+        from applications.core.models import Paciente as CorePaciente # Para obtener datos del paciente si es necesario
+        from applications.doctor.models import Patient as DoctorPatient
+        from applications.core.models import Medicamento, Diagnostico
+
+        if request.method == 'POST':
+            # Instanciar el formulario principal con los datos del POST
+            form = AtencionForm(request.POST)
+            # Instanciar el formset de detalles con los datos del POST
+            # El prefijo 'detalles' debe coincidir con el usado en el template
+            detalle_formset = DetalleAtencionFormSet(request.POST, prefix='detalles')
+
+            atencion_data = {}
+            detalles_data_list = []
+
+            # No llamamos a form.is_valid() aquí a propósito para la previsualización,
+            # ya que el objetivo es mostrar lo que el usuario ha ingresado, incluso si no es válido aún.
+            # Sin embargo, para obtener algunos datos relacionados (como nombres de objetos ForeignKey),
+            # podríamos necesitar IDs válidos.
+
+            # Copiar datos del formulario principal
+            for field_name, field in form.fields.items():
+                atencion_data[field_name] = form.data.get(field_name) # Usar form.data para obtener el valor raw
+
+            # Intentar obtener el objeto paciente para mostrar más detalles
+            paciente_id = form.data.get('paciente')
+            if paciente_id:
+                try:
+                    # Usamos DoctorPatient ya que AtencionForm ahora referencia a este
+                    paciente_obj = DoctorPatient.objects.get(pk=paciente_id)
+                    atencion_data['paciente_obj'] = paciente_obj
+                    atencion_data['paciente_nombre'] = f"{paciente_obj.Primer_nombre} {paciente_obj.apellido}"
+                except DoctorPatient.DoesNotExist:
+                    atencion_data['paciente_obj'] = None
+                    atencion_data['paciente_nombre'] = form.data.get('paciente_nombre', 'Paciente no encontrado')
+
+
+            # Intentar obtener los objetos de diagnóstico
+            diagnostico_ids = request.POST.getlist('diagnostico') # form.data.getlist('diagnostico')
+            if diagnostico_ids:
+                try:
+                    atencion_data['diagnostico_objs'] = Diagnostico.objects.filter(pk__in=diagnostico_ids)
+                except Exception:
+                    atencion_data['diagnostico_objs'] = None
+
+
+            # Procesar datos del formset de detalles
+            # Necesitamos el total_forms para iterar correctamente
+            total_forms = int(form.data.get(f'{detalle_formset.prefix}-TOTAL_FORMS', 0))
+            for i in range(total_forms):
+                detalle_data = {}
+                # No marcar para eliminar en la previsualización, solo mostrar si existe
+                # if form.data.get(f'{detalle_formset.prefix}-{i}-DELETE'):
+                #     continue # O marcarlo para no mostrarlo
+
+                detalle_data['medicamento_nombre'] = form.data.get(f'{detalle_formset.prefix}-{i}-medicamento_nombre', '')
+                detalle_data['cantidad'] = form.data.get(f'{detalle_formset.prefix}-{i}-cantidad', '')
+                detalle_data['prescripcion'] = form.data.get(f'{detalle_formset.prefix}-{i}-prescripcion', '')
+                detalle_data['DELETE'] = form.data.get(f'{detalle_formset.prefix}-{i}-DELETE', False)
+
+
+                medicamento_id = form.data.get(f'{detalle_formset.prefix}-{i}-medicamento')
+                if medicamento_id:
+                    try:
+                        med_obj = Medicamento.objects.get(pk=medicamento_id)
+                        detalle_data['medicamento_obj'] = med_obj
+                        # Si el nombre del medicamento no se pasó o se quiere el nombre "oficial":
+                        detalle_data['medicamento_nombre_resolved'] = med_obj.nombre
+                    except Medicamento.DoesNotExist:
+                        detalle_data['medicamento_obj'] = None
+
+                if detalle_data['medicamento_nombre'] or medicamento_id : # Solo añadir si hay algo
+                     detalles_data_list.append(detalle_data)
+
+
+            context_preview = {
+                'atencion_data': atencion_data,
+                'detalles_data': detalles_data_list
+            }
+
+            html_preview = render_to_string('doctor/atencion/_preview_template.html', context_preview)
+            return JsonResponse({'status': 'success', 'html_preview': html_preview})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+        # --- FIN IMPLEMENTACIÓN ---
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
 def crear_medicamento_ajax(request):
@@ -353,8 +442,77 @@ def crear_medicamento_ajax(request):
 
             # med = Medicamento.objects.create(nombre=nombre_medicamento, tipo=tipo_default, cantidad=0, precio="0.00")
             # return JsonResponse({'status': 'success', 'medicamento_id': med.id, 'medicamento_nombre': med.nombre, 'medicamento_text': med.nombre})
-            return JsonResponse({'status': 'info', 'message': 'Creación rápida de medicamento no implementada (requiere más campos).'})
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Nombre del medicamento es requerido.'})
+            # return JsonResponse({'status': 'info', 'message': 'Creación rápida de medicamento no implementada (requiere más campos).'})
+            # --- INICIO IMPLEMENTACIÓN ---
+            from applications.core.forms.medicamento import MedicamentoForm # Importar el formulario
+
+            # Crear un diccionario con los datos recibidos del POST que coinciden con los campos del form
+            # Esto es una aproximación, idealmente el frontend enviaría nombres de campo que coincidan.
+            # Por ahora, asumimos que el frontend envía 'nombre_medicamento_modal' y otros campos opcionales
+            # que podrían mapear a los campos del MedicamentoForm.
+
+            data_from_request = request.POST.copy() # Hacemos una copia para poder modificarla
+
+            # Mapeo de nombres de campos del modal a nombres de campos del MedicamentoForm
+            # Esto dependerá de cómo se nombren los campos en el modal HTML
+            field_map = {
+                'nombre_medicamento_modal': 'nombre',
+                'tipo_medicamento_modal': 'tipo', # Asumiendo que envías el ID del TipoMedicamento
+                'marca_medicamento_modal': 'marca_medicamento', # Asumiendo ID
+                'concentracion_modal': 'concentracion',
+                'via_administracion_modal': 'via_administracion', # Asumiendo el valor de la opción
+                'cantidad_modal': 'cantidad',
+                'precio_modal': 'precio',
+                'descripcion_modal': 'descripcion',
+            }
+
+            form_data = {}
+            for modal_field, form_field in field_map.items():
+                if modal_field in data_from_request:
+                    form_data[form_field] = data_from_request[modal_field]
+
+            # Valores por defecto si no vienen del modal
+            if 'nombre' not in form_data or not form_data['nombre']:
+                 return JsonResponse({'status': 'error', 'message': 'El nombre del medicamento es requerido.'})
+
+            if 'tipo' not in form_data:
+                # Asignar un tipo por defecto o el primero que encuentre si no se provee
+                default_tipo = TipoMedicamento.objects.filter(activo=True).first()
+                if default_tipo:
+                    form_data['tipo'] = default_tipo.pk
+                else:
+                    return JsonResponse({'status': 'error', 'message': 'No se encontró un tipo de medicamento por defecto. Por favor, cree tipos de medicamento en el sistema.'})
+
+            form_data.setdefault('cantidad', 0) # Stock inicial
+            form_data.setdefault('precio', "0.00")
+            form_data.setdefault('activo', True)
+            form_data.setdefault('via_administracion', 'oral') # Un valor común por defecto
+
+            form = MedicamentoForm(form_data)
+            if form.is_valid():
+                try:
+                    medicamento = form.save()
+                    # Texto para mostrar en Select2, puede ser personalizado
+                    select2_text = f"{medicamento.nombre}"
+                    if medicamento.concentracion:
+                        select2_text += f" ({medicamento.concentracion})"
+                    if medicamento.tipo:
+                        select2_text += f" - T: {medicamento.tipo.nombre}"
+
+                    return JsonResponse({
+                        'status': 'success',
+                        'medicamento_id': medicamento.pk,
+                        'medicamento_nombre': medicamento.nombre, # Nombre base
+                        'medicamento_text': select2_text, # Texto completo para Select2
+                        'medicamento_precio': str(medicamento.precio) # Para el frontend si es necesario
+                    })
+                except Exception as e:
+                    return JsonResponse({'status': 'error', 'message': f'Error al guardar el medicamento: {str(e)}'})
+            else:
+                # Errores del formulario
+                return JsonResponse({'status': 'error', 'message': 'Datos inválidos para el medicamento.', 'errors': form.errors.as_json()})
+            # --- FIN IMPLEMENTACIÓN ---
+        else: # Esto es si 'nombre_medicamento_modal' (o el campo principal) no viene en el POST
+            return JsonResponse({'status': 'error', 'message': 'Nombre del medicamento es requerido (desde el else principal).'})
 
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)

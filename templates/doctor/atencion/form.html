@@ -327,13 +327,36 @@
                             <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title-medicamento">Crear Nuevo Medicamento</h3>
                             <div class="mt-4 space-y-4">
                                 <!-- Campos del formulario para nuevo medicamento -->
-                                <!-- Simplificado: Solo nombre. En una app real, usarías un MedicamentoForm completo -->
+                                <!-- Campos del formulario para nuevo medicamento -->
                                 <div>
-                                    <label for="nombre_medicamento_modal" class="block text-sm font-medium text-gray-700">Nombre del Medicamento</label>
+                                    <label for="nombre_medicamento_modal" class="block text-sm font-medium text-gray-700">Nombre del Medicamento <span class="text-red-500">*</span></label>
                                     <input type="text" name="nombre_medicamento_modal" id="nombre_medicamento_modal" required class="mt-1 focus:ring-purple-500 focus:border-purple-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
                                 </div>
-                                <!-- Aquí irían más campos: tipo, marca, concentración, etc. -->
-                                <p class="text-xs text-gray-500">Nota: Esta es una creación rápida. Para más detalles, edite el medicamento luego desde su sección correspondiente.</p>
+                                <div>
+                                    <label for="tipo_medicamento_modal" class="block text-sm font-medium text-gray-700">Tipo de Medicamento <span class="text-red-500">*</span></label>
+                                    <select name="tipo_medicamento_modal" id="tipo_medicamento_modal" required class="mt-1 focus:ring-purple-500 focus:border-purple-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md select2-simple">
+                                        <option value="">Seleccione...</option>
+                                        {% for tipo in tipos_medicamento_existentes %}
+                                            <option value="{{ tipo.pk }}">{{ tipo.nombre }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="precio_modal" class="block text-sm font-medium text-gray-700">Precio <span class="text-red-500">*</span></label>
+                                        <input type="number" name="precio_modal" id="precio_modal" step="0.01" min="0" value="0.00" required class="mt-1 focus:ring-purple-500 focus:border-purple-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                    </div>
+                                    <div>
+                                        <label for="cantidad_modal" class="block text-sm font-medium text-gray-700">Stock Inicial <span class="text-red-500">*</span></label>
+                                        <input type="number" name="cantidad_modal" id="cantidad_modal" min="0" value="0" required class="mt-1 focus:ring-purple-500 focus:border-purple-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="concentracion_modal" class="block text-sm font-medium text-gray-700">Concentración (Ej: 500mg)</label>
+                                    <input type="text" name="concentracion_modal" id="concentracion_modal" class="mt-1 focus:ring-purple-500 focus:border-purple-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <!-- Aquí podrían ir más campos opcionales como via_administracion, marca_medicamento, etc. -->
+                                <p class="text-xs text-gray-500">Los campos marcados con <span class="text-red-500">*</span> son obligatorios. Para más detalles, edite el medicamento luego desde su sección correspondiente.</p>
                             </div>
                         </div>
                     </div>
@@ -454,18 +477,23 @@ $(document).ready(function() {
         var dni = $('#search_dni_paciente').val();
         if (dni) {
             $.ajax({
-                url: "{% url 'core:ajax_buscar_paciente_dni' %}",
+                url: "{% url 'doctor:ajax_search_patient_dni' %}",
                 data: { 'dni': dni },
                 success: function(data) {
-                    if (data.paciente) {
-                        seleccionarPaciente(data.paciente);
-                        $('#pacienteSearchModal').addClass('hidden');
+                    var resultDiv = $('#resultadoBusquedaPaciente');
+                    resultDiv.html(''); // Limpiar resultados anteriores
+                    if (data.pacientes && data.pacientes.length > 0) {
+                        var paciente = data.pacientes[0]; // Asumimos que DNI es único
+                        seleccionarPaciente(paciente); // Usar la función global
+                        // Ya no se cierra el modal aquí, se cierra en seleccionarPaciente
+                    } else if (data.error) {
+                         resultDiv.html(`<p class="text-red-500">${data.error}</p>`);
                     } else {
-                        alert(data.error || "Paciente no encontrado.");
+                         resultDiv.html('<p class="text-yellow-500">Paciente no encontrado.</p>');
                     }
                 },
                 error: function() {
-                    alert("Error al buscar paciente.");
+                     $('#resultadoBusquedaPaciente').html('<p class="text-red-500">Error al buscar paciente.</p>');
                 }
             });
         }
@@ -586,11 +614,31 @@ $(document).ready(function() {
 
     // Modal de previsualización
     $('#previsualizarBtn').click(function() {
-        // Aquí deberías recolectar los datos del formulario y enviarlos por AJAX
-            // ... (existing previsualizacionBtn click handler) ...
+        var formData = $('#atencionForm').serialize(); // Serializa todo el formulario, incluyendo el formset
+
+        // Mostrar el modal de previsualización inmediatamente con un mensaje de carga
+        $('#previsualizacionContenido').html('<p class="text-sm text-gray-500 text-center py-4">Cargando previsualización...</p>');
+        $('#previsualizacionModal').removeClass('hidden');
+
+        $.ajax({
+            url: "{% url 'doctor:ajax_previsualizar_atencion' %}",
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                if(response.status === 'success') {
+                    $('#previsualizacionContenido').html(response.html_preview);
+                } else {
+                    $('#previsualizacionContenido').html('<p class="text-red-500 text-center py-4">Error: ' + (response.message || "No se pudo generar la previsualización.") + '</p>');
+                }
+            },
+            error: function(xhr) {
+                 $('#previsualizacionContenido').html('<p class="text-red-500 text-center py-4">Error de conexión ('+ xhr.status +'): No se pudo generar la previsualización.</p>');
+            }
+        });
     });
     $('#cerrarPrevisualizacionBtn').click(function() {
         $('#previsualizacionModal').addClass('hidden');
+        $('#previsualizacionContenido').html(''); // Limpiar contenido al cerrar
     });
 
     // Voice input for comentario_adicional
@@ -708,40 +756,92 @@ $(document).ready(function() {
     // Modal para crear nuevo medicamento
     $('#crearNuevoMedicamentoBtn').click(function() {
         $('#formCrearMedicamento')[0].reset(); // Limpiar form
+        $('#tipo_medicamento_modal').val(null).trigger('change'); // Reset select2
         $('#crearMedicamentoModal').removeClass('hidden');
     });
     $('#cancelarCrearMedicamentoBtn').click(function() {
         $('#crearMedicamentoModal').addClass('hidden');
     });
+
+    // Inicializar Select2 para el campo tipo_medicamento_modal
+    $('#tipo_medicamento_modal').select2({
+        placeholder: "Seleccione un tipo",
+        dropdownParent: $('#crearMedicamentoModal'), // Para que el dropdown aparezca sobre el modal
+        width: '100%',
+        allowClear: true
+    });
+
     $('#guardarNuevoMedicamentoBtn').click(function() {
-        var nombreMed = $('#nombre_medicamento_modal').val();
-        if (!nombreMed.trim()) {
-            alert("El nombre del medicamento es requerido.");
-            return;
+        var modalForm = $('#formCrearMedicamento');
+        var formData = modalForm.serializeArray(); // Obtiene los datos del formulario del modal
+        var dataToSend = {};
+        var isValid = true;
+
+        // Validación simple de campos requeridos en frontend (complementa la del backend)
+        modalForm.find('[required]').each(function() {
+            if (!$(this).val()) {
+                isValid = false;
+                $(this).addClass('border-red-500'); // Marcar campo vacío
+                alert('Por favor, complete todos los campos obligatorios (*).');
+                return false; // Salir del bucle .each
+            } else {
+                $(this).removeClass('border-red-500');
+            }
+        });
+
+        if (!isValid) return;
+
+        formData.forEach(function(item){
+            dataToSend[item.name] = item.value;
+        });
+        // Asegurar que el token CSRF esté incluido (ya debería estar por el serialize si el campo existe en el form)
+        if (!$('input[name="csrfmiddlewaretoken"]', modalForm).length) {
+             dataToSend['csrfmiddlewaretoken'] = $('input[name="csrfmiddlewaretoken"]').first().val();
         }
-        // Aquí enviarías los datos del nuevo medicamento por AJAX
+
         $.ajax({
             url: "{% url 'doctor:ajax_crear_medicamento' %}",
             type: 'POST',
-            data: {
-                'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val(),
-                'nombre_medicamento_modal': nombreMed
-                // ...otros campos del modal si los tienes
-            },
+            data: dataToSend,
             success: function(response) {
                 if (response.status === 'success') {
-                    alert("Medicamento creado exitosamente.");
+                    alert("Medicamento '" + response.medicamento_nombre + "' creado exitosamente.");
                     $('#crearMedicamentoModal').addClass('hidden');
-                    // Opcional: añadir el nuevo medicamento a la lista de un Select2 si es relevante
-                    // Por ejemplo, si tienes un Select2 para seleccionar medicamentos existentes:
-                    // var newOption = new Option(response.medicamento_nombre, response.medicamento_id, true, true);
-                    // $('.algún-select2-de-medicamentos').append(newOption).trigger('change');
+
+                    // Añadir y seleccionar el nuevo medicamento en el ÚLTIMO formset de detalle
+                    // Esto es una heurística, podría necesitar ser más específico si se editan múltiples a la vez
+                    var $lastDetalleForm = $('.detalle-form:last');
+                    if ($lastDetalleForm.length) {
+                        var $select2Medicamento = $lastDetalleForm.find('.medicamento-autocomplete');
+                        var $hiddenIdField = $lastDetalleForm.find('input[type=hidden][name$="-medicamento"]');
+
+                        if ($select2Medicamento.data('select2')) { // Si Select2 ya está inicializado
+                            var option = new Option(response.medicamento_text, response.medicamento_id, true, true);
+                            $select2Medicamento.append(option).trigger('change');
+                            $hiddenIdField.val(response.medicamento_id).trigger('change');
+                        } else { // Si no (ej. una fila recién añadida donde aún no se inicializó)
+                            // Esto es menos probable si 'added' callback del formset funciona bien
+                            $select2Medicamento.val(response.medicamento_text); // Poner el nombre
+                            $hiddenIdField.val(response.medicamento_id);
+                             // Podrías necesitar inicializar Select2 aquí si no lo está.
+                        }
+                    }
                 } else {
-                    alert(response.message || "Error al crear medicamento.");
+                    let errorMessage = response.message || "Error al crear medicamento.";
+                    if (response.errors) {
+                        try {
+                            const errors = JSON.parse(response.errors);
+                            errorMessage += "\nDetalles:\n";
+                            for (const field in errors) {
+                                errorMessage += `${field}: ${errors[field][0].message || errors[field][0]}\n`;
+                            }
+                        } catch (e) { /* No hacer nada si no es JSON */ }
+                    }
+                    alert(errorMessage);
                 }
             },
-            error: function() {
-                alert("Error de conexión al crear medicamento.");
+            error: function(xhr) {
+                alert("Error de conexión al crear medicamento: " + xhr.statusText);
             }
         });
     });
