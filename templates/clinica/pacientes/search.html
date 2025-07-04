@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+  <h1 class="text-3xl font-extrabold text-gray-900 mb-8 text-center">Buscar Paciente</h1>
+
+  <div class="relative">
+    <input
+      id="searchInput"
+      type="search"
+      placeholder="Nombre, cédula, teléfono..."
+      class="block w-full rounded-md border border-gray-300 bg-white py-3 px-4 text-gray-900 placeholder-gray-400 
+             focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none focus:ring-1 sm:text-sm"
+      autocomplete="off"
+      aria-label="Buscar paciente"
+    />
+    <div id="results" class="mt-6 space-y-4 min-h-[100px]">
+      <p class="text-gray-500 italic">Escribe al menos 3 caracteres para buscar.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const searchInput = document.getElementById('searchInput');
+  const resultsDiv = document.getElementById('results');
+
+  searchInput.addEventListener('input', () => {
+    const query = searchInput.value.trim();
+
+    if (query.length < 3) {
+      resultsDiv.innerHTML = '<p class="text-gray-500 italic">Escribe al menos 3 caracteres para buscar.</p>';
+      return;
+    }
+
+    fetch(`/paciente_find?q=${encodeURIComponent(query)}`)
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success) {
+          resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">${data.message}</p>`;
+          return;
+        }
+
+        if (data.pacientes.length === 0) {
+          resultsDiv.innerHTML = '<p class="text-gray-500 italic">No se encontraron resultados.</p>';
+          return;
+        }
+
+        const pacientesHTML = data.pacientes.map(paciente => `
+          <div class="bg-white shadow rounded-md p-6 border border-gray-200 hover:shadow-lg transition-shadow duration-200 cursor-pointer">
+            <h2 class="text-xl font-semibold text-indigo-700">${paciente.apellidos} ${paciente.nombres}</h2>
+            <p><strong>Cédula:</strong> <span class="text-gray-700">${paciente.cedula_ecuatoriana || '-'}</span></p>
+            <p><strong>Edad:</strong> <span class="text-gray-700">${paciente.edad !== null ? paciente.edad : 'No registrada'}</span></p>
+            <p><strong>Teléfono:</strong> <span class="text-gray-700">${paciente.telefono || '-'}</span></p>
+            <p><strong>Correo:</strong> <span class="text-gray-700">${paciente.email || '-'}</span></p>
+          </div>
+        `).join('');
+
+        resultsDiv.innerHTML = pacientesHTML;
+      })
+      .catch(error => {
+        resultsDiv.innerHTML = `<p class="text-red-600 font-semibold">Error al buscar: ${error.message}</p>`;
+      });
+  });
+</script>
+{% endblock %}

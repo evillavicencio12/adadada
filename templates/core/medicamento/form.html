@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ view.model_name_title|default:"Gestión" }} - {% if object %}Editar{% else %}Crear{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white shadow-xl rounded-lg p-8 max-w-3xl mx-auto">
+        <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-800">
+                <i class="fas fa-pills mr-3 text-emerald-500"></i>
+                {% if object %}Editar{% else %}Nuevo{% endif %} Medicamento
+            </h1>
+            <a href="{% url 'core:medicamento_list' %}" class="text-gray-600 hover:text-gray-800 transition duration-300">
+                <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-md text-white {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% else %}bg-blue-500{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if form.non_field_errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                <strong class="font-bold">Error:</strong>
+                <span class="block sm:inline">{{ form.non_field_errors|join:", " }}</span>
+            </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                <div>
+                    <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.nombre.label }} {% if form.nombre.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {% render_field form.nombre class+="form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="Nombre comercial o genérico" %}
+                    {% if form.nombre.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.nombre.help_text }}</p>{% endif %}
+                    {% if form.nombre.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.nombre.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.tipo.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.tipo.label }} {% if form.tipo.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {% render_field form.tipo class+="select2-field block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" %}
+                    {% if form.tipo.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.tipo.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.marca_medicamento.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.marca_medicamento.label }}</label>
+                    {% render_field form.marca_medicamento class+="select2-field block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" %}
+                    {% if form.marca_medicamento.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.marca_medicamento.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.concentracion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.concentracion.label }}</label>
+                    {% render_field form.concentracion class+="form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="Ej: 500mg, 10ml/5mg" %}
+                    {% if form.concentracion.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.concentracion.help_text }}</p>{% endif %}
+                    {% if form.concentracion.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.concentracion.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.via_administracion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.via_administracion.label }} {% if form.via_administracion.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {% render_field form.via_administracion class+="select2-field block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" %}
+                    {% if form.via_administracion.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.via_administracion.help_text }}</p>{% endif %}
+                    {% if form.via_administracion.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.via_administracion.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.cantidad.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.cantidad.label }} (Stock) {% if form.cantidad.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {% render_field form.cantidad class+="form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" type="number" min="0" %}
+                    {% if form.cantidad.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.cantidad.help_text }}</p>{% endif %}
+                    {% if form.cantidad.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.cantidad.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <div>
+                    <label for="{{ form.precio.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.precio.label }} {% if form.precio.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                     <div class="mt-1 relative rounded-md shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">$</span>
+                        </div>
+                        {% render_field form.precio class+="form-input block w-full pl-7 pr-12 border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" placeholder="0.00" type="number" step="0.01" min="0" %}
+                    </div>
+                    {% if form.precio.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.precio.help_text }}</p>{% endif %}
+                    {% if form.precio.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.precio.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="{{ form.descripcion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.descripcion.label }}</label>
+                    {% render_field form.descripcion class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm" rows="3" placeholder="Uso, indicaciones, precauciones relevantes..." %}
+                    {% if form.descripcion.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.descripcion.help_text }}</p>{% endif %}
+                    {% if form.descripcion.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.descripcion.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="{{ form.foto.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.foto.label }}</label>
+                    {% render_field form.foto class+="form-input block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" %}
+                    {% if form.foto.help_text %}<p class="mt-1 text-xs text-gray-500">{{ form.foto.help_text }}</p>{% endif %}
+                    {% if form.foto.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.foto.errors|join:", " }}</p>{% endif %}
+                    {% if object.foto %}
+                        <div class="mt-2">
+                            <p class="text-xs text-gray-600">Actual: <a href="{{ object.foto.url }}" target="_blank" class="text-emerald-600 hover:underline">{{ object.foto.name|cut:"core/medicamentos/" }}</a></p>
+                            <img src="{{ object.foto.url }}" alt="Foto actual" class="mt-1 h-20 w-20 object-cover rounded-md">
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="flex items-center md:col-span-1">
+                    {% render_field form.comercial class+="form-checkbox h-5 w-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500" %}
+                    <label for="{{ form.comercial.id_for_label }}" class="ml-2 block text-sm font-medium text-gray-700">{{ form.comercial.label }}</label>
+                    {% if form.comercial.errors %}<p class="text-red-500 text-xs italic ml-2">{{ form.comercial.errors|join:", " }}</p>{% endif %}
+                </div>
+                 {% if form.comercial.help_text %}<p class="mt-1 text-xs text-gray-500 md:col-span-2">{{ form.comercial.help_text }}</p>{% endif %}
+
+
+                <div class="flex items-center md:col-span-1">
+                    {% render_field form.activo class+="form-checkbox h-5 w-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500" %}
+                    <label for="{{ form.activo.id_for_label }}" class="ml-2 block text-sm font-medium text-gray-700">{{ form.activo.label }}</label>
+                    {% if form.activo.errors %}<p class="text-red-500 text-xs italic ml-2">{{ form.activo.errors|join:", " }}</p>{% endif %}
+                </div>
+                 {% if form.activo.help_text %}<p class="mt-1 text-xs text-gray-500 md:col-span-2">{{ form.activo.help_text }}</p>{% endif %}
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="mt-8 pt-5 border-t border-gray-200 flex justify-end space-x-3">
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out">
+                    <i class="fas fa-save mr-2"></i> {% if object %}Actualizar{% else %}Guardar{% endif %} Medicamento
+                </button>
+                <a href="{% url 'core:medicamento_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('.select2-field').select2({
+        placeholder: "Seleccione una opción",
+        allowClear: true,
+        width: '100%'
+    });
+});
+</script>
+{% endblock %}
