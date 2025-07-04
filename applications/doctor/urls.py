@@ -1,6 +1,7 @@
 from django.urls import path
-from applications.doctor import views
+from applications.doctor import views # Esto ya importa las vistas de atencion_medica y servicios_adicionales
 from applications.doctor.views import patient as patient_views
+from applications.doctor.views import calendario as calendario_views # Importar vistas de calendario
 from applications.doctor.views.cita_medica import (
     cita_medica_list,
     cita_medica_create,
@@ -44,7 +45,7 @@ urlpatterns = [
     
     # Rutas para citas médicas
     path('citas/', cita_medica_list, name='cita_medica_list'),
-    path('citas/crear/', cita_medica_create, name='cita_medica_create'),
+    path('citas/crear/', cita_medica_create, name='cita_medica_create'), # Usada para crear desde fuera del calendario
     path('citas/<int:pk>/', cita_medica_detail, name='cita_medica_detail'),
     path('citas/<int:pk>/editar/', cita_medica_update, name='cita_medica_update'),
     path('citas/<int:pk>/eliminar/', cita_medica_delete, name='cita_medica_delete'),
@@ -53,4 +54,13 @@ urlpatterns = [
     path('citas/<int:pk>/cambiar-estado/', cita_medica_change_estado, name='cita_medica_change_estado'),
     path('citas/hoy/', citas_hoy, name='citas_hoy'),
     path('citas/fecha/<str:fecha>/', citas_por_fecha, name='citas_por_fecha'),
+
+    # URLs para el Calendario Automático y gestión de citas desde el calendario
+    path('calendario/', calendario_views.calendario_dashboard, name='calendario_dashboard'),
+    path('calendario/api/generar-mes/', calendario_views.generar_calendario_automatico, name='calendario_api_generar_mes'),
+    path('calendario/api/slots-dia/', calendario_views.obtener_slots_dia_especifico, name='calendario_api_slots_dia'),
+    path('calendario/api/agendar-cita/', calendario_views.agendar_cita_automatica, name='calendario_api_agendar_cita'),
+    # La URL para crear citas desde el calendario (`cita_medica_create` con parámetros GET o `agendar_cita_automatica` POST)
+    # ya está cubierta. Si se va a usar `cita_medica_create` desde el calendario, se puede llamar con ?fecha=YYYY-MM-DD&hora=HH:MM
+    # Si se usa `agendar_cita_automatica`, es una API POST.
 ]

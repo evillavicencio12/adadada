@@ -380,6 +380,7 @@
 
 {% endblock %}
 
+{% block js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const btn = document.getElementById('startVoiceComentario');
@@ -387,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Verificar soporte del API
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-        btn.style.display = 'none'; // Oculta botón si no es compatible
+        if (btn) btn.style.display = 'none'; // Oculta botón si no es compatible
         console.warn('Este navegador no soporta Speech Recognition.');
         return;
     }
@@ -396,45 +397,77 @@ document.addEventListener('DOMContentLoaded', function() {
     const recognition = new SpeechRecognition();
 
     recognition.lang = 'es-ES'; // Configurar idioma a español de España (ajustar según preferencia)
-    recognition.interimResults = true;
-    recognition.continuous = false;
+    recognition.interimResults = true; // Mostrar resultados parciales mientras habla
+    recognition.continuous = false; // Termina después de una pausa; si es true, sigue hasta stop()
 
     let isRecognizing = false;
 
-    btn.addEventListener('click', function() {
-        if (isRecognizing) {
-            recognition.stop();
-            return;
-        }
-        recognition.start();
-    });
+    if (btn) {
+        btn.addEventListener('click', function() {
+            if (isRecognizing) {
+                recognition.stop();
+                // No es necesario cambiar isRecognizing aquí, onend lo hará
+                return;
+            }
+            if (textarea) textarea.focus(); // Dar foco al textarea
+            recognition.start();
+        });
+    }
+
 
     recognition.onstart = function() {
         isRecognizing = true;
-        btn.classList.add('text-red-500'); // Cambio visual para indicar grabación activa
+        if (btn) btn.classList.add('text-red-500', 'animate-pulse'); // Cambio visual
         console.log('Grabando...');
     };
 
     recognition.onerror = function(event) {
         console.error('Error en reconocimiento:', event.error);
-        isRecognizing = false;
-        btn.classList.remove('text-red-500');
+        if (event.error === 'no-speech') {
+            console.warn('No se detectó voz.');
+            // Aquí podrías mostrar un mensaje al usuario
+        } else if (event.error === 'audio-capture') {
+            console.warn('Problema con el micrófono.');
+            // Aquí podrías mostrar un mensaje al usuario
+        } else if (event.error === 'not-allowed') {
+            console.warn('Permiso para micrófono denegado.');
+            // Aquí podrías mostrar un mensaje al usuario pidiendo permisos
+        }
+        // isRecognizing se actualizará en onend
     };
 
     recognition.onend = function() {
         isRecognizing = false;
-        btn.classList.remove('text-red-500');
-        console.log('Reconocimiento finalizado');
+        if (btn) btn.classList.remove('text-red-500', 'animate-pulse');
+        console.log('Reconocimiento finalizado.');
     };
 
     recognition.onresult = function(event) {
-        let transcript = '';
+        let final_transcript = '';
+        let interim_transcript = '';
+
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-            transcript += event.results[i][0].transcript;
+            const transcript_piece = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                final_transcript += transcript_piece;
+            } else {
+                interim_transcript += transcript_piece;
+            }
         }
-        // Puedes decidir si reemplazas o agregas al texto actual
-        textarea.value += transcript + ' ';
+
+        // Actualizar el textarea. Podrías tener un span para el interim_transcript si quieres
+        if (textarea) {
+            // Si hay texto final, lo añadimos con un espacio.
+            // Si no hay texto final pero sí intermedio, podríamos mostrarlo (quizás en otro color o con ...)
+            // Por simplicidad, solo añadimos el texto final.
+            if (final_transcript) {
+                 textarea.value += final_transcript.trim() + '. '; // Añade punto y espacio
+            }
+        }
+        console.log('Interim: ', interim_transcript);
+        console.log('Final: ', final_transcript);
     };
 });
 </script>
+{% endblock js %}
 

@@ -1,5 +1,4 @@
 # applications/doctor/views/cita_medica_views.py
-from django.shortcuts import render
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -9,149 +8,148 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from datetime import datetime, date
 from ..models import CitaMedica
-from applications.doctor.forms.forms import CitaMedicaForm  # Importar la clase form correctamente
+from applications.doctor.forms.forms import CitaMedicaForm
 
 def cita_medica_list(request):
     """Lista todas las citas médicas con filtros y paginación"""
-    citas = CitaMedica.objects.select_related('paciente').all()
-    
-    # Filtros
-    search = request.GET.get('search')
-    estado = request.GET.get('estado')
-    fecha_desde = request.GET.get('fecha_desde')
-    fecha_hasta = request.GET.get('fecha_hasta')
-    
-    if search:
-        citas = citas.filter(
-            Q(paciente__nombre_completo__icontains=search) |
-            Q(observaciones__icontains=search)
+    citas_qs = CitaMedica.objects.select_related('paciente').order_by('-fecha', '-hora_cita')
+
+    search_query = request.GET.get('search')
+    estado_filter = request.GET.get('estado')
+    fecha_desde_filter = request.GET.get('fecha_desde')
+    fecha_hasta_filter = request.GET.get('fecha_hasta')
+
+    if search_query:
+        citas_qs = citas_qs.filter(
+            Q(paciente__primer_nombre__icontains=search_query) |
+            Q(paciente__apellido__icontains=search_query) |
+            Q(paciente__dni__icontains=search_query) |
+            Q(observaciones__icontains=search_query)
         )
     
-    if estado:
-        citas = citas.filter(estado=estado)
+    if estado_filter:
+        citas_qs = citas_qs.filter(estado=estado_filter)
     
-    if fecha_desde:
+    if fecha_desde_filter:
         try:
-            fecha_desde = datetime.strptime(fecha_desde, '%Y-%m-%d').date()
-            citas = citas.filter(fecha__gte=fecha_desde)
+            fecha_desde_dt = datetime.strptime(fecha_desde_filter, '%Y-%m-%d').date()
+            citas_qs = citas_qs.filter(fecha__gte=fecha_desde_dt)
         except ValueError:
-            pass
+            messages.error(request, "Formato de 'fecha desde' inválido.")
+            fecha_desde_filter = None
     
-    if fecha_hasta:
+    if fecha_hasta_filter:
         try:
-            fecha_hasta = datetime.strptime(fecha_hasta, '%Y-%m-%d').date()
-            citas = citas.filter(fecha__lte=fecha_hasta)
+            fecha_hasta_dt = datetime.strptime(fecha_hasta_filter, '%Y-%m-%d').date()
+            citas_qs = citas_qs.filter(fecha__lte=fecha_hasta_dt)
         except ValueError:
-            pass
+            messages.error(request, "Formato de 'fecha hasta' inválido.")
+            fecha_hasta_filter = None
     
-    # Paginación
-    paginator = Paginator(citas, 10)
+    paginator = Paginator(citas_qs, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
     context = {
+        'title': 'Listado de Citas Médicas',
         'page_obj': page_obj,
-        'search': search,
-        'estado': estado,
-        'fecha_desde': fecha_desde,
-        'fecha_hasta': fecha_hasta,
-        'estados_choices': CitaMedica._meta.get_field('estado').choices,
+        'search_query': search_query,
+        'estado_filter': estado_filter,
+        'fecha_desde_filter': fecha_desde_filter,
+        'fecha_hasta_filter': fecha_hasta_filter,
+        'estados_choices': CitaMedica.ESTADO_CHOICES,
     }
-    
-    return render(request, 'doctor/cita_medica/citas.html', context)
+    return render(request, 'doctor/cita_medica/cita_list.html', context)
 
 def cita_medica_detail(request, pk):
     """Muestra el detalle de una cita médica"""
-    cita = get_object_or_404(CitaMedica, pk=pk)
-    
+    cita = get_object_or_404(CitaMedica.objects.select_related('paciente', 'user_creation', 'user_updated'), pk=pk)
     context = {
+        'title': f'Detalle Cita #{cita.pk}',
         'cita': cita,
     }
-    
-    return render(request, 'doctor/cita_medica/citas.html', context)
-
+    return render(request, 'doctor/cita_medica/cita_detail.html', context)
 
 def cita_medica_create(request):
-    fecha = request.GET.get('fecha')
-    hora = request.GET.get('hora')
+    fecha_param = request.GET.get('fecha')
+    hora_param = request.GET.get('hora')
+    initial_data = {}
+
+    if fecha_param:
+        try:
+            initial_data['fecha'] = datetime.strptime(fecha_param, '%Y-%m-%d').date()
+        except ValueError:
+            messages.warning(request, 'Formato de fecha inválido para la nueva cita.')
+    if hora_param:
+        try:
+            initial_data['hora_cita'] = datetime.strptime(hora_param, '%H:%M').time()
+        except ValueError:
+            messages.warning(request, 'Formato de hora inválido para la nueva cita.')
 
     if request.method == 'POST':
         form = CitaMedicaForm(request.POST)
         if form.is_valid():
             try:
-                cita = form.save()
-                messages.success(request, 'Cita médica creada exitosamente')
+                cita = form.save(commit=False)
+                cita.user_creation = request.user if request.user.is_authenticated else None
+                cita.save()
+                messages.success(request, f'Cita médica para {cita.paciente} creada exitosamente.')
                 return redirect('doctor:cita_medica_detail', pk=cita.pk)
             except Exception as e:
                 messages.error(request, f'Error al crear la cita: {str(e)}')
     else:
-        initial_data = {}
-        if fecha:
-            try:
-                initial_data['fecha'] = datetime.strptime(fecha, '%Y-%m-%d').date()
-            except ValueError:
-                pass
-        if hora:
-            try:
-                initial_data['hora_cita'] = datetime.strptime(hora, '%H:%M').time()
-            except ValueError:
-                pass
         form = CitaMedicaForm(initial=initial_data)
 
     context = {
+        'title': 'Crear Nueva Cita Médica',
         'form': form,
-        'title': 'Crear Cita Médica',
         'action': 'Crear'
     }
-
-    return render(request, 'doctor/cita_medica/citas.html', context)
-
-
+    return render(request, 'doctor/cita_medica/cita_form.html', context)
 
 def cita_medica_update(request, pk):
     """Actualiza una cita médica existente"""
     cita = get_object_or_404(CitaMedica, pk=pk)
-    
     if request.method == 'POST':
         form = CitaMedicaForm(request.POST, instance=cita)
         if form.is_valid():
             try:
-                cita = form.save()
-                messages.success(request, 'Cita médica actualizada exitosamente')
-                return redirect('doctor:cita_medica_detail', pk=cita.pk)
+                updated_cita = form.save(commit=False)
+                updated_cita.user_updated = request.user if request.user.is_authenticated else None
+                updated_cita.save()
+                messages.success(request, f'Cita médica para {updated_cita.paciente} actualizada exitosamente.')
+                return redirect('doctor:cita_medica_detail', pk=updated_cita.pk)
             except Exception as e:
                 messages.error(request, f'Error al actualizar la cita: {str(e)}')
     else:
         form = CitaMedicaForm(instance=cita)
     
     context = {
+        'title': f'Editar Cita Médica #{cita.pk}',
         'form': form,
         'cita': cita,
-        'title': 'Editar Cita Médica',
         'action': 'Actualizar'
     }
-    
-    return render(request, 'doctor/cita_medica/citas.html', context)
-
+    return render(request, 'doctor/cita_medica/cita_form.html', context)
 
 def cita_medica_delete(request, pk):
-    """Elimina una cita médica"""
-    cita = get_object_or_404(CitaMedica, pk=pk)
-    
+    """Muestra confirmación o elimina una cita médica"""
+    cita = get_object_or_404(CitaMedica.objects.select_related('paciente'), pk=pk)
     if request.method == 'POST':
         try:
+            nombre_paciente = f"{cita.paciente.primer_nombre} {cita.paciente.apellido}"
             cita.delete()
-            messages.success(request, 'Cita médica eliminada exitosamente')
+            messages.success(request, f'Cita médica para {nombre_paciente} eliminada exitosamente.')
             return redirect('doctor:cita_medica_list')
         except Exception as e:
             messages.error(request, f'Error al eliminar la cita: {str(e)}')
+            return redirect('doctor:cita_medica_detail', pk=cita.pk)
     
     context = {
+        'title': f'Confirmar Eliminación de Cita #{cita.pk}',
         'cita': cita,
     }
-    
-    return render(request, 'doctor/cita_medica/citas.html', context)
-
+    return render(request, 'doctor/cita_medica/cita_confirm_delete.html', context)
 
 @require_http_methods(["POST"])
 def cita_medica_change_estado(request, pk):
@@ -159,10 +157,12 @@ def cita_medica_change_estado(request, pk):
     cita = get_object_or_404(CitaMedica, pk=pk)
     nuevo_estado = request.POST.get('estado')
     
-    if nuevo_estado in dict(CitaMedica._meta.get_field('estado').choices):
+    valid_estados = [choice[0] for choice in CitaMedica.ESTADO_CHOICES]
+
+    if nuevo_estado in valid_estados:
         cita.estado = nuevo_estado
+        cita.user_updated = request.user if request.user.is_authenticated else None
         cita.save()
-        
         return JsonResponse({
             'success': True,
             'message': f'Estado cambiado a {cita.get_estado_display()}',
@@ -170,46 +170,49 @@ def cita_medica_change_estado(request, pk):
             'nuevo_estado_display': cita.get_estado_display()
         })
     
-    return JsonResponse({
-        'success': False,
-        'message': 'Estado no válido'
-    })
+    return JsonResponse({'success': False, 'message': 'Estado no válido'}, status=400)
 
 def citas_hoy(request):
-    """Muestra las citas de hoy"""
+    """Muestra las citas de hoy en el formato de lista"""
     hoy = date.today()
-    citas = CitaMedica.objects.filter(fecha=hoy).select_related('paciente').order_by('hora_cita')
+    citas_qs = CitaMedica.objects.filter(fecha=hoy).select_related('paciente').order_by('hora_cita')
     
+    paginator = Paginator(citas_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        'citas': citas,
-        'fecha': hoy,
-        'title': 'Citas de Hoy'
+        'title': f'Citas de Hoy ({hoy.strftime("%d/%m/%Y")})',
+        'page_obj': page_obj,
+        'estados_choices': CitaMedica.ESTADO_CHOICES,
+        'search_query': None,
+        'estado_filter': None,
+        'fecha_desde_filter': hoy.strftime('%Y-%m-%d'),
+        'fecha_hasta_filter': hoy.strftime('%Y-%m-%d'),
     }
-    
-    return render(request, 'doctor/cita_medica/citas.html', context)
+    return render(request, 'doctor/cita_medica/cita_list.html', context)
 
-
-def citas_por_fecha(request, fecha):
-    """Muestra las citas de una fecha específica"""
+def citas_por_fecha(request, fecha_str):
+    """Muestra las citas de una fecha específica en el formato de lista"""
     try:
-        fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
+        fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
     except ValueError:
-        messages.error(request, 'Formato de fecha inválido')
+        messages.error(request, 'Formato de fecha inválido. Use YYYY-MM-DD.')
         return redirect('doctor:cita_medica_list')
     
-    citas = CitaMedica.objects.filter(fecha=fecha_obj).select_related('paciente').order_by('hora_cita')
+    citas_qs = CitaMedica.objects.filter(fecha=fecha_obj).select_related('paciente').order_by('hora_cita')
+    
+    paginator = Paginator(citas_qs, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
     context = {
-        'citas': citas,
-        'fecha': fecha_obj,
-        'title': f'Citas del {fecha_obj.strftime("%d/%m/%Y")}'
+        'title': f'Citas del {fecha_obj.strftime("%d/%m/%Y")}',
+        'page_obj': page_obj,
+        'estados_choices': CitaMedica.ESTADO_CHOICES,
+        'search_query': None,
+        'estado_filter': None,
+        'fecha_desde_filter': fecha_obj.strftime('%Y-%m-%d'),
+        'fecha_hasta_filter': fecha_obj.strftime('%Y-%m-%d'),
     }
-    
-    return render(request, 'doctor/cita_medica/citas.html', context)
-
-def vista_citas(request):
-    citas = CitaMedica.objects.all()
-    context = {
-        'citas': citas,
-    }
-    return render(request, 'doctor/cita_medica/citas.html', context)
+    return render(request, 'doctor/cita_medica/cita_list.html', context)
