@@ -1,7 +1,16 @@
 from django.urls import path
 from applications.doctor import views
 from applications.doctor.views import patient as patient_views
-
+from applications.doctor.views.cita_medica import (
+    cita_medica_list,
+    cita_medica_create,
+    cita_medica_detail,
+    cita_medica_update,
+    cita_medica_delete,
+    cita_medica_change_estado,
+    citas_hoy,
+    citas_por_fecha
+)
 app_name = 'doctor'
 
 urlpatterns = [
@@ -31,4 +40,17 @@ urlpatterns = [
     path('servicios-adicionales/crear/', views.ServiciosAdicionalesCreateView.as_view(), name='servicio_adicional_create'),
     path('servicios-adicionales/editar/<int:pk>/', views.ServiciosAdicionalesUpdateView.as_view(), name='servicio_adicional_update'),
     path('servicios-adicionales/eliminar/<int:pk>/', views.ServiciosAdicionalesDeleteView.as_view(), name='servicio_adicional_delete'),
+    
+    
+    # Rutas para citas médicas
+    path('citas/', cita_medica_list, name='cita_medica_list'),
+    path('citas/crear/', cita_medica_create, name='cita_medica_create'),
+    path('citas/<int:pk>/', cita_medica_detail, name='cita_medica_detail'),
+    path('citas/<int:pk>/editar/', cita_medica_update, name='cita_medica_update'),
+    path('citas/<int:pk>/eliminar/', cita_medica_delete, name='cita_medica_delete'),
+    
+    # URLs adicionales para citas
+    path('citas/<int:pk>/cambiar-estado/', cita_medica_change_estado, name='cita_medica_change_estado'),
+    path('citas/hoy/', citas_hoy, name='citas_hoy'),
+    path('citas/fecha/<str:fecha>/', citas_por_fecha, name='citas_por_fecha'),
 ]

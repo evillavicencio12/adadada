@@ -5,7 +5,7 @@ class PatientForm(forms.ModelForm):
     class Meta:
         model = Patient
         fields = [
-            'Primer_nombre',
+            'primer_nombre',
             'apellido',
             'dni',
             'birth_date',
@@ -16,7 +16,7 @@ class PatientForm(forms.ModelForm):
             'blood_type',
         ]
         widgets = {
-            'Primer_nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'primer_nombre': forms.TextInput(attrs={'class': 'form-control'}),
             'apellido': forms.TextInput(attrs={'class': 'form-control'}),
             'dni': forms.TextInput(attrs={'class': 'form-control'}),
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -27,7 +27,7 @@ class PatientForm(forms.ModelForm):
             'blood_type': forms.Select(attrs={'class': 'form-control'}),
         }
         labels = {
-            'Primer_nombre': 'Nombres',
+            'primer_nombre': 'Nombres',
             'apellido': 'Apellidos',
             'dni': 'Cédula',
             'birth_date': 'Fecha de Nacimiento',
@@ -38,8 +38,8 @@ class PatientForm(forms.ModelForm):
             'blood_type': 'Tipo de Sangre',
         }
 
-    def clean_Primer_nombre(self):
-        primer_nombre = self.cleaned_data.get('Primer_nombre')
+    def clean_primer_nombre(self):
+        primer_nombre = self.cleaned_data.get('primer_nombre')
         if not primer_nombre:
             raise forms.ValidationError("Este campo es obligatorio.")
         return primer_nombre

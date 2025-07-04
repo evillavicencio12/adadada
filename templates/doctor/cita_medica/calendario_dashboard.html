@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario Médico Automático</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .date-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .date-selector select {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .date-selector select:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .calendar {
+            padding: 30px;
+        }
+
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            margin-bottom: 1px;
+            background: #ddd;
+        }
+
+        .day-header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: #ddd;
+        }
+
+        .day-cell {
+            background: white;
+            min-height: 120px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .day-cell:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .day-number {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .day-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: auto;
+            font-weight: 500;
+        }
+
+        /* Colores de estado */
+        .disponible {
+            background-color: #fff9c4;
+            border: 2px solid #ffd700;
+            color: #333;
+        }
+
+        .disponible .day-status {
+            background: #ffd700;
+            color: #333;
+        }
+
+        .ocupado {
+            background-color: #e6f3ff;
+            border: 2px solid #87ceeb;
+            color: #333;
+        }
+
+        .ocupado .day-status {
+            background: #87ceeb;
+            color: #333;
+        }
+
+        .sin_atencion {
+            background-color: #f5f5f5;
+            border: 2px solid #d3d3d3;
+            color: #999;
+        }
+
+        .sin_atencion .day-status {
+            background: #d3d3d3;
+            color: #666;
+        }
+
+        .dia-actual {
+            background-color: #1e3a8a !important;
+            border: 2px solid #1e3a8a !important;
+            color: white !important;
+        }
+
+        .dia-actual .day-status {
+            background: #3b82f6 !important;
+            color: white !important;
+        }
+
+        .dia-actual .day-number {
+            color: white !important;
+        }
+
+        .dia-actual .slots-info {
+            color: #e0e7ff !important;
+        }
+
+        .slots-info {
+            font-size: 11px;
+            margin-top: 5px;
+            color: #666;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .time-slot {
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .time-slot.disponible {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+
+        .time-slot.ocupado {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+            cursor: not-allowed;
+        }
+
+        .time-slot.disponible:hover {
+            background: #28a745;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .summary {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 30px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-item {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .summary-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .user-info {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .alert {
+            padding: 15px;
+            margin: 20px 30px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .day-cell {
+                min-height: 80px;
+                padding: 5px;
+            }
+            
+            .time-slots {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 Calendario Médico Automático</h1>
+            <p>Sistema de gestión de citas con disponibilidad en tiempo real</p>
+            <div class="user-info">
+                <strong>Bienvenido, Usuario Demo</strong>
+                <span> - Paciente</span>
+            </div>
+        </div>
+
+        <div class="alert alert-info">
+            <strong>Información:</strong> Esta es una demostración del sistema de calendario médico.
+        </div>
+
+        <div class="controls">
+            <div class="date-selector">
+                <label for="year">Año:</label>
+                <select id="year">
+                    <option value="2024">2024</option>
+                    <option value="2025" selected>2025</option>
+                    <option value="2026">2026</option>
+                </select>
+                
+                <label for="month">Mes:</label>
+                <select id="month">
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7" selected>Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select>
+                
+                <button class="btn btn-primary" onclick="cargarCalendario()">Generar Calendario</button>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffd700;"></div>
+                    <span>Disponible</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #87ceeb;"></div>
+                    <span>Ocupado</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #d3d3d3;"></div>
+                    <span>Sin Atención</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #1e3a8a;"></div>
+                    <span>Día Actual</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="summary" class="summary">
+            <div class="summary-item">
+                <div class="summary-number">31</div>
+                <div>Total Días</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-number" style="color: #ffd700;">18</div>
+                <div>Días Disponibles</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-number" style="color: #87ceeb;">8</div>
+                <div>Días Ocupados</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-number" style="color: #d3d3d3;">5</div>
+                <div>Sin Atención</div>
+            </div>
+        </div>
+
+        <div class="calendar">
+            <div id="calendar-content">
+                <div class="calendar-header">
+                    <div class="day-header">Lun</div>
+                    <div class="day-header">Mar</div>
+                    <div class="day-header">Mié</div>
+                    <div class="day-header">Jue</div>
+                    <div class="day-header">Vie</div>
+                    <div class="day-header">Sáb</div>
+                    <div class="day-header">Dom</div>
+                </div>
+                <div id="calendar-grid" class="calendar-grid">
+                    <!-- Aquí se generará el calendario dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ver slots de tiempo -->
+    <div id="slotsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Horarios Disponibles</h2>
+                <span class="close" onclick="cerrarModal()">&times;</span>
+            </div>
+            <div id="modal-body">
+                <div id="time-slots" class="time-slots"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de ejemplo para el calendario
+        const calendarioData = {
+            2025: {
+                7: { // Julio
+                    diasEnMes: 31,
+                    primerDiaSemana: 1, // Martes (0=Domingo, 1=Lunes, etc.)
+                    dias: {}
+                }
+            }
+        };
+
+        // Generar datos de ejemplo para julio 2025
+        function generarDatosEjemplo() {
+            const dias = calendarioData[2025][7].dias;
+            const hoy = new Date();
+            const diaActual = hoy.getDate();
+            const mesActual = hoy.getMonth() + 1;
+            const añoActual = hoy.getFullYear();
+            
+            for (let i = 1; i <= 31; i++) {
+                let estado, slots = [];
+                
+                // Determinar si es el día actual
+                const esDiaActual = (i === diaActual && 7 === mesActual && 2025 === añoActual);
+                
+                // Simular diferentes estados
+                if (i % 7 === 0 || i % 7 === 6) { // Fines de semana
+                    estado = 'sin_atencion';
+                } else if (i % 5 === 0) { // Algunos días ocupados
+                    estado = 'ocupado';
+                    slots = [
+                        { hora: '08:00', estado: 'ocupado' },
+                        { hora: '09:00', estado: 'ocupado' },
+                        { hora: '10:00', estado: 'disponible' },
+                        { hora: '11:00', estado: 'disponible' },
+                        { hora: '14:00', estado: 'ocupado' },
+                        { hora: '15:00', estado: 'disponible' }
+                    ];
+                } else {
+                    estado = 'disponible';
+                    slots = [
+                        { hora: '08:00', estado: 'disponible' },
+                        { hora: '09:00', estado: 'disponible' },
+                        { hora: '10:00', estado: 'disponible' },
+                        { hora: '11:00', estado: 'disponible' },
+                        { hora: '14:00', estado: 'disponible' },
+                        { hora: '15:00', estado: 'disponible' }
+                    ];
+                }
+                
+                dias[i] = {
+                    estado: estado,
+                    slots: slots,
+                    slots_disponibles: slots.filter(s => s.estado === 'disponible').length,
+                    esDiaActual: esDiaActual
+                };
+            }
+        }
+
+        // Función para generar el calendario
+        function generarCalendario(year, month) {
+            const calendarGrid = document.getElementById('calendar-grid');
+            calendarGrid.innerHTML = '';
+            
+            const data = calendarioData[year] && calendarioData[year][month];
+            if (!data) {
+                calendarGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 50px;">No hay datos disponibles para este mes</div>';
+                return;
+            }
+            
+            // Agregar celdas vacías para alineación
+            for (let i = 0; i < data.primerDiaSemana; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'day-cell';
+                emptyCell.style.backgroundColor = '#f8f9fa';
+                calendarGrid.appendChild(emptyCell);
+            }
+            
+            // Agregar días del mes
+            for (let dia = 1; dia <= data.diasEnMes; dia++) {
+                const diaData = data.dias[dia];
+                const dayCell = document.createElement('div');
+                
+                // Aplicar clases CSS
+                let clases = `day-cell ${diaData.estado}`;
+                if (diaData.esDiaActual) {
+                    clases += ' dia-actual';
+                }
+                
+                dayCell.className = clases;
+                dayCell.onclick = () => mostrarSlots(dia, diaData);
+                
+                dayCell.innerHTML = `
+                    <div class="day-number">${dia}</div>
+                    <div class="day-status">
+                        ${diaData.estado === 'disponible' ? 'Disponible' : 
+                          diaData.estado === 'ocupado' ? 'Ocupado' : 'Sin Atención'}
+                    </div>
+                    <div class="slots-info">
+                        ${diaData.estado === 'disponible' ? `${diaData.slots_disponibles} slots libres` :
+                          diaData.estado === 'ocupado' ? `${diaData.slots_disponibles} de ${diaData.slots.length} libres` :
+                          'No hay consultas'}
+                    </div>
+                `;
+                
+                calendarGrid.appendChild(dayCell);
+            }
+        }
+
+        // Función para cargar calendario
+        function cargarCalendario() {
+            const year = parseInt(document.getElementById('year').value);
+            const month = parseInt(document.getElementById('month').value);
+            
+            if (!year || !month) {
+                alert('Por favor seleccione año y mes');
+                return;
+            }
+            
+            generarCalendario(year, month);
+        }
+
+        function mostrarSlots(dia, diaData) {
+            if (diaData.estado === 'sin_atencion') {
+                alert('No hay atención médica este día');
+                return;
+            }
+            
+            const modal = document.getElementById('slotsModal');
+            const modalTitle = document.getElementById('modal-title');
+            const timeSlots = document.getElementById('time-slots');
+            
+            modalTitle.textContent = `Horarios para el día ${dia}`;
+            timeSlots.innerHTML = '';
+            
+            diaData.slots.forEach(slot => {
+                const slotElement = document.createElement('div');
+                slotElement.className = `time-slot ${slot.estado}`;
+                slotElement.textContent = slot.hora;
+                
+                if (slot.estado === 'disponible') {
+                    slotElement.onclick = () => reservarSlot(dia, slot.hora);
+                }
+                
+                timeSlots.appendChild(slotElement);
+            });
+            
+            modal.style.display = 'block';
+        }
+
+        function reservarSlot(dia, hora) {
+            if (confirm(`¿Desea reservar la cita para el día ${dia} a las ${hora}?`)) {
+                alert(`Cita reservada exitosamente para el día ${dia} a las ${hora}`);
+                cerrarModal();
+                
+                // Actualizar el estado del slot
+                const year = parseInt(document.getElementById('year').value);
+                const month = parseInt(document.getElementById('month').value);
+                const diaData = calendarioData[year][month].dias[dia];
+                
+                // Encontrar y actualizar el slot
+                const slot = diaData.slots.find(s => s.hora === hora);
+                if (slot) {
+                    slot.estado = 'ocupado';
+                    diaData.slots_disponibles--;
+                    
+                    // Si no quedan slots disponibles, cambiar el estado del día
+                    if (diaData.slots_disponibles === 0) {
+                        diaData.estado = 'ocupado';
+                    }
+                }
+                
+                // Regenerar el calendario
+                generarCalendario(year, month);
+            }
+        }
+
+        function cerrarModal() {
+            document.getElementById('slotsModal').style.display = 'none';
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('slotsModal');
+            if (event.target === modal) {
+                cerrarModal();
+            }
+        }
+
+        // Inicializar
+        // Inicializar datos y calendario al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    generarDatosEjemplo();
+
+    // Seleccionar año y mes actuales en los selectores (si están disponibles)
+    const hoy = new Date();
+    const yearSelect = document.getElementById('year');
+    const monthSelect = document.getElementById('month');
+    
+    // Intentar seleccionar año actual si está en el selector
+    if ([...yearSelect.options].some(o => parseInt(o.value) === hoy.getFullYear())) {
+        yearSelect.value = hoy.getFullYear();
+    }
+    // Intentar seleccionar mes actual si está en el selector
+    if ([...monthSelect.options].some(o => parseInt(o.value) === hoy.getMonth() + 1)) {
+        monthSelect.value = hoy.getMonth() + 1;
+    }
+
+    cargarCalendario();
+});
+
+    </script>
+</body>
+</html>

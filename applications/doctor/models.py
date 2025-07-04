@@ -38,7 +38,7 @@ class HorarioAtencion(models.Model):
         unique_together = ('dia_semana', 'hora_inicio', 'hora_fin')  # Evita duplicados exactos
 
 class CitaMedica(models.Model):
-    paciente = models.ForeignKey('core.Paciente', on_delete=models.CASCADE, verbose_name="Paciente", related_name="citas")
+    paciente = models.ForeignKey('Patient', on_delete=models.CASCADE, verbose_name="Paciente", related_name="citas")
     fecha = models.DateField(verbose_name="Fecha de la Cita")
     hora_cita = models.TimeField(verbose_name="Hora de la Cita")
 
@@ -445,7 +445,7 @@ class DetallePago(models.Model):
         verbose_name_plural = "Detalles de Pago"
         
 class Patient (models.Model):
-    Primer_nombre= models.CharField(verbose_name='Nombres', max_length=150)
+    primer_nombre= models.CharField(verbose_name='Nombres', max_length=150)
     apellido=models.CharField(verbose_name='Apellidos', max_length=150)
     dni = models.CharField(verbose_name='Cédula', max_length=13, unique=True)
     birth_date = models.DateField(verbose_name='Fecha de Nacimiento')
@@ -471,12 +471,12 @@ class Patient (models.Model):
     created_at = models.DateTimeField(verbose_name='Fecha de Registro', auto_now_add=True)
     
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.dni})"
+        return f"{self.primer_nombre} {self.apellido} ({self.dni})"
     
     class Meta:
         verbose_name = 'Paciente'
         verbose_name_plural = 'Pacientes'
-        ordering = ['apellido', 'Primer_nombre']
+        ordering = ['apellido', 'primer_nombre']
 
 
 """

@@ -17,7 +17,7 @@ class PatientListView(PermissionMixin, ListViewMixin, ListView):
 
     def get_queryset(self):
         q1 = self.request.GET.get('q')
-        queryset = self.model.objects.all().order_by('apellido', 'Primer_nombre')
+        queryset = self.model.objects.all().order_by('apellido', 'primer_nombre')
         if q1:
             queryset = queryset.filter(
                 Q(Primer_nombre__icontains=q1) |
@@ -51,7 +51,7 @@ class PatientCreateView(PermissionMixin, CreateViewMixin, CreateView):
 
     def form_valid(self, form):
         patient = form.save()
-        messages.success(self.request, f"Éxito al crear el paciente {patient.Primer_nombre} {patient.apellido}.")
+        messages.success(self.request, f"Éxito al crear el paciente {patient.primer_nombre} {patient.apellido}.")
         return super().form_valid(form)
 
 
@@ -84,13 +84,13 @@ class PatientDeleteView(PermissionMixin, DeleteViewMixin, DeleteView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['grabar'] = 'Eliminar Paciente'
-        context['description'] = f"¿Desea eliminar el paciente: {self.object.Primer_nombre} {self.object.apellido}?"
+        context['description'] = f"¿Desea eliminar el paciente: {self.object.primer_nombre} {self.object.apellido}?"
         context['back_url'] = self.success_url
         context['title'] = 'Eliminar Paciente'
         return context
 
     def form_valid(self, form):
-        patient_name = f"{self.object.Primer_nombre} {self.object.apellido}"
+        patient_name = f"{self.object.primer_nombre} {self.object.apellido}"
         # Instead of super().form_valid(form) which calls delete(),
         # we can implement soft delete if the model supports it (e.g., an 'activo' field)
         # For now, we'll proceed with hard delete as per DeleteView's default.
@@ -151,7 +151,7 @@ def ajax_search_patient_dni(request):
             # Returning a list, though DNI should be unique. JS currently takes the first.
             data = [{
                 'id': p.pk,
-                'Primer_nombre': p.Primer_nombre,
+                'primer_nombre': p.Primer_nombre,
                 'apellido': p.apellido,
                 'dni': p.dni,
                 'birth_date': p.birth_date.strftime('%Y-%m-%d') if p.birth_date else None,
