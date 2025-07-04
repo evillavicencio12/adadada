@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Listado de Marcas de Medicamentos{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Marcas de Medicamentos</h1>
+        {% if perms.core.add_marcamedicamento %}
+        <a href="{% url 'core:marcamedicamento_create' %}" class="bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:-translate-y-1">
+            <i class="fas fa-copyright mr-2"></i> Nueva Marca
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Formulario de Filtro -->
+    <form method="get" class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="q_marca" class="block text-gray-700 text-sm font-bold mb-2">Buscar Marca</label>
+                <input type="text" name="q" id="q_marca" value="{{ request.GET.q }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-pink-500" placeholder="Nombre de la marca...">
+            </div>
+            <div>
+                <label for="activo_filter_marca" class="block text-gray-700 text-sm font-bold mb-2">Estado</label>
+                <select name="activo" id="activo_filter_marca" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-pink-500">
+                    <option value="">Todos</option>
+                    <option value="true" {% if request.GET.activo == 'true' %}selected{% endif %}>Activo</option>
+                    <option value="false" {% if request.GET.activo == 'false' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-6 flex items-center justify-end">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-800 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-300">
+                <i class="fas fa-filter mr-2"></i> Filtrar
+            </button>
+            <a href="{% url 'core:marcamedicamento_list' %}" class="ml-3 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition duration-300">
+                <i class="fas fa-eraser mr-2"></i> Limpiar
+            </a>
+        </div>
+    </form>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-4 p-4 rounded-md text-white {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% else %}bg-blue-500{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="bg-white shadow-xl rounded-lg overflow-x-auto">
+        <table class="min-w-full leading-normal">
+            <thead class="bg-gray-800 text-white">
+                <tr>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold uppercase tracking-wider">Nombre de la Marca</th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold uppercase tracking-wider">Descripción</th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 text-center text-xs font-semibold uppercase tracking-wider">Activo</th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 text-left text-xs font-semibold uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-700">
+                {% for marca in marcas %}
+                <tr class="hover:bg-gray-100 border-b border-gray-200">
+                    <td class="px-5 py-4 text-sm font-semibold">{{ marca.nombre }}</td>
+                    <td class="px-5 py-4 text-sm">{{ marca.descripcion|default:"N/A"|truncatewords:20 }}</td>
+                    <td class="px-5 py-4 text-sm text-center">
+                        {% if marca.activo %}
+                            <span class="inline-block p-1.5 rounded-full bg-green-500" title="Activo"><i class="fas fa-check text-white text-xs"></i></span>
+                        {% else %}
+                            <span class="inline-block p-1.5 rounded-full bg-red-500" title="Inactivo"><i class="fas fa-times text-white text-xs"></i></span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-4 text-sm whitespace-nowrap">
+                        {% if perms.core.change_marcamedicamento %}
+                        <a href="{% url 'core:marcamedicamento_update' marca.pk %}" class="text-indigo-600 hover:text-indigo-900 mr-3" title="Editar">
+                            <i class="fas fa-edit fa-lg"></i>
+                        </a>
+                        {% endif %}
+                        {% if perms.core.delete_marcamedicamento %}
+                        <a href="{% url 'core:marcamedicamento_delete' marca.pk %}" class="text-red-600 hover:text-red-900" title="Eliminar">
+                            <i class="fas fa-trash-alt fa-lg"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center py-10">
+                        <div class="text-gray-500">
+                            <i class="far fa-copyright fa-3x mb-3"></i>
+                            <p class="text-xl">No hay marcas de medicamentos registradas.</p>
+                             {% if request.GET %}
+                            <p class="mt-2">Intente con otros filtros o <a href="{% url 'core:marcamedicamento_list' %}" class="text-blue-500 hover:underline">limpie los filtros actuales</a>.</p>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if is_paginated %}
+    <div class="py-5">
+        <nav class="block">
+            <ul class="flex pl-0 rounded list-none flex-wrap">
+                {% if page_obj.has_previous %}
+                <li>
+                    <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                       class="first:ml-0 text-xs font-semibold flex w-8 h-8 mx-1 p-0 items-center justify-center leading-tight relative border border-solid border-pink-500 bg-white text-pink-500 rounded-md hover:bg-pink-100">
+                        <i class="fas fa-chevron-left -ml-px"></i>
+                    </a>
+                </li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li>
+                        <a href="#"
+                           class="first:ml-0 text-xs font-semibold flex w-8 h-8 mx-1 p-0 items-center justify-center leading-tight relative border border-solid border-pink-500 bg-pink-500 text-white rounded-md">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li>
+                        <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           class="first:ml-0 text-xs font-semibold flex w-8 h-8 mx-1 p-0 items-center justify-center leading-tight relative border border-solid border-pink-500 bg-white text-pink-500 rounded-md hover:bg-pink-100">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                <li>
+                    <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                       class="first:ml-0 text-xs font-semibold flex w-8 h-8 mx-1 p-0 items-center justify-center leading-tight relative border border-solid border-pink-500 bg-white text-pink-500 rounded-md hover:bg-pink-100">
+                        <i class="fas fa-chevron-right -mr-px"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

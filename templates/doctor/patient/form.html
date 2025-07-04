@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {{ title|default:"Formulario de Paciente" }}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto bg-white shadow-2xl rounded-lg p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">{{ title|default:"Formulario de Paciente" }}</h1>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-md
+                            {% if message.tags == 'success' %} bg-green-100 border border-green-400 text-green-700
+                            {% elif message.tags == 'error' %} bg-red-100 border border-red-400 text-red-700
+                            {% elif message.tags == 'warning' %} bg-yellow-100 border border-yellow-400 text-yellow-700
+                            {% else %} bg-blue-100 border border-blue-400 text-blue-700
+                            {% endif %}"
+                     role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+
+            {{ form.media }} {# For DatePicker or other media-dependent widgets #}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.Primer_nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Nombres</label>
+                    {{ form.Primer_nombre }}
+                    {% if form.Primer_nombre.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.Primer_nombre.errors|first }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.apellido.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Apellidos</label>
+                    {{ form.apellido }}
+                    {% if form.apellido.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.apellido.errors|first }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.dni.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Cédula/DNI</label>
+                {{ form.dni }}
+                {% if form.dni.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.dni.errors|first }}</p>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.birth_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento</label>
+                    {{ form.birth_date }}
+                    {% if form.birth_date.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.birth_date.errors|first }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.gender.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Género</label>
+                    {{ form.gender }}
+                    {% if form.gender.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.gender.errors|first }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                    {{ form.phone }}
+                    {% if form.phone.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.phone.errors|first }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.email.errors|first }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                {{ form.address }}
+                {% if form.address.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.address.errors|first }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label for="{{ form.blood_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Tipo de Sangre</label>
+                {{ form.blood_type }}
+                {% if form.blood_type.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ form.blood_type.errors|first }}</p>
+                {% endif %}
+            </div>
+
+            <!-- Hidden fields -->
+            {% for field in form.hidden_fields %}
+                {{ field }}
+            {% endfor %}
+
+            <!-- Non-field errors -->
+            {% if form.non_field_errors %}
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong class="font-bold">Error:</strong>
+                    <span class="block sm:inline">{{ form.non_field_errors|first }}</span>
+                </div>
+            {% endif %}
+
+            <div class="flex items-center justify-end pt-6 border-t border-gray-200 mt-8">
+                <a href="{{ back_url }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg mr-3 transition duration-300 ease-in-out">
+                    <i class="fas fa-arrow-left mr-2"></i> Cancelar
+                </a>
+                <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:-translate-y-0.5">
+                    <i class="fas fa-save mr-2"></i> {{ grabar|default:"Guardar" }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Custom styles for form elements if needed, though Tailwind classes should cover most cases */
+    .form-control {
+        /* Tailwind classes are applied directly in the form PatientForm widget attrs */
+        /* This class is here as a fallback or for global styling if preferred */
+        @apply block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm;
+    }
+    /* Styling for Django Crispy Forms if it were used more extensively */
+    /* For now, direct field rendering with Tailwind is used */
+</style>
+
+{% endblock %}

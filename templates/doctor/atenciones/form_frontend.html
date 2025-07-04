@@ -1,0 +1,750 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ view.model_name_title|default:"Gestión" }} - {% if object %}Editar{% else %}Crear{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white shadow-xl rounded-lg p-8">
+        <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-800">
+                <i class="fas fa-notes-medical mr-3 text-blue-500"></i>
+                {% if object %}Editar{% else %}Nueva{% endif %} Atención Médica
+            </h1>
+            <a href="{% url 'doctor:atencion_list' %}" class="text-gray-600 hover:text-gray-800 transition duration-300">
+                <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 p-4 rounded-md text-white {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% else %}bg-blue-500{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post" id="atencionForm" novalidate>
+            {% csrf_token %}
+
+            <!-- Sección Paciente -->
+            <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center">
+                    <i class="fas fa-user-injured mr-2 text-blue-500"></i> Datos del Paciente11
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="{{ form.paciente_nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.paciente_nombre.label }}</label>
+                        {% render_field form.paciente_nombre class+="form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %}
+                        {% render_field form.paciente %} {# Campo oculto para el ID #}
+                        <button type="button" id="buscarPacienteBtn" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition duration-150">
+                            <i class="fas fa-search mr-1"></i> Buscar Paciente Existente
+                        </button>
+                        <button type="button" id="crearPacienteBtn" class="mt-2 ml-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition duration-150">
+                            <i class="fas fa-user-plus mr-1"></i> Crear Nuevo Paciente
+                        </button>
+                    </div>
+                    <div id="infoPacienteSeleccionado" class="md:col-span-2 text-sm text-gray-600">
+                        {% if selected_paciente %}
+                            <p><strong>Cédula:</strong> {{ selected_paciente.cedula_ecuatoriana|default:selected_paciente.dni }}</p>
+                            <p><strong>Edad:</strong> {{ selected_paciente.edad }} años</p>
+                            <p><strong>Teléfono:</strong> {{ selected_paciente.telefono }}</p>
+                        {% else %}
+                            <p class="italic">Seleccione un paciente para ver más detalles.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                 {% if form.paciente_nombre.errors or form.paciente.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">
+                        {{ form.paciente_nombre.errors|join:", " }} {{ form.paciente.errors|join:", " }}
+                        {% if form.paciente_nombre.field.required and not form.paciente_nombre.value %}
+                            Este campo es obligatorio.
+                        {% endif %}
+                    </p>
+                {% endif %}
+            </div>
+
+            <!-- Sección Signos Vitales -->
+            <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-heartbeat mr-2 text-red-500"></i> Signos Vitales</h2>
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {% for field in form %}
+                        {% if field.name in "presion_arterial pulso temperatura frecuencia_respiratoria saturacion_oxigeno peso altura" %}
+                        <div>
+                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
+                            {% render_field field class+="form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %}
+                            {% if field.help_text %}<p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>{% endif %}
+                            {% if field.errors %}<p class="text-red-500 text-xs italic mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    <div class="flex items-center mt-5">
+                        {% render_field form.es_control class+="form-checkbox h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" %}
+                        <label for="{{ form.es_control.id_for_label }}" class="ml-2 block text-sm font-medium text-gray-700">{{ form.es_control.label }}</label>
+                         {% if form.es_control.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.es_control.errors|join:", " }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección Evaluación Clínica -->
+            <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-stethoscope mr-2 text-green-500"></i> Evaluación Clínica</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.motivo_consulta.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.motivo_consulta.label }}</label>
+                        {% render_field form.motivo_consulta class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="3" %}
+                        {% if form.motivo_consulta.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.motivo_consulta.errors|join:", " }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.sintomas.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.sintomas.label }}</label>
+                        {% render_field form.sintomas class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="3" %}
+                        {% if form.sintomas.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.sintomas.errors|join:", " }}</p>{% endif %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="{{ form.examen_fisico.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.examen_fisico.label }}</label>
+                        {% render_field form.examen_fisico class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="3" %}
+                        {% if form.examen_fisico.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.examen_fisico.errors|join:", " }}</p>{% endif %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="{{ form.diagnostico.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.diagnostico.label }}</label>
+                        {% render_field form.diagnostico class+="select2-diagnosticos block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %}
+                        {% if form.diagnostico.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.diagnostico.errors|join:", " }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección Plan Terapéutico y Medicamentos -->
+            <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-pills mr-2 text-yellow-500"></i> Plan Terapéutico y Medicamentos</h2>
+                <div>
+                    <label for="{{ form.tratamiento.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.tratamiento.label }}</label>
+                    {% render_field form.tratamiento class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="3" %}
+                    {% if form.tratamiento.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.tratamiento.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <h3 class="text-lg font-medium text-gray-700 mt-6 mb-3">Medicamentos Recetados</h3>
+                {{ detalle_formset.management_form }}
+                <div id="detalleAtencionFormset" class="space-y-6">
+                    {% for detalle_form in detalle_formset %}
+                    <div class="detalle-form p-4 border border-gray-200 rounded-md bg-gray-50 relative">
+                        {{ detalle_form.id }} {# Campo oculto para el ID del detalle si existe #}
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+                            <div class="lg:col-span-2">
+                                <label for="{{ detalle_form.medicamento_nombre.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.medicamento_nombre.label }}</label>
+                                {% render_field detalle_form.medicamento_nombre class+="form-input mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Buscar o agregar..." %}
+                                {% render_field detalle_form.medicamento %} {# Campo oculto para el ID del medicamento #}
+                                {% if detalle_form.medicamento_nombre.errors or detalle_form.medicamento.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.medicamento_nombre.errors|join:", " }} {{ detalle_form.medicamento.errors|join:", " }}</p>{% endif %}
+                            </div>
+                            <div>
+                                <label for="{{ detalle_form.cantidad.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.cantidad.label }}</label>
+                                {% render_field detalle_form.cantidad class+="form-input mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %}
+                                {% if detalle_form.cantidad.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.cantidad.errors|join:", " }}</p>{% endif %}
+                            </div>
+                            <div class="lg:col-span-3">
+                                <label for="{{ detalle_form.prescripcion.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.prescripcion.label }}</label>
+                                {% render_field detalle_form.prescripcion class+="form-textarea mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" rows="1" %}
+                                {% if detalle_form.prescripcion.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.prescripcion.errors|join:", " }}</p>{% endif %}
+                            </div>
+                             <div class="hidden"> <!-- Campos adicionales, ocultos por defecto o mostrados según necesidad -->
+                                <label for="{{ detalle_form.duracion_tratamiento.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.duracion_tratamiento.label }}</label>
+                                {% render_field detalle_form.duracion_tratamiento class+="form-input mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %}
+
+                                <label for="{{ detalle_form.frecuencia_diaria.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.frecuencia_diaria.label }}</label>
+                                {% render_field detalle_form.frecuencia_diaria class+="form-input mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %}
+                            </div>
+                            <div class="flex items-center">
+                                {% if detalle_formset.can_delete and detalle_form.instance.pk %}
+                                <div class="mr-2">
+                                    {% render_field detalle_form.DELETE class+="form-checkbox h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" %}
+                                    <label for="{{ detalle_form.DELETE.id_for_label }}" class="ml-1 text-xs text-red-700">Eliminar</label>
+                                </div>
+                                {% endif %}
+                                {% if forloop.last %}
+                                <button type="button" class="remove-form-row hidden text-red-500 hover:text-red-700 transition duration-150" title="Eliminar este medicamento">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="addDetalleAtencion" class="mt-4 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition duration-150">
+                    <i class="fas fa-plus mr-1"></i> Agregar Medicamento
+                </button>
+                <button type="button" id="crearNuevoMedicamentoBtn" class="mt-4 ml-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition duration-150">
+                    <i class="fas fa-capsules mr-1"></i> Crear Nuevo Medicamento
+                </button>
+
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div>
+                        <label for="{{ form.examenes_enviados.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.examenes_enviados.label }}</label>
+                        {% render_field form.examenes_enviados class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="2" %}
+                        {% if form.examenes_enviados.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.examenes_enviados.errors|join:", " }}</p>{% endif %}
+                    </div>
+                    <div class="relative">
+                        <label for="{{ form.comentario_adicional.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.comentario_adicional.label }}</label>
+                        {% render_field form.comentario_adicional class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10" rows="2" %}
+                        <button type="button" id="startVoiceComentario" title="Grabar comentario por voz" class="absolute top-7 right-2 p-2 text-gray-500 hover:text-blue-500 focus:outline-none">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        {% if form.comentario_adicional.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.comentario_adicional.errors|join:", " }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="mt-8 flex justify-end space-x-3">
+                <button type="button" id="previsualizarBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out">
+                    <i class="fas fa-eye mr-2"></i> Previsualizar
+                </button>
+                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out">
+                    <i class="fas fa-save mr-2"></i> {% if object %}Actualizar{% else %}Guardar{% endif %} Atención
+                </button>
+                <a href="{% url 'doctor:atencion_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para buscar paciente -->
+{% include "fragments/modal_paciente.html" %}
+
+<!-- Modal para Crear Nuevo Paciente -->
+<div id="crearPacienteModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title-crear-paciente" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="formCrearPaciente">
+                {% csrf_token %} <!-- Important for AJAX POST -->
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="fas fa-user-plus text-green-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title-crear-paciente">Crear Nuevo Paciente</h3>
+                            <div class="mt-4 space-y-3">
+                                <!-- Simplified PatientForm fields - ideally, load this form via AJAX from a view -->
+                                <div>
+                                    <label for="id_Primer_nombre_modal" class="block text-sm font-medium text-gray-700">Nombres</label>
+                                    <input type="text" name="Primer_nombre" id="id_Primer_nombre_modal" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_apellido_modal" class="block text-sm font-medium text-gray-700">Apellidos</label>
+                                    <input type="text" name="apellido" id="id_apellido_modal" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_dni_modal" class="block text-sm font-medium text-gray-700">Cédula/DNI</label>
+                                    <input type="text" name="dni" id="id_dni_modal" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_birth_date_modal" class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+                                    <input type="date" name="birth_date" id="id_birth_date_modal" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_gender_modal" class="block text-sm font-medium text-gray-700">Género</label>
+                                    <select name="gender" id="id_gender_modal" required class="mt-1 form-select block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Femenino</option>
+                                        <option value="O">Otro</option>
+                                    </select>
+                                </div>
+                                <!-- Add other fields from PatientForm as needed: phone, email, address, blood_type -->
+                                 <div>
+                                    <label for="id_phone_modal" class="block text-sm font-medium text-gray-700">Teléfono (Opcional)</label>
+                                    <input type="text" name="phone" id="id_phone_modal" class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_email_modal" class="block text-sm font-medium text-gray-700">Email (Opcional)</label>
+                                    <input type="email" name="email" id="id_email_modal" class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" id="guardarNuevoPacienteBtn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Guardar Paciente
+                    </button>
+                    <button type="button" id="cancelarCrearPacienteBtn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para previsualización -->
+<div id="previsualizacionModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <i class="fas fa-file-medical-alt text-blue-600"></i>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Previsualización de Atención</h3>
+                        <div class="mt-2" id="previsualizacionContenido">
+                            <!-- Contenido de la previsualización se cargará aquí -->
+                            <p class="text-sm text-gray-500">Cargando previsualización...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" id="cerrarPrevisualizacionBtn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear nuevo medicamento -->
+<div id="crearMedicamentoModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title-medicamento" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="formCrearMedicamento">
+                {% csrf_token %}
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="fas fa-pills text-purple-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title-medicamento">Crear Nuevo Medicamento</h3>
+                            <div class="mt-4 space-y-4">
+                                <!-- Campos del formulario para nuevo medicamento -->
+                                <!-- Simplificado: Solo nombre. En una app real, usarías un MedicamentoForm completo -->
+                                <div>
+                                    <label for="nombre_medicamento_modal" class="block text-sm font-medium text-gray-700">Nombre del Medicamento</label>
+                                    <input type="text" name="nombre_medicamento_modal" id="nombre_medicamento_modal" required class="mt-1 focus:ring-purple-500 focus:border-purple-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                                <!-- Aquí irían más campos: tipo, marca, concentración, etc. -->
+                                <p class="text-xs text-gray-500">Nota: Esta es una creación rápida. Para más detalles, edite el medicamento luego desde su sección correspondiente.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" id="guardarNuevoMedicamentoBtn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Guardar Medicamento
+                    </button>
+                    <button type="button" id="cancelarCrearMedicamentoBtn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/jquery.formset.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Inicializar Select2 para diagnósticos
+    $('.select2-diagnosticos').select2({
+        placeholder: "Seleccione uno o más diagnósticos",
+        width: '100%',
+        allowClear: true
+    });
+
+    // Configuración del formset para detalles de atención
+    $('#detalleAtencionFormset .detalle-form').formset({
+        prefix: '{{ detalle_formset.prefix }}',
+        addText: '<i class="fas fa-plus mr-1"></i> Agregar Otro Medicamento',
+        deleteText: '<i class="fas fa-trash-alt"></i>',
+        addCssClass: 'bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 rounded-lg text-sm shadow transition duration-150 inline-flex items-center',
+        deleteCssClass: 'text-red-500 hover:text-red-700 transition duration-150 p-1 rounded-full focus:outline-none',
+        added: function(row) {
+            // Inicializar Select2 para el nuevo campo de medicamento
+            $(row).find('.medicamento-autocomplete').select2(select2MedicamentoOptions);
+            // Mostrar botón de eliminar para la nueva fila
+            $(row).find('.remove-form-row').removeClass('hidden');
+        },
+        removed: function(row) {
+            // Lógica si se necesita al eliminar una fila
+        }
+    });
+
+    // Ocultar el botón "Agregar Otro Medicamento" original del plugin, usamos el nuestro
+    $('a.add-row').hide();
+    // Usar nuestro propio botón para añadir filas al formset
+    $('#addDetalleAtencion').click(function() {
+        $('#detalleAtencionFormset .add-row').click(); // Simula click en el botón del plugin
+    });
+     // Mostrar botón de eliminar para filas ya existentes (excepto la primera si es la única)
+    $('#detalleAtencionFormset .detalle-form').each(function(index) {
+        if ($('#detalleAtencionFormset .detalle-form').length > 1 || index > 0) {
+             //$(this).find('.remove-form-row').removeClass('hidden'); // Comentado para que el plugin lo maneje
+        }
+    });
+
+
+    // Configuración de Select2 para autocompletar medicamentos
+    const select2MedicamentoOptions = {
+        placeholder: "Buscar medicamento...",
+        minimumInputLength: 2,
+        allowClear: true,
+        width: '100%',
+        ajax: {
+            url: "{% url 'doctor:ajax_buscar_medicamento' %}",
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return { term: params.term };
+            },
+            processResults: function(data) {
+                return { results: data };
+            },
+            cache: true
+        },
+        templateResult: function(data) { return data.text; },
+        templateSelection: function(data) { return data.text || data.nombre; }
+    };
+
+    // Inicializar Select2 para los campos de medicamento existentes
+    $('.medicamento-autocomplete').each(function() {
+        const $this = $(this);
+        const $hiddenMedIdField = $this.closest('.detalle-form').find('input[type=hidden][name$="-medicamento"]');
+
+        // Si hay un valor inicial (ej. al editar), configurarlo para Select2
+        const initialMedId = $hiddenMedIdField.val();
+        const initialMedNombre = $this.val();
+
+        if (initialMedId && initialMedNombre) {
+            const option = new Option(initialMedNombre, initialMedId, true, true);
+            $this.append(option).trigger('change');
+        }
+
+        $this.select2(select2MedicamentoOptions).on('select2:select', function(e) {
+            var data = e.params.data;
+            // Cuando se selecciona un medicamento, actualizar el campo oculto con su ID
+            $hiddenMedIdField.val(data.id).trigger('change');
+        }).on('select2:unselect', function() {
+            // Limpiar el campo oculto si se deselecciona
+            $hiddenMedIdField.val('').trigger('change');
+        });
+    });
+
+
+    // Modal de búsqueda de paciente
+    $('#buscarPacienteBtn').click(function() {
+        $('#pacienteSearchModal').removeClass('hidden');
+    });
+    $('#closePacienteModal').click(function() {
+        $('#pacienteSearchModal').addClass('hidden');
+    });
+    $('#buscarPacienteDniBtn').click(function() {
+        var dni = $('#search_dni_paciente').val();
+        if (dni) {
+            $.ajax({
+                url: "{% url 'core:ajax_buscar_paciente_dni' %}",
+                data: { 'dni': dni },
+                success: function(data) {
+                    if (data.paciente) {
+                        seleccionarPaciente(data.paciente);
+                        $('#pacienteSearchModal').addClass('hidden');
+                    } else {
+                        alert(data.error || "Paciente no encontrado.");
+                    }
+                },
+                error: function() {
+                    alert("Error al buscar paciente.");
+                }
+            });
+        }
+    });
+    // (Función seleccionarPaciente como en tu modal_paciente.html)
+    function seleccionarPaciente(paciente_data) { // Renamed to paciente_data to avoid conflict
+        // Assuming paciente_data is an object with Primer_nombre, apellido, id, dni, birth_date, phone
+        $('#{{ form.paciente_nombre.id_for_label }}').val(`${paciente_data.Primer_nombre || ''} ${paciente_data.apellido || ''}`.trim());
+        $('#{{ form.paciente.id_for_label }}').val(paciente_data.id).trigger('change');
+
+        let edad = 'N/A';
+        if (paciente_data.birth_date) {
+            const birthDate = new Date(paciente_data.birth_date);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            edad = age;
+        }
+
+        let infoHtml = `<p><strong>Cédula:</strong> ${paciente_data.dni || 'N/A'}</p>
+                        <p><strong>Edad:</strong> ${edad} años</p>
+                        <p><strong>Teléfono:</strong> ${paciente_data.phone || 'N/A'}</p>`;
+        $('#infoPacienteSeleccionado').html(infoHtml);
+        $('#pacienteSearchModal').addClass('hidden'); // Close search modal
+        $('#crearPacienteModal').addClass('hidden'); // Close create modal if open
+    }
+
+    // Modal para Crear Nuevo Paciente
+    $('#crearPacienteBtn').click(function() {
+        $('#formCrearPaciente')[0].reset(); // Limpiar form
+        $('#crearPacienteModal').removeClass('hidden');
+    });
+    $('#cancelarCrearPacienteBtn').click(function() {
+        $('#crearPacienteModal').addClass('hidden');
+    });
+    $('#guardarNuevoPacienteBtn').click(function() {
+        var formData = $('#formCrearPaciente').serializeArray(); // serializa el form
+        var dataToSend = {};
+        formData.forEach(function(item){
+            dataToSend[item.name] = item.value;
+        });
+        // console.log("Data to send for new patient:", dataToSend); // For debugging
+
+        $.ajax({
+            url: "{% url 'doctor:ajax_create_patient' %}", // NUEVA URL
+            type: 'POST',
+            data: dataToSend, // No need to JSON.stringify if using jQuery's default content type
+            // contentType: 'application/json', // No if sending as form data
+            // dataType: 'json', // Expect JSON response
+            success: function(response) {
+                if (response.status === 'success' && response.paciente) {
+                    seleccionarPaciente(response.paciente); // Usa la misma función para actualizar campos
+                    $('#crearPacienteModal').addClass('hidden');
+                    alert("Paciente creado y seleccionado exitosamente.");
+                } else {
+                    // Display errors (simplistic alert, could be improved to show field-specific errors)
+                    let errorMessage = "Error al crear paciente.";
+                    if (response.errors) {
+                        try {
+                            const errors = JSON.parse(response.errors); // if errors is a JSON string
+                            for (const key in errors) {
+                                errorMessage += `\n${key}: ${errors[key].join(', ')}`;
+                            }
+                        } catch(e) {
+                             errorMessage += `\n${response.errors}`; // if errors is just a string
+                        }
+                    }
+                    alert(errorMessage);
+                }
+            },
+            error: function(xhr) {
+                console.error("Error AJAX:", xhr.responseText);
+                alert("Error de conexión al crear paciente. Revise la consola para más detalles.");
+            }
+        });
+    });
+
+
+    // Modal de búsqueda de paciente (actualizado para nueva URL y datos de doctor.Patient)
+    $('#buscarPacienteBtn').click(function() {
+        $('#formBuscarPaciente')[0].reset();
+        $('#resultadoBusquedaPaciente').html('');
+        $('#pacienteSearchModal').removeClass('hidden');
+    });
+    $('#closePacienteModal').click(function() {
+        $('#pacienteSearchModal').addClass('hidden');
+    });
+    // Actualizar la búsqueda por DNI para usar el nuevo endpoint y modelo
+    $('#buscarPacienteDniBtn').click(function() {
+        var dni = $('#search_dni_paciente').val();
+        if (dni) {
+            $.ajax({
+                url: "{% url 'doctor:ajax_search_patient_dni' %}", // NUEVA URL para buscar doctor.Patient
+                data: { 'dni': dni },
+                success: function(data) {
+                    var resultDiv = $('#resultadoBusquedaPaciente');
+                    resultDiv.html(''); // Limpiar resultados anteriores
+                    if (data.pacientes && data.pacientes.length > 0) {
+                        var paciente = data.pacientes[0]; // Asumimos que DNI es único
+                        seleccionarPaciente(paciente); // Usar la función global
+                        // Ya no se cierra el modal aquí, se cierra en seleccionarPaciente
+                    } else if (data.error) {
+                         resultDiv.html(`<p class="text-red-500">${data.error}</p>`);
+                    } else {
+                         resultDiv.html('<p class="text-yellow-500">Paciente no encontrado.</p>');
+                    }
+                },
+                error: function() {
+                     $('#resultadoBusquedaPaciente').html('<p class="text-red-500">Error al buscar paciente.</p>');
+                }
+            });
+        }
+    });
+
+
+    // Modal de previsualización
+    $('#previsualizarBtn').click(function() {
+        // Aquí deberías recolectar los datos del formulario y enviarlos por AJAX
+            // ... (existing previsualizacionBtn click handler) ...
+    });
+    $('#cerrarPrevisualizacionBtn').click(function() {
+        $('#previsualizacionModal').addClass('hidden');
+    });
+
+    // Voice input for comentario_adicional
+    const startVoiceComentarioBtn = document.getElementById('startVoiceComentario');
+    const comentarioAdicionalTextarea = document.getElementById('{{ form.comentario_adicional.id_for_label }}');
+
+    if (startVoiceComentarioBtn && comentarioAdicionalTextarea) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false; // Capture a single phrase
+            recognition.lang = 'es-ES'; // Set language to Spanish
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            let listening = false;
+
+            startVoiceComentarioBtn.addEventListener('click', () => {
+                if (!listening) {
+                    recognition.start();
+                    listening = true;
+                    startVoiceComentarioBtn.classList.add('text-red-500');
+                    startVoiceComentarioBtn.querySelector('i').classList.add('fa-beat');
+                    // console.log("Voice recognition started");
+                } else {
+                    recognition.stop();
+                    listening = false;
+                    startVoiceComentarioBtn.classList.remove('text-red-500');
+                     startVoiceComentarioBtn.querySelector('i').classList.remove('fa-beat');
+                    // console.log("Voice recognition stopped manually");
+                }
+            });
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                // Append to existing text, or replace. Appending might be better.
+                comentarioAdicionalTextarea.value += (comentarioAdicionalTextarea.value ? ' ' : '') + transcript + '. ';
+                // console.log("Transcript:", transcript);
+            };
+
+            recognition.onspeechend = () => {
+                recognition.stop();
+                // console.log("Voice recognition ended due to speech end");
+            };
+
+            recognition.onnomatch = (event) => {
+                // console.log("No speech was recognized.");
+                alert("No se reconoció voz. Intente de nuevo.");
+            };
+
+            recognition.onerror = (event) => {
+                listening = false; // Reset listening state on error
+                startVoiceComentarioBtn.classList.remove('text-red-500');
+                startVoiceComentarioBtn.querySelector('i').classList.remove('fa-beat');
+                // console.error("Voice recognition error", event.error);
+                if (event.error === 'no-speech') {
+                    // This error is often triggered too quickly.
+                    // alert("No se detectó voz. Asegúrese de que el micrófono esté habilitado y hable claramente.");
+                } else if (event.error === 'audio-capture') {
+                    alert("Error de captura de audio. Asegúrese de que el micrófono esté conectado y permitido.");
+                } else if (event.error === 'not-allowed') {
+                    alert("Permiso para usar el micrófono denegado. Por favor, habilite el acceso al micrófono en la configuración de su navegador.");
+                } else {
+                    alert(`Error en el reconocimiento de voz: ${event.error}`);
+                }
+            };
+            
+            recognition.onend = () => {
+                listening = false;
+                startVoiceComentarioBtn.classList.remove('text-red-500');
+                startVoiceComentarioBtn.querySelector('i').classList.remove('fa-beat');
+                // console.log("Voice recognition service disconnected.");
+            };
+
+        } else {
+            startVoiceComentarioBtn.style.display = 'none'; // Hide button if not supported
+            console.warn("Speech Recognition API not supported in this browser.");
+            // Optionally inform the user that the feature is not available
+            // var info = document.createElement('p');
+            // info.textContent = 'El dictado por voz no está disponible en este navegador.';
+            // comentarioAdicionalTextarea.parentNode.appendChild(info);
+        }
+    } else {
+        if (!startVoiceComentarioBtn) console.error("Button #startVoiceComentario not found");
+        if (!comentarioAdicionalTextarea) console.error("Textarea for comentario_adicional not found");
+    }
+
+
+    // Modal de previsualización
+        // para obtener el HTML de previsualización.
+        // var formData = $('#atencionForm').serialize();
+        // $.ajax({
+        //     url: "{% url 'doctor:ajax_previsualizar_atencion' %}",
+        //     type: 'POST',
+        //     data: formData,
+        //     success: function(response) {
+        //         if(response.status === 'success') {
+        //             $('#previsualizacionContenido').html(response.html_preview);
+        //             $('#previsualizacionModal').removeClass('hidden');
+        //         } else {
+        //             alert(response.message || "Error al generar previsualización.");
+        //         }
+        //     },
+        //     error: function() {
+        //         alert("Error de conexión al previsualizar.");
+        //     }
+        // });
+        $('#previsualizacionContenido').html("<p class='text-orange-500'>Funcionalidad de previsualización pendiente de implementación completa del backend.</p>");
+        $('#previsualizacionModal').removeClass('hidden');
+    });
+    $('#cerrarPrevisualizacionBtn').click(function() {
+        $('#previsualizacionModal').addClass('hidden');
+    });
+
+    // Modal para crear nuevo medicamento
+    $('#crearNuevoMedicamentoBtn').click(function() {
+        $('#formCrearMedicamento')[0].reset(); // Limpiar form
+        $('#crearMedicamentoModal').removeClass('hidden');
+    });
+    $('#cancelarCrearMedicamentoBtn').click(function() {
+        $('#crearMedicamentoModal').addClass('hidden');
+    });
+    $('#guardarNuevoMedicamentoBtn').click(function() {
+        var nombreMed = $('#nombre_medicamento_modal').val();
+        if (!nombreMed.trim()) {
+            alert("El nombre del medicamento es requerido.");
+            return;
+        }
+        // Aquí enviarías los datos del nuevo medicamento por AJAX
+        $.ajax({
+            url: "{% url 'doctor:ajax_crear_medicamento' %}",
+            type: 'POST',
+            data: {
+                'csrfmiddlewaretoken': $('input[name="csrfmiddlewaretoken"]').val(),
+                'nombre_medicamento_modal': nombreMed
+                // ...otros campos del modal si los tienes
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    alert("Medicamento creado exitosamente.");
+                    $('#crearMedicamentoModal').addClass('hidden');
+                    // Opcional: añadir el nuevo medicamento a la lista de un Select2 si es relevante
+                    // Por ejemplo, si tienes un Select2 para seleccionar medicamentos existentes:
+                    // var newOption = new Option(response.medicamento_nombre, response.medicamento_id, true, true);
+                    // $('.algún-select2-de-medicamentos').append(newOption).trigger('change');
+                } else {
+                    alert(response.message || "Error al crear medicamento.");
+                }
+            },
+            error: function() {
+                alert("Error de conexión al crear medicamento.");
+            }
+        });
+    });
+
+</script>
+{% endblock %}

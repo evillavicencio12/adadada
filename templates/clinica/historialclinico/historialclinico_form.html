@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+<h1>{% if object %}Editar{% else %}Crear{% endif %} Historial Clínico</h1>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+
+  <button type="submit">Guardar</button>
+  <a href="{% url 'historialclinico_list' %}">Cancelar</a>
+</form>
+{% endblock %}

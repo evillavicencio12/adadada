@@ -1,0 +1,843 @@
+{% extends 'home.html' %} 
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title|default:"Formulario de Doctor" }} | SaludTotal{% endblock %}
+
+{% block css %}
+{{ super }}
+{# Incluir CSS para Select2 si no está globalmente #}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    .select2-container--default .select2-selection--multiple {
+        border-color: #d1d5db; /* gray-300 */
+        border-radius: 0.5rem; /* rounded-lg */
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #3b82f6; /* bg-blue-600 */
+        border-color: #2563eb; /* border-blue-700 */
+        color: white;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: rgba(255,255,255,0.7);
+    }
+    .select2-dropdown {
+        border-color: #d1d5db;
+        border-radius: 0.5rem;
+    }
+    
+    /* Estilos para campos requeridos */
+    .required-field label::after {
+        content: " *";
+        color: #ef4444;
+        font-weight: bold;
+    }
+    
+    /* Estilos para validación */
+    .field-error {
+        border-color: #ef4444 !important;
+        background-color: #fef2f2;
+    }
+    
+    .field-valid {
+        border-color: #10b981 !important;
+        background-color: #f0fdf4;
+    }
+    
+    /* Estilos para drag & drop */
+    .drag-drop-area {
+        border: 2px dashed #d1d5db;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f9fafb;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .drag-drop-area.drag-over {
+        border-color: #3b82f6;
+        background-color: #eff6ff;
+    }
+    
+    .drag-drop-area:hover {
+        border-color: #6b7280;
+        background-color: #f3f4f6;
+    }
+    
+    /* Estilos para preview de imágenes */
+    .image-preview {
+        max-width: 200px;
+        max-height: 200px;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        margin-top: 0.5rem;
+        object-fit: cover;
+    }
+    
+    /* Estilos para el mapa */
+    #map {
+        height: 400px;
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5db;
+    }
+    
+    /* Estilos para breadcrumbs */
+    .breadcrumbs {
+        display: flex;
+        align-items: center;
+        /* space-x: 0.5rem; */ /* Tailwind space-x-2 = 0.5rem */
+        margin-bottom: 1.5rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    .breadcrumbs a {
+        color: #3b82f6;
+        text-decoration: none;
+    }
+    
+    .breadcrumbs a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Estilos para indicadores de carga */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    
+    .spinner {
+        border: 4px solid #f3f4f6;
+        border-top: 4px solid #3b82f6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Estilos responsive mejorados */
+    @media (max-width: 768px) {
+        .grid-cols-1.md\\:grid-cols-2 {
+            grid-template-columns: 1fr;
+        }
+        
+        .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        
+        .bg-white.shadow-xl {
+            margin: 0.5rem;
+            padding: 1rem;
+        }
+        
+        #map {
+            height: 250px;
+        }
+    }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs space-x-2">
+        <a href="{% url 'home' %}" class="flex items-center">
+            <i class="fas fa-home mr-1"></i>
+            Inicio
+        </a>
+        <span>/</span>
+        <a href="{% url 'core:doctor_list' %}" class="flex items-center">
+            <i class="fas fa-user-md mr-1"></i>
+            Doctores
+        </a>
+        <span>/</span>
+        <span class="text-gray-800">{{ title|default:"Formulario de Doctor" }}</span>
+    </nav>
+
+    {% include "fragments/messages.html" %}
+
+    <div class="bg-white shadow-xl rounded-2xl p-6 md:p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8 text-center">
+            <i class="fas fa-user-md text-blue-600 mr-2"></i>{{ title|default:"Formulario de Doctor" }}
+        </h1>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-6" id="doctorForm">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6" role="alert">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Información Personal -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-user mr-2"></i>Información Personal
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="required-field">
+                        <label for="{{ form.nombres.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.nombres.label }}</label>
+                        {% render_field form.nombres class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Nombres completos" data-validation="required" %}
+                        {% if form.nombres.errors %}<p class="mt-1 text-xs text-red-600">{{ form.nombres.errors|join:", " }}</p>{% endif %}
+                    </div>
+                    <div class="required-field">
+                        <label for="{{ form.apellidos.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.apellidos.label }}</label>
+                        {% render_field form.apellidos class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Apellidos completos" data-validation="required" %}
+                        {% if form.apellidos.errors %}<p class="mt-1 text-xs text-red-600">{{ form.apellidos.errors|join:", " }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="required-field">
+                        <label for="{{ form.ruc.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.ruc.label }}</label>
+                        {% render_field form.ruc class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder=form.ruc.help_text data-validation="ruc" %}
+                        {% if form.ruc.errors %}<p class="mt-1 text-xs text-red-600">{{ form.ruc.errors|join:", " }}</p>{% endif %}
+                        <div class="mt-1 text-xs text-gray-500" id="ruc-status"></div>
+                    </div>
+                    <div class="required-field">
+                        <label for="{{ form.fecha_nacimiento.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.fecha_nacimiento.label }}</label>
+                        {% render_field form.fecha_nacimiento class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" type="date" data-validation="required" %}
+                        {% if form.fecha_nacimiento.errors %}<p class="mt-1 text-xs text-red-600">{{ form.fecha_nacimiento.errors|join:", " }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Contacto -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-address-book mr-2"></i>Información de Contacto
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="required-field">
+                        <label for="{{ form.telefonos.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.telefonos.label }}</label>
+                        {% render_field form.telefonos class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Número(s) de contacto" data-validation="phone" %}
+                        {% if form.telefonos.errors %}<p class="mt-1 text-xs text-red-600">{{ form.telefonos.errors|join:", " }}</p>{% endif %}
+                    </div>
+                    <div class="required-field">
+                        <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.email.label }}</label>
+                        {% render_field form.email class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="correo@ejemplo.com" data-validation="email" %}
+                        {% if form.email.errors %}<p class="mt-1 text-xs text-red-600">{{ form.email.errors|join:", " }}</p>{% endif %}
+                        <div class="mt-1 text-xs text-gray-500" id="email-status"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ubicación del Consultorio -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-map-marker-alt mr-2"></i>Ubicación del Consultorio
+                </h3>
+                
+                <div class="mb-6 required-field">
+                    <label for="{{ form.direccion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.direccion.label }}</label>
+                    {% render_field form.direccion class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Dirección del consultorio" data-validation="required" %}
+                    {% if form.direccion.errors %}<p class="mt-1 text-xs text-red-600">{{ form.direccion.errors|join:", " }}</p>{% endif %}
+                </div>
+
+                <!-- Mapa interactivo -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-map mr-1"></i>Seleccionar ubicación en el mapa
+                    </label>
+                    <div id="map"></div>
+                    <p class="mt-2 text-xs text-gray-500">
+                        Haga clic en el mapa para seleccionar la ubicación exacta del consultorio
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.latitud.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.latitud.label }}</label>
+                        {% render_field form.latitud class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-100" placeholder="Ej: -2.149" data-validation="coordinate" readonly="readonly" %}
+                        {% if form.latitud.errors %}<p class="mt-1 text-xs text-red-600">{{ form.latitud.errors|join:", " }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.longitud.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.longitud.label }}</label>
+                        {% render_field form.longitud class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-gray-100" placeholder="Ej: -79.890" data-validation="coordinate" readonly="readonly" %}
+                        {% if form.longitud.errors %}<p class="mt-1 text-xs text-red-600">{{ form.longitud.errors|join:", " }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información Profesional -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-stethoscope mr-2"></i>Información Profesional
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="required-field">
+                        <label for="{{ form.codigo_unico_doctor.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.codigo_unico_doctor.label }}</label>
+                        {% render_field form.codigo_unico_doctor class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Código MSP, etc." data-validation="required" %}
+                        {% if form.codigo_unico_doctor.errors %}<p class="mt-1 text-xs text-red-600">{{ form.codigo_unico_doctor.errors|join:", " }}</p>{% endif %}
+                    </div>
+                    <div class="required-field">
+                        <label for="{{ form.especialidad.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.especialidad.label }}</label>
+                        {% render_field form.especialidad class+="w-full select2" data-placeholder="Seleccione especialidades" data-validation="required" %}
+                        {% if form.especialidad.errors %}<p class="mt-1 text-xs text-red-600">{{ form.especialidad.errors|join:", " }}</p>{% endif %}
+                        {% if form.especialidad.help_text %}<small class="mt-1 text-xs text-gray-500">{{ form.especialidad.help_text }}</small>{% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div>
+                        <label for="{{ form.horario_atencion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.horario_atencion.label }}</label>
+                        {% render_field form.horario_atencion class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" rows="3" placeholder=form.horario_atencion.help_text %}
+                        {% if form.horario_atencion.errors %}<p class="mt-1 text-xs text-red-600">{{ form.horario_atencion.errors|join:", " }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ form.duracion_atencion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.duracion_atencion.label }}</label>
+                        {% render_field form.duracion_atencion class+="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" type="number" placeholder="Tiempo en minutos" min="5" max="120" %}
+                        {% if form.duracion_atencion.errors %}<p class="mt-1 text-xs text-red-600">{{ form.duracion_atencion.errors|join:", " }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Archivos y Documentos -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-file-medical mr-2"></i>Archivos y Documentos
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Curriculum -->
+                    <div>
+                        <label for="{{ form.curriculum.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.curriculum.label }}</label>
+                        <div class="drag-drop-area" id="curriculum-drop">
+                            <i class="fas fa-file-upload text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600 mb-2">Arrastra y suelta tu CV aquí o haz clic para seleccionar</p>
+                            {% render_field form.curriculum class+="hidden" id="curriculum-input" accept=".pdf,.doc,.docx" %}
+                            <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition">
+                                Seleccionar archivo
+                            </button>
+                        </div>
+                        {% if form.curriculum.errors %}<p class="mt-1 text-xs text-red-600">{{ form.curriculum.errors|join:", " }}</p>{% endif %}
+                        {% if form.instance.curriculum and form.instance.curriculum.url %}
+                            <p class="mt-2 text-xs text-gray-500">
+                                <i class="fas fa-file-pdf mr-1"></i>
+                                Actual: <a href="{{ form.instance.curriculum.url }}" target="_blank" class="text-blue-600 hover:underline">{{ form.instance.curriculum.name|cut:"core/curriculums/" }}</a>
+                            </p>
+                        {% endif %}
+                        <div id="curriculum-preview" class="mt-2 hidden">
+                            <p class="text-xs text-green-600">
+                                <i class="fas fa-check-circle mr-1"></i>
+                                Archivo seleccionado: <span id="curriculum-filename"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Foto -->
+                    <div>
+                        <label for="{{ form.foto.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.foto.label }}</label>
+                        <div class="drag-drop-area" id="foto-drop">
+                            <i class="fas fa-image text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600 mb-2">Arrastra y suelta tu foto aquí o haz clic para seleccionar</p>
+                            {% render_field form.foto class+="hidden" id="foto-input" accept="image/*" %}
+                            <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition">
+                                Seleccionar imagen
+                            </button>
+                        </div>
+                        {% if form.foto.errors %}<p class="mt-1 text-xs text-red-600">{{ form.foto.errors|join:", " }}</p>{% endif %}
+                        {% if form.instance.foto and form.instance.foto.url %}
+                            <div class="mt-2">
+                                <img src="{{ form.instance.foto.url }}" alt="Foto actual" class="image-preview">
+                                <p class="mt-1 text-xs text-gray-500">Para cambiar, seleccione un nuevo archivo.</p>
+                            </div>
+                        {% else %}
+                            <div id="foto-preview-container" class="mt-2 hidden">
+                                <img id="foto-preview" alt="Preview de foto" class="image-preview">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <!-- Firma Digital -->
+                    <div>
+                        <label for="{{ form.firma_digital.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.firma_digital.label }}</label>
+                        <div class="drag-drop-area" id="firma-drop">
+                            <i class="fas fa-signature text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600 mb-2">Arrastra y suelta tu firma aquí o haz clic para seleccionar</p>
+                            {% render_field form.firma_digital class+="hidden" id="firma-input" accept="image/*" %}
+                            <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition">
+                                Seleccionar firma
+                            </button>
+                        </div>
+                        {% if form.firma_digital.errors %}<p class="mt-1 text-xs text-red-600">{{ form.firma_digital.errors|join:", " }}</p>{% endif %}
+                        {% if form.instance.firma_digital and form.instance.firma_digital.url %}
+                            <div class="mt-2">
+                                <img src="{{ form.instance.firma_digital.url }}" alt="Firma actual" class="image-preview">
+                                <p class="mt-1 text-xs text-gray-500">Para cambiar, seleccione un nuevo archivo.</p>
+                            </div>
+                        {% else %}
+                             <div id="firma-preview-container" class="mt-2 hidden">
+                                <img id="firma-preview" alt="Preview de firma" class="image-preview">
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Imagen Receta -->
+                    <div>
+                        <label for="{{ form.imagen_receta.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.imagen_receta.label }}</label>
+                        <div class="drag-drop-area" id="receta-drop">
+                            <i class="fas fa-prescription-bottle-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-600 mb-2">Arrastra y suelta la imagen de receta aquí o haz clic para seleccionar</p>
+                            {% render_field form.imagen_receta class+="hidden" id="receta-input" accept="image/*" %}
+                            <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition">
+                                Seleccionar imagen
+                            </button>
+                        </div>
+                        {% if form.imagen_receta.errors %}<p class="mt-1 text-xs text-red-600">{{ form.imagen_receta.errors|join:", " }}</p>{% endif %}
+                        {% if form.instance.imagen_receta and form.instance.imagen_receta.url %}
+                            <div class="mt-2">
+                                <img src="{{ form.instance.imagen_receta.url }}" alt="Imagen receta actual" class="image-preview">
+                                <p class="mt-1 text-xs text-gray-500">Para cambiar, seleccione un nuevo archivo.</p>
+                            </div>
+                        {% else %}
+                            <div id="receta-preview-container" class="mt-2 hidden">
+                                <img id="receta-preview" alt="Preview de imagen receta" class="image-preview">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-toggle-on mr-2"></i>Estado
+                </h3>
+                <div class="flex items-center">
+                    {% render_field form.activo class+="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" %}
+                    <label for="{{ form.activo.id_for_label }}" class="ml-2 block text-sm text-gray-900">{{ form.activo.label }}</label>
+                    {% if form.activo.errors %}<p class="ml-2 text-xs text-red-600">{{ form.activo.errors|join:", " }}</p>{% endif %}
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="pt-5 border-t border-gray-200">
+                <div class="flex justify-between items-center">
+                    <!-- Botones de navegación -->
+                    <div class="flex space-x-3">
+                        <a href="{% url 'home' %}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-sm hover:shadow transition duration-300 ease-in-out flex items-center">
+                            <i class="fas fa-home mr-2"></i>
+                            Inicio
+                        </a>
+                        <a href="{% url 'core:doctor_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-sm hover:shadow transition duration-300 ease-in-out flex items-center">
+                            <i class="fas fa-list mr-2"></i>
+                            Lista de Doctores
+                        </a>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex space-x-3">
+                        <button type="button" id="cancelBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-6 rounded-lg shadow-sm hover:shadow transition duration-300 ease-in-out">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancelar
+                        </button>
+                        <button type="submit" id="submitBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-px">
+                            <i class="fas fa-save mr-2"></i>
+                            <span id="submitText">{{ submit_button_text|default:"Guardar" }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de confirmación -->
+<div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[10000] flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg p-6 max-w-md mx-auto shadow-2xl">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+            <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+            Confirmar acción
+        </h3>
+        <p class="text-gray-600 mb-6">¿Estás seguro de que deseas cancelar? Los cambios no guardados se perderán.</p>
+        <div class="flex justify-end space-x-3">
+            <button id="confirmCancel" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">
+                No, continuar editando
+            </button>
+            <button id="confirmOk" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                Sí, cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading overlay -->
+<!-- <div id="loadingOverlay" class="loading-overlay hidden">
+    <div class="bg-white p-6 rounded-lg text-center shadow-2xl">
+        <div class="spinner mx-auto mb-4"></div>
+        <p class="text-gray-600">Guardando información...</p>
+    </div>
+</div> -->
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const mapDiv = document.getElementById("map");
+    if (!mapDiv) return;
+
+    const defaultLat = parseFloat(document.getElementById("id_latitud")?.value) || -1.8312;
+    const defaultLng = parseFloat(document.getElementById("id_longitud")?.value) || -78.1834;
+    const zoomLevel = 6;
+
+    const map = L.map("map").setView([defaultLat, defaultLng], zoomLevel);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let marker = null;
+
+    function setMarker(lat, lng) {
+        if (marker) {
+            marker.setLatLng([lat, lng]);
+        } else {
+            marker = L.marker([lat, lng]).addTo(map);
+        }
+    }
+
+    // Si ya hay coordenadas, coloca el marcador
+    if (!isNaN(defaultLat) && !isNaN(defaultLng)) {
+        setMarker(defaultLat, defaultLng);
+    }
+
+    map.on("click", function (e) {
+        const { lat, lng } = e.latlng;
+        setMarker(lat, lng);
+        document.getElementById("id_latitud").value = lat.toFixed(6);
+        document.getElementById("id_longitud").value = lng.toFixed(6);
+    });
+});
+</script>
+{% endblock content %}
+
+{% block js %}
+{{ super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Script para el formulario de Doctor
+// Asegurarse que este script solo se ejecute en esta página
+// y no cause problemas en otras.
+if (document.getElementById('doctorForm')) {
+
+    $(document).ready(function() {
+        let map;
+        let marker;
+        let hasUnsavedChanges = false;
+        // let initialFormData = {}; // Comentado si no se usa para `hasUnsavedChanges` más avanzado
+
+        // Siempre asegurarse que el overlay esté oculto al cargar la página del formulario
+        hideLoadingOverlay();
+
+        initializeSelect2();
+        initializeMap();
+        initializeDragDrop();
+        initializeValidation();
+        initializeFormChangeTracking();
+
+        function initializeSelect2() {
+            $('.select2').select2({
+                width: '100%',
+                placeholder: function() { return $(this).data('placeholder') || "Seleccione una o más opciones"; },
+                allowClear: true,
+                language: { noResults: function() { return "No se encontraron resultados"; } }
+            });
+        }
+
+        function initializeMap() {
+            let defaultLat = -2.1894;
+            let defaultLng = -79.8890;
+            const latInput = $('#{{ form.latitud.id_for_label }}');
+            const lngInput = $('#{{ form.longitud.id_for_label }}');
+
+            if (latInput.val() && lngInput.val()) {
+                try {
+                    defaultLat = parseFloat(latInput.val());
+                    defaultLng = parseFloat(lngInput.val());
+                } catch (e) { console.error("Error parseando lat/lng iniciales", e); }
+            }
+
+            map = L.map('map').setView([defaultLat, defaultLng], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            marker = L.marker([defaultLat, defaultLng], { draggable: true }).addTo(map);
+
+            marker.on('dragend', function(e) { updateCoordinates(e.target.getLatLng().lat, e.target.getLatLng().lng); });
+            map.on('click', function(e) { marker.setLatLng([e.latlng.lat, e.latlng.lng]); updateCoordinates(e.latlng.lat, e.latlng.lng); });
+
+            const locationButton = L.control({position: 'topright'});
+            locationButton.onAdd = function(mapCtrl) { // mapCtrl es el mapa
+                const div = L.DomUtil.create('div', 'leaflet-control-custom bg-white border-2 border-gray-300 rounded p-1 shadow');
+                div.innerHTML = '<button type="button" class="text-blue-500 hover:text-blue-700" title="Obtener mi ubicación"><i class="fas fa-crosshairs fa-lg"></i></button>';
+                div.onclick = function(e) { e.stopPropagation(); getCurrentLocation(); };
+                return div;
+            };
+            locationButton.addTo(map);
+        }
+
+        function getCurrentLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    map.setView([lat, lng], 15);
+                    marker.setLatLng([lat, lng]);
+                    updateCoordinates(lat, lng);
+                }, function() { alert('No se pudo obtener tu ubicación actual.'); });
+            } else {
+                alert('Tu navegador no soporta geolocalización.');
+            }
+        }
+
+        function updateCoordinates(lat, lng) {
+            $('#{{ form.latitud.id_for_label }}').val(lat.toFixed(6)).trigger('change'); // trigger change for hasUnsavedChanges
+            $('#{{ form.longitud.id_for_label }}').val(lng.toFixed(6)).trigger('change');
+        }
+
+        function initializeDragDrop() {
+            ['curriculum', 'foto', 'firma', 'receta'].forEach(area => {
+                const dropArea = $(`#${area}-drop`);
+                const input = $(`#${area}-input`);
+                const button = dropArea.find('button');
+
+                dropArea.on('dragover dragenter', function(e) { e.preventDefault(); $(this).addClass('drag-over'); });
+                dropArea.on('dragleave dragend drop', function(e) { e.preventDefault(); $(this).removeClass('drag-over'); });
+                dropArea.on('drop', function(e) { if (e.originalEvent.dataTransfer.files.length) handleFile(area, e.originalEvent.dataTransfer.files[0]); });
+                button.on('click', function(e) { e.preventDefault(); input.click(); });
+                input.on('change', function(e) { if (e.target.files.length) handleFile(area, e.target.files[0]); });
+            });
+        }
+
+        function handleFile(area, file) {
+            const input = $(`#${area}-input`);
+            if (!validateFileType(area, file)) { alert('Tipo de archivo no válido para ' + area); input.val(''); return; }
+            if (!validateFileSize(file)) { alert('El archivo es demasiado grande (máximo 5MB)'); input.val(''); return; }
+
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            input[0].files = dataTransfer.files;
+            input.trigger('change'); // Para hasUnsavedChanges
+
+            showFilePreview(area, file);
+        }
+
+        function validateFileType(area, file) {
+            const validTypes = {
+                'curriculum': ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+                'foto': ['image/jpeg', 'image/png', 'image/gif'],
+                'firma': ['image/jpeg', 'image/png', 'image/gif'],
+                'receta': ['image/jpeg', 'image/png', 'image/gif']
+            };
+            return validTypes[area].includes(file.type);
+        }
+        function validateFileSize(file) { return file.size <= 5 * 1024 * 1024; }
+
+        function showFilePreview(area, file) {
+            const previewContainer = $(`#${area}-preview-container`);
+            const previewImg = $(`#${area}-preview`);
+            const curriculumPreviewEl = $('#curriculum-preview');
+            const curriculumFilenameEl = $('#curriculum-filename');
+
+            // Ocultar previews existentes de esa area
+            previewContainer.addClass('hidden');
+            previewImg.addClass('hidden'); // Es el elemento img dentro del container
+            if (area === 'curriculum') curriculumPreviewEl.addClass('hidden');
+
+
+            if (file.type.startsWith('image/')) {
+                previewContainer.removeClass('hidden');
+                previewImg.attr('src', URL.createObjectURL(file)).removeClass('hidden');
+            } else if (area === 'curriculum') {
+                curriculumPreviewEl.removeClass('hidden');
+                curriculumFilenameEl.text(file.name);
+            }
+        }
+
+        function initializeValidation() {
+            $('#{{ form.ruc.id_for_label }}').on('input', function() { validateField($(this), validateRUC, $('#ruc-status'), 'RUC'); });
+            $('#{{ form.email.id_for_label }}').on('input', function() { validateField($(this), validateEmail, $('#email-status'), 'Email'); });
+            $('#{{ form.telefonos.id_for_label }}').on('input', function() { validateField($(this), validatePhone); });
+            $('[data-validation="required"]', '#doctorForm').on('input change', function() { validateRequiredField($(this)); });
+        }
+
+        function validateField(field, validatorFn, statusEl, fieldName) {
+            const value = field.val();
+            if (value) {
+                if (validatorFn(value)) {
+                    field.removeClass('field-error').addClass('field-valid');
+                    if (statusEl) statusEl.text(`${fieldName || ''} válido`).removeClass('text-red-500').addClass('text-green-500');
+                } else {
+                    field.removeClass('field-valid').addClass('field-error');
+                    if (statusEl) statusEl.text(`${fieldName || ''} inválido`).removeClass('text-green-500').addClass('text-red-500');
+                }
+            } else {
+                field.removeClass('field-valid field-error');
+                if (statusEl) statusEl.text('');
+            }
+        }
+        function validateRequiredField(field) {
+             if (field.val() && String(field.val()).trim() !== '') field.removeClass('field-error').addClass('field-valid');
+            else field.removeClass('field-valid').addClass('field-error');
+        }
+        function validateRUC(ruc) {  if (ruc.length !== 13) return false; const co = [2,1,2,1,2,1,2,1,2]; let sum=0; for(let i=0;i<9;i++){let d=parseInt(ruc[i])*co[i]; if(d>9)d-=9; sum+=d;} const cd=(10-(sum%10))%10; return cd===parseInt(ruc[9]); }
+        function validateEmail(email) { const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; return re.test(String(email).toLowerCase()); }
+        function validatePhone(phone) { const re = /^[\d\s\-\+\(\)]{7,15}$/; return re.test(phone); }
+
+        function initializeFormChangeTracking() {
+            $('#doctorForm').on('input change', ':input', function() { hasUnsavedChanges = true; });
+            $(window).on('beforeunload', function(e) { if (hasUnsavedChanges) { e.preventDefault(); return 'Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?'; } });
+        }
+
+        $('#cancelBtn').on('click', function(e) { e.preventDefault(); if (hasUnsavedChanges) $('#confirmModal').removeClass('hidden'); else navigateToList(); });
+        $('#confirmCancel').on('click', function() { $('#confirmModal').addClass('hidden'); });
+        $('#confirmOk').on('click', navigateToList);
+
+        function navigateToList() {
+            hasUnsavedChanges = false;
+            window.location.href = "{% url 'core:doctor_list' %}";
+        }
+
+        $('#doctorForm').on('submit', function(e) {
+            e.preventDefault();
+            if (!validateForm()) {
+                showGeneralValidationError("Por favor, corrige los errores resaltados en el formulario.");
+                return;
+            }
+
+            showLoadingOverlay();
+
+            const formData = new FormData(this);
+            const formAction = this.action;
+
+            fetch(formAction, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val() }
+            })
+            .then(response => {
+                if (response.ok) {
+                    hasUnsavedChanges = false;
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                         window.location.reload();
+                    }
+                } else {
+                    hideLoadingOverlay();
+                    response.text().then(text => {
+                        console.error("Error del servidor:", response.status, text);
+                        let errorMsg = `Error del servidor (${response.status}). Inténtalo de nuevo.`;
+                        try {
+                            const errors = JSON.parse(text);
+                            if (errors && typeof errors === 'object') {
+                                errorMsg = "Por favor, corrige los errores del formulario indicados por el servidor.";
+                            }
+                        } catch (e) { /* No era JSON */ }
+                        showGeneralValidationError(errorMsg);
+                    }).catch(() => {
+                        showGeneralValidationError(`Error del servidor (${response.status}). Inténtalo de nuevo.`);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error en fetch submit:', error);
+                hideLoadingOverlay();
+                showGeneralValidationError("Ocurrió un error de red o conexión al guardar. Inténtalo de nuevo.");
+            });
+        });
+
+        function validateForm() {
+            let isValid = true;
+            $('.field-error', '#doctorForm').removeClass('field-error');
+            $('.validation-error-message-general', '#doctorForm').remove(); // Limpiar mensajes generales
+
+
+            $('[data-validation="required"]:visible', '#doctorForm').each(function() {
+                const field = $(this);
+                let value = field.val();
+
+                if (field.hasClass('select2') && field.prop('multiple')) {
+                    if (!value || value.length === 0) {
+                        field.next('.select2-container').find('.select2-selection').addClass('field-error');
+                        isValid = false;
+                    } else {
+                         field.next('.select2-container').find('.select2-selection').removeClass('field-error');
+                    }
+                } else if (typeof value === 'string' && (!value || value.trim() === '')) {
+                    field.addClass('field-error');
+                    isValid = false;
+                } else if (value === null || (Array.isArray(value) && value.length ===0)){ // Para otros tipos de input
+                    field.addClass('field-error');
+                    isValid = false;
+                }
+                 else {
+                    field.removeClass('field-error');
+                }
+            });
+
+            const rucField = $('#{{ form.ruc.id_for_label }}');
+            if (rucField.val() && !validateRUC(rucField.val())) { rucField.addClass('field-error'); isValid = false; }
+
+            const emailField = $('#{{ form.email.id_for_label }}');
+            if (emailField.val() && !validateEmail(emailField.val())) { emailField.addClass('field-error'); isValid = false; }
+
+            return isValid;
+        }
+
+        function showLoadingOverlay() { $('#loadingOverlay').removeClass('hidden'); $('#submitBtn').prop('disabled', true); $('#submitText').text('Guardando...');}
+        function hideLoadingOverlay() {
+            $('#loadingOverlay').addClass('hidden');
+            $('#submitBtn').prop('disabled', false);
+            $('#submitText').text("{{ submit_button_text|escapejs|default:'Guardar' }}");
+        }
+
+        function showGeneralValidationError(message) {
+            $('.validation-error-message-general').remove();
+            const errorMessageHtml = `
+                <div class="validation-error-message-general bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6" role="alert">
+                    <p><i class="fas fa-exclamation-triangle mr-2"></i>${message}</p>
+                </div>
+            `;
+            $('#doctorForm').prepend(errorMessageHtml);
+
+            const firstError = $('.field-error', '#doctorForm').first();
+            if (firstError.length) {
+                $('html, body').animate({ scrollTop: firstError.offset().top - 120 }, 300);
+            } else {
+                $('html, body').animate({ scrollTop: $('.validation-error-message-general').offset().top - 120 }, 300);
+            }
+        }
+    });
+}
+</script>
+{% endblock js %}
