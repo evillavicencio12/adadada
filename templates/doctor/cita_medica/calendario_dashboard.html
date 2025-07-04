@@ -6,173 +6,48 @@
 {% block css %}
 <style>
     /* Estilos específicos del calendario, adaptados para Tailwind si es posible o mantenidos aquí */
-    /* Se asume que los estilos generales de .container, .header, etc. ya no son necesarios si base.html los provee */
-    /* O se deben prefijar/aislar para no colisionar con Tailwind */
-
-    .calendar-container-custom { /* Renombrado para evitar colisión con .container de Tailwind si existe */
-        max-width: 1200px; /* O usa clases de Tailwind como max-w-6xl */
-        margin: 1rem auto; /* mx-auto my-4 */
-        background: white; /* bg-white */
-        border-radius: 1.25rem; /* rounded-2xl */
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1); /* shadow-xl */
-        overflow: hidden;
-    }
-
-    .calendar-header-custom { /* Renombrado */
-        background: linear-gradient(135deg, #4CAF50, #45a049); /* Puede ser reemplazado por clases de Tailwind bg-gradient-to-r from-green-500 to-green-600 */
-        color: white; /* text-white */
-        padding: 1.875rem; /* p-7 o p-8 */
-        text-align: center; /* text-center */
-    }
-
-    .calendar-header-custom h1 {
-        font-size: 2.5rem; /* text-4xl */
-        margin-bottom: 0.625rem; /* mb-2 o mb-3 */
-        font-weight: 300; /* font-light */
-    }
-
-    .controls-custom { /* Renombrado */
-        background: #f8f9fa; /* bg-gray-50 */
-        padding: 1.25rem; /* p-5 */
-        display: flex; /* flex */
-        justify-content: space-between; /* justify-between */
-        align-items: center; /* items-center */
-        flex-wrap: wrap; /* flex-wrap */
-        gap: 0.9375rem; /* gap-4 */
-        border-bottom: 1px solid #e5e7eb; /* border-b border-gray-200 */
-    }
-
-    .date-selector-custom select, .btn-custom { /* Renombrado */
-        padding: 0.625rem 0.9375rem; /* py-2 px-4 */
-        border: 2px solid #ddd; /* border-2 border-gray-300 */
-        border-radius: 0.625rem; /* rounded-lg */
-        font-size: 1rem; /* text-base */
-        background: white; /* bg-white */
-        cursor: pointer; /* cursor-pointer */
-    }
-    .date-selector-custom select:focus, .btn-custom:focus {
-        border-color: #4CAF50; /* focus:border-green-500 */
-        outline: none; /* focus:outline-none */
-        box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2); /* focus:ring-2 focus:ring-green-500 focus:ring-opacity-20 */
-    }
-    .btn-primary-custom { /* Renombrado */
-        background: #4CAF50; /* bg-green-500 */
-        color: white; /* text-white */
-    }
-    .btn-primary-custom:hover {
-        background: #45a049; /* hover:bg-green-600 */
-    }
-
-    .legend-custom { /* Renombrado */
-        display: flex; gap: 1.25rem; flex-wrap: wrap; /* flex gap-5 flex-wrap */
-    }
-    .legend-item-custom { /* Renombrado */
-        display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; /* flex items-center gap-2 text-sm */
-    }
-    .legend-color-custom { /* Renombrado */
-        width: 20px; height: 20px; border-radius: 50%; border: 2px solid #333; /* w-5 h-5 rounded-full border-2 border-gray-700 */
-    }
-
-    .calendar-grid-wrapper { /* Renombrado */
-        padding: 1.875rem; /* p-7 o p-8 */
-    }
-    .calendar-week-header, .calendar-grid-custom { /* Renombrado */
-        display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #ddd; /* grid grid-cols-7 gap-px bg-gray-300 */
-    }
-    .calendar-week-header .day-name-custom { /* Renombrado */
-        background: #2c3e50; color: white; padding: 0.9375rem; text-align: center; font-weight: bold; font-size: 0.875rem;
-        /* bg-gray-700 text-white p-3 text-center font-semibold text-sm */
-    }
-    .day-cell-custom { /* Renombrado */
-        background: white; /* bg-white */
-        min-height: 120px; /* min-h-[120px] */
-        padding: 0.625rem; /* p-2.5 */
-        cursor: pointer; /* cursor-pointer */
-        transition: all 0.3s ease; /* transition-all duration-300 ease-in-out */
-        position: relative;
-        display: flex; flex-direction: column; /* flex flex-col */
-    }
-    .day-cell-custom:hover {
-        transform: translateY(-2px); /* hover:-translate-y-0.5 */
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1); /* hover:shadow-lg */
-    }
-    .day-number-custom { font-weight: bold; font-size: 1rem; margin-bottom: 0.3125rem; /* font-bold text-base mb-1 */ }
-    .day-status-custom { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.9375rem; text-align: center; margin-top: auto; font-weight: 500;
-        /* text-xs py-1 px-2 rounded-full text-center mt-auto font-medium */
-    }
-
-    /* Estado de colores para .day-cell-custom */
-    .day-cell-custom.disponible { background-color: #fff9c4; border: 1px solid #ffd700; } /* bg-yellow-50 border border-yellow-400 */
-    .day-cell-custom.disponible .day-status-custom { background: #ffd700; color: #333; } /* bg-yellow-400 text-gray-800 */
-
-    .day-cell-custom.ocupado { background-color: #e6f3ff; border: 1px solid #87ceeb; } /* bg-blue-50 border border-blue-300 */
-    .day-cell-custom.ocupado .day-status-custom { background: #87ceeb; color: #333; } /* bg-blue-300 text-gray-800 */
-
-    .day-cell-custom.sin_atencion { background-color: #f5f5f5; border: 1px solid #d3d3d3; color: #999; } /* bg-gray-100 border border-gray-300 text-gray-400 */
-    .day-cell-custom.sin_atencion .day-status-custom { background: #d3d3d3; color: #666; } /* bg-gray-300 text-gray-600 */
-
-    .day-cell-custom.dia-actual { background-color: #1e3a8a !important; border: 1px solid #1e3a8a !important; color: white !important; } /* bg-blue-800 border-blue-800 text-white */
-    .day-cell-custom.dia-actual .day-status-custom { background: #3b82f6 !important; color: white !important; } /* bg-blue-500 text-white */
+    .calendar-container-custom { max-width: 1200px; margin: 1rem auto; background: white; border-radius: 1.25rem; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+    .calendar-header-custom { background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 1.875rem; text-align: center; }
+    .calendar-header-custom h1 { font-size: 2.5rem; margin-bottom: 0.625rem; font-weight: 300; }
+    .controls-custom { background: #f8f9fa; padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.9375rem; border-bottom: 1px solid #e5e7eb; }
+    .date-selector-custom select, .btn-custom { padding: 0.625rem 0.9375rem; border: 2px solid #ddd; border-radius: 0.625rem; font-size: 1rem; background: white; cursor: pointer; }
+    .date-selector-custom select:focus, .btn-custom:focus { border-color: #4CAF50; outline: none; box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2); }
+    .btn-primary-custom { background: #4CAF50; color: white; }
+    .btn-primary-custom:hover { background: #45a049; }
+    .legend-custom { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+    .legend-item-custom { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; }
+    .legend-color-custom { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #333; }
+    .calendar-grid-wrapper { padding: 1.875rem; }
+    .calendar-week-header, .calendar-grid-custom { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #ddd; }
+    .calendar-week-header .day-name-custom { background: #2c3e50; color: white; padding: 0.9375rem; text-align: center; font-weight: bold; font-size: 0.875rem; }
+    .day-cell-custom { background: white; min-height: 120px; padding: 0.625rem; cursor: pointer; transition: all 0.3s ease; position: relative; display: flex; flex-direction: column; }
+    .day-cell-custom:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+    .day-number-custom { font-weight: bold; font-size: 1rem; margin-bottom: 0.3125rem; }
+    .day-status-custom { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.9375rem; text-align: center; margin-top: auto; font-weight: 500; }
+    .day-cell-custom.disponible { background-color: #fff9c4; border: 1px solid #ffd700; }
+    .day-cell-custom.disponible .day-status-custom { background: #ffd700; color: #333; }
+    .day-cell-custom.ocupado { background-color: #e6f3ff; border: 1px solid #87ceeb; }
+    .day-cell-custom.ocupado .day-status-custom { background: #87ceeb; color: #333; }
+    .day-cell-custom.sin_atencion { background-color: #f5f5f5; border: 1px solid #d3d3d3; color: #999; }
+    .day-cell-custom.sin_atencion .day-status-custom { background: #d3d3d3; color: #666; }
+    .day-cell-custom.dia-actual { background-color: #1e3a8a !important; border: 1px solid #1e3a8a !important; color: white !important; }
+    .day-cell-custom.dia-actual .day-status-custom { background: #3b82f6 !important; color: white !important; }
     .day-cell-custom.dia-actual .day-number-custom, .day-cell-custom.dia-actual .slots-info-custom { color: white !important; }
-
-    .slots-info-custom { font-size: 0.6875rem; margin-top: 0.3125rem; color: #666; /* text-[11px] mt-1 text-gray-500 */}
-
-    /* Modal Styles */
-    .modal-custom { /* Renombrado */
-        display: none; position: fixed; z-index: 50; /* Tailwind: hidden fixed z-50 inset-0 */
-        left: 0; top: 0; width: 100%; height: 100%;
-        background-color: rgba(0,0,0,0.5); /* bg-black bg-opacity-50 */
-    }
-    .modal-content-custom { /* Renombrado */
-        background-color: white; /* bg-white */
-        margin: 5% auto; /* mx-auto mt-[5%] */
-        padding: 1.875rem; /* p-7 o p-8 */
-        border-radius: 0.9375rem; /* rounded-xl */
-        width: 90%; max-width: 600px; /* w-11/12 max-w-2xl */
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3); /* shadow-2xl */
-    }
-    .modal-header-custom { /* Renombrado */
-        display: flex; justify-content: space-between; align-items: center; /* flex justify-between items-center */
-        margin-bottom: 1.25rem; padding-bottom: 0.9375rem; border-bottom: 2px solid #eee; /* mb-5 pb-3 border-b-2 border-gray-200 */
-    }
-    .close-custom { font-size: 1.75rem; font-weight: bold; cursor: pointer; color: #aaa; /* text-2xl font-bold cursor-pointer text-gray-400 hover:text-gray-700 */ }
-
-    .time-slots-custom { /* Renombrado */
-        display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.625rem; margin-top: 1.25rem;
-        /* grid grid-cols-fill-100px gap-2.5 mt-5 */
-    }
-    .time-slot-custom { /* Renombrado */
-        padding: 0.625rem; text-align: center; border-radius: 0.5rem; cursor: pointer; transition: all 0.3s ease; font-weight: 500;
-        /* p-2.5 text-center rounded-lg cursor-pointer transition-all duration-300 font-medium */
-    }
-    .time-slot-custom.disponible { background: #d4edda; border: 1px solid #28a745; color: #155724; /* bg-green-100 border border-green-500 text-green-700 */ }
-    .time-slot-custom.disponible:hover { background: #28a745; color: white; transform: scale(1.05); /* hover:bg-green-500 hover:text-white hover:scale-105 */ }
-    .time-slot-custom.ocupado { background: #f8d7da; border: 1px solid #dc3545; color: #721c24; cursor: not-allowed;
-        /* bg-red-100 border border-red-500 text-red-700 cursor-not-allowed */
-    }
-
-    /* Summary */
-    .summary-custom { /* Renombrado */
-        background: #f8f9fa; /* bg-gray-50 */
-        padding: 1.25rem; margin: 1.25rem 1.875rem; border-radius: 0.625rem; /* p-5 mx-7 my-5 rounded-lg */
-        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.9375rem; /* grid grid-cols-fit-200px gap-4 */
-    }
-    .summary-item-custom { /* Renombrado */
-        text-align: center; padding: 0.9375rem; background: white; border-radius: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        /* text-center p-3 bg-white rounded-md shadow-md */
-    }
-    .summary-number-custom { font-size: 2rem; font-weight: bold; margin-bottom: 0.3125rem; /* text-3xl font-bold mb-1 */ }
-
-    /* Alertas */
-    .alert-custom { /* Renombrado */
-        padding: 0.9375rem; margin: 1.25rem 1.875rem; border-radius: 0.5rem; font-weight: 500; /* p-3 mx-7 my-5 rounded-md font-medium */
-    }
-    .alert-info-custom { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; /* bg-blue-100 border border-blue-300 text-blue-700 */ }
-
-    /* Helper para Tailwind grid-template-columns */
-    /* En tu tailwind.config.js bajo theme.extend.gridTemplateColumns podrías añadir: */
-    /* 'fill-100px': 'repeat(auto-fill, minmax(100px, 1fr))', */
-    /* 'fit-200px': 'repeat(auto-fit, minmax(200px, 1fr))', */
+    .slots-info-custom { font-size: 0.6875rem; margin-top: 0.3125rem; color: #666; }
+    .modal-custom { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+    .modal-content-custom { background-color: white; margin: 5% auto; padding: 1.875rem; border-radius: 0.9375rem; width: 90%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+    .modal-header-custom { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.9375rem; border-bottom: 2px solid #eee; }
+    .close-custom { font-size: 1.75rem; font-weight: bold; cursor: pointer; color: #aaa; }
+    .time-slots-custom { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.625rem; margin-top: 1.25rem; }
+    .time-slot-custom { padding: 0.625rem; text-align: center; border-radius: 0.5rem; cursor: pointer; transition: all 0.3s ease; font-weight: 500; }
+    .time-slot-custom.disponible { background: #d4edda; border: 1px solid #28a745; color: #155724; }
+    .time-slot-custom.disponible:hover { background: #28a745; color: white; transform: scale(1.05); }
+    .time-slot-custom.ocupado { background: #f8d7da; border: 1px solid #dc3545; color: #721c24; cursor: not-allowed; }
+    .summary-custom { background: #f8f9fa; padding: 1.25rem; margin: 1.25rem 1.875rem; border-radius: 0.625rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.9375rem; }
+    .summary-item-custom { text-align: center; padding: 0.9375rem; background: white; border-radius: 0.5rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .summary-number-custom { font-size: 2rem; font-weight: bold; margin-bottom: 0.3125rem; }
+    .alert-custom { padding: 0.9375rem; margin: 1.25rem 1.875rem; border-radius: 0.5rem; font-weight: 500; }
+    .alert-info-custom { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
 </style>
 {% endblock %}
 
@@ -182,7 +57,7 @@
         <h1>📅 Calendario Médico</h1>
         <p>Gestión de citas con disponibilidad en tiempo real.</p>
         {% if user.is_authenticated %}
-        <div class="text-sm mt-2"> <!-- user-info original -->
+        <div class="text-sm mt-2">
             <strong>Bienvenido, {{ user.username }}</strong>
             {% if request.session.group_name %}
              - Grupo: {{ request.session.group_name }}
@@ -199,12 +74,10 @@
         <div class="date-selector-custom flex items-center gap-2">
             <label for="year" class="text-sm font-medium text-gray-700">Año:</label>
             <select id="year" class="form-select">
-                <!-- Años se llenarán dinámicamente -->
             </select>
             
             <label for="month" class="text-sm font-medium text-gray-700 ml-4">Mes:</label>
             <select id="month" class="form-select">
-                <!-- Meses se llenarán dinámicamente -->
             </select>
             
             <button class="btn-custom btn-primary-custom ml-4" onclick="cargarCalendarioDesdeServidor()">
@@ -221,7 +94,6 @@
     </div>
 
     <div id="summary" class="summary-custom">
-        <!-- Resumen se cargará dinámicamente -->
     </div>
 
     <div class="calendar-grid-wrapper">
@@ -240,7 +112,6 @@
     </div>
 </div>
 
-<!-- Modal para ver slots de tiempo -->
 <div id="slotsModal" class="modal-custom">
     <div class="modal-content-custom">
         <div class="modal-header-custom">
@@ -250,7 +121,6 @@
         <div id="modal-body">
              <p id="modal-loading" class="text-gray-500 text-center p-4">Cargando horarios...</p>
             <div id="time-slots" class="time-slots-custom">
-                <!-- Slots se cargarán dinámicamente -->
             </div>
              <div id="no-slots-message" class="text-gray-500 text-center p-4 hidden">No hay horarios disponibles o no hay atención este día.</div>
         </div>
@@ -265,18 +135,17 @@
 <script>
     const GENERAR_CALENDARIO_URL = "{% url 'doctor:calendario_api_generar_mes' %}";
     const SLOTS_DIA_URL = "{% url 'doctor:calendario_api_slots_dia' %}";
-    // Asumiendo que tienes una URL para crear la cita que puede tomar fecha y hora
-    // y redirigir a un formulario de cita médica.
     const AGENDAR_CITA_FORM_URL_BASE = "{% url 'doctor:cita_medica_create' %}";
-    let csrfToken = "{{ csrf_token }}"; // Para peticiones POST si se usa agendar_cita_automatica
+    let csrfToken = "{{ csrf_token }}";
 
     function popularSelectoresFecha() {
+        console.log('Popularizando selectores de fecha...');
         const yearSelect = document.getElementById('year');
         const monthSelect = document.getElementById('month');
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
 
-        // Llenar años (ej. año actual +/- 2)
+        yearSelect.innerHTML = ''; // Limpiar opciones previas
         for (let i = currentYear - 2; i <= currentYear + 2; i++) {
             const option = document.createElement('option');
             option.value = i;
@@ -285,7 +154,7 @@
             yearSelect.appendChild(option);
         }
 
-        // Llenar meses
+        monthSelect.innerHTML = ''; // Limpiar opciones previas
         const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         meses.forEach((mes, index) => {
             const option = document.createElement('option');
@@ -294,44 +163,57 @@
             if ((index + 1) === currentMonth) option.selected = true;
             monthSelect.appendChild(option);
         });
+        console.log('Selectores de fecha popularizados.');
     }
 
     async function cargarCalendarioDesdeServidor() {
+        console.log('Iniciando cargarCalendarioDesdeServidor...');
         const year = document.getElementById('year').value;
         const month = document.getElementById('month').value;
         const calendarGrid = document.getElementById('calendar-grid');
         const loadingMessage = document.getElementById('loading-message');
         const summaryDiv = document.getElementById('summary');
 
-        calendarGrid.innerHTML = ''; // Limpiar calendario anterior
-        loadingMessage.classList.remove('hidden');
-        loadingMessage.textContent = 'Cargando calendario...';
+        calendarGrid.innerHTML = '';
+        if (loadingMessage) {
+            loadingMessage.classList.remove('hidden');
+            loadingMessage.textContent = 'Cargando calendario...';
+        } else {
+            console.error("Elemento loading-message no encontrado");
+        }
         summaryDiv.innerHTML = '<p class="text-gray-500 col-span-full text-center">Cargando resumen...</p>';
-
+        console.log(`Solicitando calendario para: ${year}-${month}`);
 
         try {
             const response = await fetch(`${GENERAR_CALENDARIO_URL}?year=${year}&month=${month}`);
+            console.log('Respuesta del fetch recibida, status:', response.status);
             if (!response.ok) {
-                throw new Error(`Error del servidor: ${response.status}`);
+                const errorText = await response.text();
+                console.error('Error en respuesta del servidor:', response.status, errorText);
+                throw new Error(`Error del servidor: ${response.status}, ${errorText}`);
             }
             const data = await response.json();
+            console.log('Datos JSON recibidos de la API generar-mes:', data);
 
             if (data.success && data.calendario) {
-                loadingMessage.classList.add('hidden');
+                if (loadingMessage) loadingMessage.classList.add('hidden');
                 renderizarCalendario(data.calendario, calendarGrid);
                 renderizarResumen(data.resumen, summaryDiv);
+                console.log('Calendario y resumen renderizados.');
             } else {
-                loadingMessage.textContent = data.error || 'Error al cargar el calendario.';
-                summaryDiv.innerHTML = '<p class="text-red-500 col-span-full text-center">No se pudo cargar el resumen.</p>';
+                console.error('La API no devolvió success:true o faltan datos del calendario:', data.error || 'Error desconocido');
+                if (loadingMessage) loadingMessage.textContent = data.error || 'Error al cargar el calendario (datos inválidos).';
+                summaryDiv.innerHTML = `<p class="text-red-500 col-span-full text-center">No se pudo cargar el resumen: ${data.error || ''}</p>`;
             }
         } catch (error) {
-            console.error('Error fetching calendar data:', error);
-            loadingMessage.textContent = 'Error de conexión al cargar el calendario.';
-            summaryDiv.innerHTML = '<p class="text-red-500 col-span-full text-center">Error de conexión al cargar resumen.</p>';
+            console.error('Error en fetch o procesamiento de datos del calendario:', error);
+            if (loadingMessage) loadingMessage.textContent = `Error de conexión o procesamiento: ${error.message}`;
+            summaryDiv.innerHTML = `<p class="text-red-500 col-span-full text-center">Error de conexión al cargar resumen: ${error.message}</p>`;
         }
     }
 
     function renderizarResumen(resumen, summaryDiv) {
+        console.log('Renderizando resumen:', resumen);
         if (!resumen) {
             summaryDiv.innerHTML = '<p class="text-gray-500 col-span-full text-center">No hay datos de resumen.</p>';
             return;
@@ -356,20 +238,27 @@
         `;
     }
 
-
     function renderizarCalendario(calendario, calendarGrid) {
+        console.log('Iniciando renderizarCalendario con datos:', calendario);
         const year = calendario.year;
         const month = calendario.month;
         const dias = calendario.dias;
 
-        const primerDiaDelMes = new Date(year, month - 1, 1);
-        let diaSemanaPrimerDia = primerDiaDelMes.getDay(); // Domingo=0, Lunes=1 ...
-        if (diaSemanaPrimerDia === 0) diaSemanaPrimerDia = 7; // Ajustar Domingo a 7 para que Lunes sea 1
+        if (!dias || !Array.isArray(dias)) {
+            console.error("Formato de 'dias' incorrecto o ausente en los datos del calendario", calendario);
+            calendarGrid.innerHTML = '<p class="text-red-500 col-span-7 text-center p-4">Error: Datos de días inválidos.</p>';
+            return;
+        }
 
-        // Celdas vacías al inicio
+        const primerDiaDelMes = new Date(year, month - 1, 1);
+        let diaSemanaPrimerDia = primerDiaDelMes.getDay();
+        if (diaSemanaPrimerDia === 0) diaSemanaPrimerDia = 7;
+
+        console.log(`Primer día del mes ${year}-${month} es día de semana: ${diaSemanaPrimerDia} (1=Lun, 7=Dom)`);
+
         for (let i = 1; i < diaSemanaPrimerDia; i++) {
             const emptyCell = document.createElement('div');
-            emptyCell.className = 'day-cell-custom bg-gray-50'; // Tailwind para celda vacía
+            emptyCell.className = 'day-cell-custom bg-gray-50';
             calendarGrid.appendChild(emptyCell);
         }
 
@@ -378,41 +267,55 @@
         const mesActualNum = hoy.getMonth() + 1;
         const anioActualNum = hoy.getFullYear();
 
-        dias.forEach(diaData => {
+        dias.forEach((diaData, index) => {
+            if (!diaData || typeof diaData.dia === 'undefined') {
+                console.warn('Saltando diaData inválido en el índice:', index, diaData);
+                return;
+            }
+
             const dayCell = document.createElement('div');
-            dayCell.className = `day-cell-custom ${diaData.estado}`; // diaData.estado debe ser 'disponible', 'ocupado', 'sin_atencion'
+            dayCell.className = `day-cell-custom ${diaData.estado || 'sin_atencion'}`;
             
-            if (diaData.dia === diaActualNum && month === mesActualNum && year === anioActualNum) {
+            if (diaData.dia === diaActualNum && parseInt(month) === mesActualNum && parseInt(year) === anioActualNum) {
                 dayCell.classList.add('dia-actual');
             }
 
             dayCell.innerHTML = `
                 <div class="day-number-custom">${diaData.dia}</div>
                 <div class="slots-info-custom">
-                    ${diaData.slots_libres !== undefined ? `${diaData.slots_libres} libres` : ''}
+                    ${diaData.slots_libres !== undefined ? `${diaData.slots_libres} libres` : 'N/A'}
                     ${diaData.slots_totales ? ` de ${diaData.slots_totales}` : ''}
                 </div>
-                <div class="day-status-custom" style="background-color:${diaData.color}; color: ${diaData.color === '#d3d3d3' || diaData.color === 'gray' ? '#666' : '#333'}">
+                <div class="day-status-custom" style="background-color:${diaData.color || '#EEE'}; color: ${diaData.color === '#d3d3d3' || diaData.color === 'gray' ? '#666' : '#333'}">
                     ${diaData.estado === 'disponible' ? 'Disponible' :
-                      diaData.estado === 'ocupado' ? 'Ocupado Parcial/Total' :
-                      diaData.estado === 'sin_atencion' ? 'Sin Atención' : diaData.estado}
+                      diaData.estado === 'ocupado' ? 'Ocupado' :
+                      diaData.estado === 'sin_atencion' ? 'Sin Atención' : (diaData.estado || 'N/D')}
                 </div>
             `;
-            if (diaData.estado !== 'sin_atencion') {
+
+            if (diaData.estado && diaData.estado !== 'sin_atencion' && diaData.fecha) {
+                 console.log(`Asignando onclick a día ${diaData.dia} con fecha ${diaData.fecha}`);
                  dayCell.onclick = () => mostrarSlotsDia(diaData.fecha);
             } else {
                 dayCell.style.cursor = 'not-allowed';
             }
             calendarGrid.appendChild(dayCell);
         });
+        console.log('Finalizado renderizarCalendario.');
     }
 
     async function mostrarSlotsDia(fechaStr) {
+        console.log(`Iniciando mostrarSlotsDia para fecha: ${fechaStr}`);
         const modal = document.getElementById('slotsModal');
         const modalTitle = document.getElementById('modal-title');
         const timeSlotsDiv = document.getElementById('time-slots');
         const modalLoading = document.getElementById('modal-loading');
         const noSlotsMessage = document.getElementById('no-slots-message');
+
+        if (!modal || !modalTitle || !timeSlotsDiv || !modalLoading || !noSlotsMessage) {
+            console.error("Algunos elementos del modal no fueron encontrados en el DOM.");
+            return;
+        }
 
         modalTitle.textContent = `Horarios para ${formatearFecha(fechaStr)}`;
         timeSlotsDiv.innerHTML = '';
@@ -422,43 +325,54 @@
 
         try {
             const response = await fetch(`${SLOTS_DIA_URL}?fecha=${fechaStr}`);
-            if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+            console.log(`Respuesta de API slots para ${fechaStr}, status:`, response.status);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Error en respuesta del servidor (slots):', response.status, errorText);
+                throw new Error(`Error del servidor: ${response.status}, ${errorText}`);
+            }
             const data = await response.json();
+            console.log('Datos JSON recibidos de la API slots-dia:', data);
 
             modalLoading.classList.add('hidden');
-            if (data.success && data.slots && data.slots.length > 0) {
-                data.slots.forEach(slot => {
-                    const slotElement = document.createElement('div');
-                    slotElement.className = `time-slot-custom ${slot.disponible ? 'disponible' : 'ocupado'}`;
-                    slotElement.textContent = slot.hora;
-                    if (slot.disponible) {
-                        slotElement.onclick = () => redirigirAgendarCita(fechaStr, slot.hora);
-                    }
-                    timeSlotsDiv.appendChild(slotElement);
-                });
-            } else if (data.success && data.slots && data.slots.length === 0) {
-                 noSlotsMessage.textContent = data.mensaje || "No hay horarios disponibles o no hay atención este día.";
-                 noSlotsMessage.classList.remove('hidden');
+            if (data.success && data.slots) {
+                if (data.slots.length > 0) {
+                    data.slots.forEach(slot => {
+                        const slotElement = document.createElement('div');
+                        slotElement.className = `time-slot-custom ${slot.disponible ? 'disponible' : 'ocupado'}`;
+                        slotElement.textContent = slot.hora;
+                        if (slot.disponible) {
+                            console.log(`Slot disponible ${slot.hora} para ${fechaStr}, asignando onclick.`);
+                            slotElement.onclick = () => redirigirAgendarCita(fechaStr, slot.hora);
+                        }
+                        timeSlotsDiv.appendChild(slotElement);
+                    });
+                } else {
+                     noSlotsMessage.textContent = data.mensaje || "No hay horarios disponibles o no hay atención este día.";
+                     noSlotsMessage.classList.remove('hidden');
+                }
             } else {
-                 noSlotsMessage.textContent = data.error || "Error al cargar los horarios.";
+                 noSlotsMessage.textContent = data.error || "Error al cargar los horarios (datos inválidos).";
                  noSlotsMessage.classList.remove('hidden');
+                 console.error('La API no devolvió success:true o faltan datos de slots:', data.error || 'Error desconocido');
             }
         } catch (error) {
-            console.error('Error fetching slots:', error);
+            console.error(`Error en fetch o procesamiento de datos de slots para ${fechaStr}:`, error);
             modalLoading.classList.add('hidden');
-            noSlotsMessage.textContent = "Error de conexión al cargar horarios.";
+            noSlotsMessage.textContent = `Error de conexión o procesamiento: ${error.message}`;
             noSlotsMessage.classList.remove('hidden');
         }
     }
 
     function redirigirAgendarCita(fecha, hora) {
-        // Redirige al formulario de creación de CitaMedica, pasando fecha y hora como parámetros GET.
-        // El formulario CitaMedicaForm debe estar preparado para recibir estos parámetros.
+        console.log(`Redirigiendo para agendar cita: fecha=${fecha}, hora=${hora}`);
         window.location.href = `${AGENDAR_CITA_FORM_URL_BASE}?fecha=${fecha}&hora=${hora}`;
     }
 
     function cerrarModal() {
-        document.getElementById('slotsModal').style.display = 'none';
+        const modal = document.getElementById('slotsModal');
+        if (modal) modal.style.display = 'none';
+        console.log('Modal cerrado.');
     }
 
     function formatearFecha(fechaStr) {
@@ -466,7 +380,6 @@
         return `${day}/${month}/${year}`;
     }
 
-    // Cerrar modal al hacer clic fuera o presionar Escape
     window.onclick = function(event) {
         const modal = document.getElementById('slotsModal');
         if (event.target === modal) {
@@ -480,8 +393,9 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM completamente cargado y parseado.');
         popularSelectoresFecha();
-        cargarCalendarioDesdeServidor(); // Carga inicial
+        cargarCalendarioDesdeServidor();
     });
 </script>
 {% endblock %}
