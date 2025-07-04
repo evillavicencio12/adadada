@@ -65,11 +65,11 @@ class CitaMedica(models.Model):
 class Atencion(models.Model):
     # Paciente que recibe esta atención médica
     paciente = models.ForeignKey(
-        'core.Paciente',
+        'Patient',  # Changed from 'core.Paciente'
         on_delete=models.PROTECT,
         verbose_name="Paciente",
-        related_name="atenciones",
-        help_text="Paciente que recibe esta atención médica."
+        related_name="atenciones_doctor", # Changed related_name to avoid clash if 'core.Paciente' also has 'atenciones'
+        help_text="Paciente que recibe esta atención médica (modelo doctor.Patient)."
     )
 
     # Fecha y hora en que se realizó la atención

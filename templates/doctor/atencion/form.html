@@ -39,7 +39,10 @@
                         {% render_field form.paciente_nombre class+="form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %}
                         {% render_field form.paciente %} {# Campo oculto para el ID #}
                         <button type="button" id="buscarPacienteBtn" class="mt-2 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition duration-150">
-                            <i class="fas fa-search mr-1"></i> Buscar Paciente
+                            <i class="fas fa-search mr-1"></i> Buscar Paciente Existente
+                        </button>
+                        <button type="button" id="crearPacienteBtn" class="mt-2 ml-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition duration-150">
+                            <i class="fas fa-user-plus mr-1"></i> Crear Nuevo Paciente
                         </button>
                     </div>
                     <div id="infoPacienteSeleccionado" class="md:col-span-2 text-sm text-gray-600">
@@ -181,9 +184,12 @@
                         {% render_field form.examenes_enviados class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="2" %}
                         {% if form.examenes_enviados.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.examenes_enviados.errors|join:", " }}</p>{% endif %}
                     </div>
-                    <div>
+                    <div class="relative">
                         <label for="{{ form.comentario_adicional.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.comentario_adicional.label }}</label>
-                        {% render_field form.comentario_adicional class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="2" %}
+                        {% render_field form.comentario_adicional class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10" rows="2" %}
+                        <button type="button" id="startVoiceComentario" title="Grabar comentario por voz" class="absolute top-7 right-2 p-2 text-gray-500 hover:text-blue-500 focus:outline-none">
+                            <i class="fas fa-microphone"></i>
+                        </button>
                         {% if form.comentario_adicional.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.comentario_adicional.errors|join:", " }}</p>{% endif %}
                     </div>
                 </div>
@@ -207,6 +213,73 @@
 
 <!-- Modal para buscar paciente -->
 {% include "fragments/modal_paciente.html" %}
+
+<!-- Modal para Crear Nuevo Paciente -->
+<div id="crearPacienteModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title-crear-paciente" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <form id="formCrearPaciente">
+                {% csrf_token %} <!-- Important for AJAX POST -->
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-green-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="fas fa-user-plus text-green-600"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title-crear-paciente">Crear Nuevo Paciente</h3>
+                            <div class="mt-4 space-y-3">
+                                <!-- Simplified PatientForm fields - ideally, load this form via AJAX from a view -->
+                                <div>
+                                    <label for="id_Primer_nombre_modal" class="block text-sm font-medium text-gray-700">Nombres</label>
+                                    <input type="text" name="Primer_nombre" id="id_Primer_nombre_modal" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_apellido_modal" class="block text-sm font-medium text-gray-700">Apellidos</label>
+                                    <input type="text" name="apellido" id="id_apellido_modal" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_dni_modal" class="block text-sm font-medium text-gray-700">Cédula/DNI</label>
+                                    <input type="text" name="dni" id="id_dni_modal" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_birth_date_modal" class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
+                                    <input type="date" name="birth_date" id="id_birth_date_modal" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_gender_modal" class="block text-sm font-medium text-gray-700">Género</label>
+                                    <select name="gender" id="id_gender_modal" required class="mt-1 form-select block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                        <option value="M">Masculino</option>
+                                        <option value="F">Femenino</option>
+                                        <option value="O">Otro</option>
+                                    </select>
+                                </div>
+                                <!-- Add other fields from PatientForm as needed: phone, email, address, blood_type -->
+                                 <div>
+                                    <label for="id_phone_modal" class="block text-sm font-medium text-gray-700">Teléfono (Opcional)</label>
+                                    <input type="text" name="phone" id="id_phone_modal" class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label for="id_email_modal" class="block text-sm font-medium text-gray-700">Email (Opcional)</label>
+                                    <input type="email" name="email" id="id_email_modal" class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" id="guardarNuevoPacienteBtn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Guardar Paciente
+                    </button>
+                    <button type="button" id="cancelarCrearPacienteBtn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- Modal para previsualización -->
 <div id="previsualizacionModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -398,21 +471,215 @@ $(document).ready(function() {
         }
     });
     // (Función seleccionarPaciente como en tu modal_paciente.html)
-    function seleccionarPaciente(paciente) {
-        $('#{{ form.paciente_nombre.id_for_label }}').val(paciente.nombre_completo);
-        $('#{{ form.paciente.id_for_label }}').val(paciente.id).trigger('change'); // Trigger change para cualquier listener
+    function seleccionarPaciente(paciente_data) { // Renamed to paciente_data to avoid conflict
+        // Assuming paciente_data is an object with Primer_nombre, apellido, id, dni, birth_date, phone
+        $('#{{ form.paciente_nombre.id_for_label }}').val(`${paciente_data.Primer_nombre || ''} ${paciente_data.apellido || ''}`.trim());
+        $('#{{ form.paciente.id_for_label }}').val(paciente_data.id).trigger('change');
 
-        // Actualizar info del paciente en la página
-        let infoHtml = `<p><strong>Cédula:</strong> ${paciente.cedula || paciente.dni || 'N/A'}</p>
-                        <p><strong>Edad:</strong> ${paciente.edad || 'N/A'} años</p>
-                        <p><strong>Teléfono:</strong> ${paciente.telefono || 'N/A'}</p>`;
+        let edad = 'N/A';
+        if (paciente_data.birth_date) {
+            const birthDate = new Date(paciente_data.birth_date);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            edad = age;
+        }
+
+        let infoHtml = `<p><strong>Cédula:</strong> ${paciente_data.dni || 'N/A'}</p>
+                        <p><strong>Edad:</strong> ${edad} años</p>
+                        <p><strong>Teléfono:</strong> ${paciente_data.phone || 'N/A'}</p>`;
         $('#infoPacienteSeleccionado').html(infoHtml);
+        $('#pacienteSearchModal').addClass('hidden'); // Close search modal
+        $('#crearPacienteModal').addClass('hidden'); // Close create modal if open
     }
+
+    // Modal para Crear Nuevo Paciente
+    $('#crearPacienteBtn').click(function() {
+        $('#formCrearPaciente')[0].reset(); // Limpiar form
+        $('#crearPacienteModal').removeClass('hidden');
+    });
+    $('#cancelarCrearPacienteBtn').click(function() {
+        $('#crearPacienteModal').addClass('hidden');
+    });
+    $('#guardarNuevoPacienteBtn').click(function() {
+        var formData = $('#formCrearPaciente').serializeArray(); // serializa el form
+        var dataToSend = {};
+        formData.forEach(function(item){
+            dataToSend[item.name] = item.value;
+        });
+        // console.log("Data to send for new patient:", dataToSend); // For debugging
+
+        $.ajax({
+            url: "{% url 'doctor:ajax_create_patient' %}", // NUEVA URL
+            type: 'POST',
+            data: dataToSend, // No need to JSON.stringify if using jQuery's default content type
+            // contentType: 'application/json', // No if sending as form data
+            // dataType: 'json', // Expect JSON response
+            success: function(response) {
+                if (response.status === 'success' && response.paciente) {
+                    seleccionarPaciente(response.paciente); // Usa la misma función para actualizar campos
+                    $('#crearPacienteModal').addClass('hidden');
+                    alert("Paciente creado y seleccionado exitosamente.");
+                } else {
+                    // Display errors (simplistic alert, could be improved to show field-specific errors)
+                    let errorMessage = "Error al crear paciente.";
+                    if (response.errors) {
+                        try {
+                            const errors = JSON.parse(response.errors); // if errors is a JSON string
+                            for (const key in errors) {
+                                errorMessage += `\n${key}: ${errors[key].join(', ')}`;
+                            }
+                        } catch(e) {
+                             errorMessage += `\n${response.errors}`; // if errors is just a string
+                        }
+                    }
+                    alert(errorMessage);
+                }
+            },
+            error: function(xhr) {
+                console.error("Error AJAX:", xhr.responseText);
+                alert("Error de conexión al crear paciente. Revise la consola para más detalles.");
+            }
+        });
+    });
+
+
+    // Modal de búsqueda de paciente (actualizado para nueva URL y datos de doctor.Patient)
+    $('#buscarPacienteBtn').click(function() {
+        $('#formBuscarPaciente')[0].reset();
+        $('#resultadoBusquedaPaciente').html('');
+        $('#pacienteSearchModal').removeClass('hidden');
+    });
+    $('#closePacienteModal').click(function() {
+        $('#pacienteSearchModal').addClass('hidden');
+    });
+    // Actualizar la búsqueda por DNI para usar el nuevo endpoint y modelo
+    $('#buscarPacienteDniBtn').click(function() {
+        var dni = $('#search_dni_paciente').val();
+        if (dni) {
+            $.ajax({
+                url: "{% url 'doctor:ajax_search_patient_dni' %}", // NUEVA URL para buscar doctor.Patient
+                data: { 'dni': dni },
+                success: function(data) {
+                    var resultDiv = $('#resultadoBusquedaPaciente');
+                    resultDiv.html(''); // Limpiar resultados anteriores
+                    if (data.pacientes && data.pacientes.length > 0) {
+                        var paciente = data.pacientes[0]; // Asumimos que DNI es único
+                        seleccionarPaciente(paciente); // Usar la función global
+                        // Ya no se cierra el modal aquí, se cierra en seleccionarPaciente
+                    } else if (data.error) {
+                         resultDiv.html(`<p class="text-red-500">${data.error}</p>`);
+                    } else {
+                         resultDiv.html('<p class="text-yellow-500">Paciente no encontrado.</p>');
+                    }
+                },
+                error: function() {
+                     $('#resultadoBusquedaPaciente').html('<p class="text-red-500">Error al buscar paciente.</p>');
+                }
+            });
+        }
+    });
 
 
     // Modal de previsualización
     $('#previsualizarBtn').click(function() {
         // Aquí deberías recolectar los datos del formulario y enviarlos por AJAX
+            // ... (existing previsualizacionBtn click handler) ...
+    });
+    $('#cerrarPrevisualizacionBtn').click(function() {
+        $('#previsualizacionModal').addClass('hidden');
+    });
+
+    // Voice input for comentario_adicional
+    const startVoiceComentarioBtn = document.getElementById('startVoiceComentario');
+    const comentarioAdicionalTextarea = document.getElementById('{{ form.comentario_adicional.id_for_label }}');
+
+    if (startVoiceComentarioBtn && comentarioAdicionalTextarea) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false; // Capture a single phrase
+            recognition.lang = 'es-ES'; // Set language to Spanish
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            let listening = false;
+
+            startVoiceComentarioBtn.addEventListener('click', () => {
+                if (!listening) {
+                    recognition.start();
+                    listening = true;
+                    startVoiceComentarioBtn.classList.add('text-red-500');
+                    startVoiceComentarioBtn.querySelector('i').classList.add('fa-beat');
+                    // console.log("Voice recognition started");
+                } else {
+                    recognition.stop();
+                    listening = false;
+                    startVoiceComentarioBtn.classList.remove('text-red-500');
+                     startVoiceComentarioBtn.querySelector('i').classList.remove('fa-beat');
+                    // console.log("Voice recognition stopped manually");
+                }
+            });
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                // Append to existing text, or replace. Appending might be better.
+                comentarioAdicionalTextarea.value += (comentarioAdicionalTextarea.value ? ' ' : '') + transcript + '. ';
+                // console.log("Transcript:", transcript);
+            };
+
+            recognition.onspeechend = () => {
+                recognition.stop();
+                // console.log("Voice recognition ended due to speech end");
+            };
+
+            recognition.onnomatch = (event) => {
+                // console.log("No speech was recognized.");
+                alert("No se reconoció voz. Intente de nuevo.");
+            };
+
+            recognition.onerror = (event) => {
+                listening = false; // Reset listening state on error
+                startVoiceComentarioBtn.classList.remove('text-red-500');
+                startVoiceComentarioBtn.querySelector('i').classList.remove('fa-beat');
+                // console.error("Voice recognition error", event.error);
+                if (event.error === 'no-speech') {
+                    // This error is often triggered too quickly.
+                    // alert("No se detectó voz. Asegúrese de que el micrófono esté habilitado y hable claramente.");
+                } else if (event.error === 'audio-capture') {
+                    alert("Error de captura de audio. Asegúrese de que el micrófono esté conectado y permitido.");
+                } else if (event.error === 'not-allowed') {
+                    alert("Permiso para usar el micrófono denegado. Por favor, habilite el acceso al micrófono en la configuración de su navegador.");
+                } else {
+                    alert(`Error en el reconocimiento de voz: ${event.error}`);
+                }
+            };
+
+            recognition.onend = () => {
+                listening = false;
+                startVoiceComentarioBtn.classList.remove('text-red-500');
+                startVoiceComentarioBtn.querySelector('i').classList.remove('fa-beat');
+                // console.log("Voice recognition service disconnected.");
+            };
+
+        } else {
+            startVoiceComentarioBtn.style.display = 'none'; // Hide button if not supported
+            console.warn("Speech Recognition API not supported in this browser.");
+            // Optionally inform the user that the feature is not available
+            // var info = document.createElement('p');
+            // info.textContent = 'El dictado por voz no está disponible en este navegador.';
+            // comentarioAdicionalTextarea.parentNode.appendChild(info);
+        }
+    } else {
+        if (!startVoiceComentarioBtn) console.error("Button #startVoiceComentario not found");
+        if (!comentarioAdicionalTextarea) console.error("Textarea for comentario_adicional not found");
+    }
+
+
+    // Modal de previsualización
         // para obtener el HTML de previsualización.
         // var formData = $('#atencionForm').serialize();
         // $.ajax({

@@ -1,21 +1,23 @@
 from django import forms
-from applications.doctor.models import Atencion, DetalleAtencion
-from applications.core.models import Paciente, Diagnostico, Medicamento
+from applications.doctor.models import Atencion, DetalleAtencion, Patient as DoctorPatient
+from applications.core.models import Diagnostico, Medicamento # Paciente is no longer imported from core for this form
 from django.forms import inlineformset_factory
 
 class AtencionForm(forms.ModelForm):
     paciente_nombre = forms.CharField(
         label='Paciente',
-        required=True,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'paciente_nombre', 'readonly': 'readonly'})
+        required=True, # Will be handled by JS, but good to keep for non-JS fallback if any
+        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'paciente_nombre', 'placeholder': 'Buscar o seleccionar paciente...'}),
+        help_text="Seleccione un paciente existente o cree uno nuevo."
     )
+    # paciente field will now point to doctor.models.Patient
     paciente = forms.ModelChoiceField(
-        queryset=Paciente.objects.filter(activo=True), # Filtrar por pacientes activos
-        widget=forms.HiddenInput(),
-        required=False # Se popula desde la búsqueda o selección
+        queryset=DoctorPatient.objects.all(), # Initially all, can be filtered if needed e.g. by active status if 'doctor.Patient' has it
+        widget=forms.HiddenInput(), # ID is stored here, name is shown in paciente_nombre
+        required=True # An attention must have a patient
     )
     diagnostico = forms.ModelMultipleChoiceField(
-        queryset=Diagnostico.objects.filter(activo=True),
+        queryset=Diagnostico.objects.filter(activo=True), # Assuming core.Diagnostico is still used
         widget=forms.SelectMultiple(attrs={'class': 'form-control select2', 'multiple': 'multiple'}),
         required=False,
         label="Diagnósticos"
@@ -50,8 +52,16 @@ class AtencionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk and self.instance.paciente:
-            self.fields['paciente_nombre'].initial = self.instance.paciente.nombre_completo
+            # For DoctorPatient, the name is constructed from Primer_nombre and apellido
+            self.fields['paciente_nombre'].initial = f"{self.instance.paciente.Primer_nombre} {self.instance.paciente.apellido}"
             self.fields['paciente'].initial = self.instance.paciente.pk
+
+        # Ensure 'readonly' is removed from paciente_nombre if it was there before
+        self.fields['paciente_nombre'].widget.attrs.pop('readonly', None)
+
+        # Update queryset for paciente field to use DoctorPatient
+        self.fields['paciente'].queryset = DoctorPatient.objects.all()
+
 
         # Personalizar etiquetas
         self.fields['es_control'].label = "¿Es consulta de control?"
@@ -128,5 +138,6 @@ class AtencionFilterForm(forms.Form):
         queryset=Diagnostico.objects.filter(activo=True),
         required=False,
         label="Diagnóstico",
-        widget=forms.Select(attrs={'class': 'form-control select2'})
+        widget=forms.Select(attrs={'class': 'form-control select2'}),
+        help_text="Filtrar atenciones por diagnóstico." # Added help_text for clarity
     )

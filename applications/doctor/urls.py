@@ -1,9 +1,19 @@
 from django.urls import path
 from applications.doctor import views
+from applications.doctor.views import patient as patient_views
 
 app_name = 'doctor'
 
 urlpatterns = [
+    # Rutas para Patient
+    path('patients/', patient_views.PatientListView.as_view(), name='patient_list'),
+    path('patients/crear/', patient_views.PatientCreateView.as_view(), name='patient_create'),
+    path('patients/editar/<int:pk>/', patient_views.PatientUpdateView.as_view(), name='patient_update'),
+    path('patients/eliminar/<int:pk>/', patient_views.PatientDeleteView.as_view(), name='patient_delete'),
+    # Rutas AJAX para Patient (usadas en el formulario de Atencion)
+    path('ajax/patient/crear/', patient_views.ajax_create_patient, name='ajax_create_patient'),
+    path('ajax/patient/buscar/dni/', patient_views.ajax_search_patient_dni, name='ajax_search_patient_dni'),
+
     # Rutas para Atencion y DetalleAtencion (manejadas juntas)
     path('atenciones/', views.AtencionListView.as_view(), name='atencion_list'),
     path('atenciones/crear/', views.AtencionCreateView.as_view(), name='atencion_create'),
