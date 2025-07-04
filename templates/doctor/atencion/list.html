@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Listado de Atenciones Médicas{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-10">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-4xl font-semibold text-gray-800">Atenciones Médicas</h1>
+    {% if perms.doctor.add_atencion %}
+    <a href="{% url 'doctor:atencion_create' %}" class="bg-indigo-600 hover:bg-indigo-800 text-slate-100 font-medium py-2 px-5 rounded-lg shadow hover:shadow-lg transition-all duration-300">
+      <i class="fas fa-plus mr-2"></i> Nueva Atención
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Formulario de Filtro -->
+  <form method="get" class="bg-slate-50 border border-slate-200 shadow rounded-xl px-8 pt-6 pb-8 mb-10">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div>
+        <label for="{{ filter_form.paciente.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">{{ filter_form.paciente.label }}</label>
+        {% render_field filter_form.paciente class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-700 bg-white" placeholder="Nombre, Apellido o CI" %}
+      </div>
+      <div>
+        <label for="{{ filter_form.fecha_desde.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">{{ filter_form.fecha_desde.label }}</label>
+        {% render_field filter_form.fecha_desde class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-700 bg-white" %}
+      </div>
+      <div>
+        <label for="{{ filter_form.fecha_hasta.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">{{ filter_form.fecha_hasta.label }}</label>
+        {% render_field filter_form.fecha_hasta class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-700 bg-white" %}
+      </div>
+      <div>
+        <label for="{{ filter_form.diagnostico.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">{{ filter_form.diagnostico.label }}</label>
+        {% render_field filter_form.diagnostico class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none text-gray-700 bg-white select2-filter" %}
+      </div>
+    </div>
+    <div class="mt-8 flex justify-end gap-3">
+      <button type="submit" class="bg-green-600 hover:bg-green-800 text-slate-100 font-semibold py-2 px-5 rounded-md transition-colors duration-300">
+        <i class="fas fa-filter mr-2"></i> Filtrar
+      </button>
+      <a href="{% url 'doctor:atencion_list' %}" class="bg-gray-600 hover:bg-gray-800 text-slate-100 font-semibold py-2 px-5 rounded-md transition-colors duration-300">
+        <i class="fas fa-eraser mr-2"></i> Limpiar
+      </a>
+    </div>
+  </form>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 p-4 rounded-md text-slate-100 {% if message.tags == 'success' %}bg-green-600{% elif message.tags == 'error' %}bg-red-600{% else %}bg-indigo-600{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Tabla de resultados -->
+  <div class="overflow-x-auto bg-white shadow-md rounded-lg">
+    <table class="min-w-full text-sm text-left text-gray-700">
+      <thead class="bg-slate-200 text-gray-800 uppercase text-xs tracking-wider">
+        <tr>
+          <th class="px-6 py-4">Paciente</th>
+          <th class="px-6 py-4">Fecha Atención</th>
+          <th class="px-6 py-4">Motivo Consulta</th>
+          <th class="px-6 py-4">Diagnóstico(s)</th>
+          <th class="px-6 py-4">Acciones</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200">
+        {% for atencion in atenciones %}
+        <tr class="hover:bg-gray-100">
+          <td class="px-6 py-4">
+            <div class="font-medium">{{ atencion.paciente.nombre_completo }}</div>
+            <div class="text-xs text-gray-500">CI: {{ atencion.paciente.cedula_ecuatoriana|default:atencion.paciente.dni }}</div>
+          </td>
+          <td class="px-6 py-4">{{ atencion.fecha_atencion|date:"d/m/Y H:i" }}</td>
+          <td class="px-6 py-4">{{ atencion.motivo_consulta|truncatewords:10 }}</td>
+          <td class="px-6 py-4">
+            {% for diag in atencion.diagnostico.all %}
+              <span class="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full mr-2">{{ diag.descripcion }}</span>
+            {% empty %}
+              <span class="text-gray-500">N/A</span>
+            {% endfor %}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            {% if perms.doctor.change_atencion %}
+            <a href="{% url 'doctor:atencion_update' atencion.pk %}" class="text-indigo-600 hover:text-indigo-800 mr-4" title="Editar">
+              <i class="fas fa-edit"></i>
+            </a>
+            {% endif %}
+            {% if perms.doctor.delete_atencion %}
+            <a href="{% url 'doctor:atencion_delete' atencion.pk %}" class="text-red-600 hover:text-red-800" title="Eliminar">
+              <i class="fas fa-trash-alt"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center py-10 text-gray-500">
+            <i class="fas fa-folder-open fa-3x mb-3"></i>
+            <p class="text-xl">No hay atenciones registradas.</p>
+            {% if request.GET %}
+            <p class="mt-2">Intente con otros filtros o <a href="{% url 'doctor:atencion_list' %}" class="text-indigo-600 hover:underline">restablezca los filtros</a>.</p>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  {% if is_paginated %}
+  <div class="py-6 flex justify-center">
+    <nav class="inline-flex space-x-1">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+         class="px-3 py-2 rounded-md border border-indigo-500 text-indigo-600 hover:bg-indigo-100">
+        <i class="fas fa-chevron-left"></i>
+      </a>
+      {% endif %}
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <span class="px-3 py-2 rounded-md bg-indigo-600 text-slate-100 font-semibold">{{ num }}</span>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <a href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+           class="px-3 py-2 rounded-md border border-indigo-500 text-indigo-600 hover:bg-indigo-100">
+          {{ num }}
+        </a>
+        {% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+         class="px-3 py-2 rounded-md border border-indigo-500 text-indigo-600 hover:bg-indigo-100">
+        <i class="fas fa-chevron-right"></i>
+      </a>
+      {% endif %}
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+  $('.select2-filter').select2({
+    placeholder: "Seleccione un diagnóstico",
+    allowClear: true,
+    width: '100%'
+  });
+});
+</script>
+{% endblock %}
