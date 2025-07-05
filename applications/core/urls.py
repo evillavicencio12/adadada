@@ -3,6 +3,7 @@ from applications.core import views
 from .views.historialclinico import HistorialClinicoCreateView, HistorialClinicoDeleteView, HistorialClinicoDetailView, HistorialClinicoListView, HistorialClinicoUpdateView
 from applications.core.views.paciente import paciente_find, paciente_search_view
 from applications.core.views.medicamento import ajax_create_medicamento, ajax_search_medicamento
+from applications.core.views.GastoMensual import listar_tipos_gasto , crear_tipo_gasto , editar_tipo_gasto , cambiar_estado_tipo_gasto , reporte_gastos_por_tipo , ListarGastosMensuales , crear_gasto_mensual 
 app_name = 'core'
 
 urlpatterns = [
@@ -58,6 +59,14 @@ urlpatterns = [
     path('tipos-medicamentos/crear/', views.TipoMedicamentoCreateView.as_view(), name='tipomedicamento_create'),
     path('tipos-medicamentos/editar/<int:pk>/', views.TipoMedicamentoUpdateView.as_view(), name='tipomedicamento_update'),
     path('tipos-medicamentos/eliminar/<int:pk>/', views.TipoMedicamentoDeleteView.as_view(), name='tipomedicamento_delete'),
+    
+    path('gastos/', ListarGastosMensuales.as_view(), name='listar_gastos_mensuales'),
+    path('gastos/crear/', crear_gasto_mensual, name='crear_gasto_mensual'),
+    path('gastos/tipos/', listar_tipos_gasto, name='listar_tipos_gasto'),
+    path('gastos/tipos/crear/', crear_tipo_gasto, name='crear_tipo_gasto'),
+    path('gastos/tipos/<int:id>/editar/', editar_tipo_gasto, name='editar_tipo_gasto'),
+    path('gastos/tipos/<int:id>/cambiar_estado/', cambiar_estado_tipo_gasto, name='cambiar_estado_tipo_gasto'),
+    path('gastos/reportes/', reporte_gastos_por_tipo, name='reporte_gastos_por_tipo'),
 ]
 
 

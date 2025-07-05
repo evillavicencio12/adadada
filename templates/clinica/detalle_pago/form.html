@@ -1,0 +1,132 @@
+<!-- templates/clinica/detalle_pago/form.html -->
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %} <!-- Asegúrate de tener django-crispy-forms instalado y configurado en settings.py -->
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4>
+                        {% if view.__class__.__name__ == 'DetallePagoDeleteView' %}
+                            {% translate "Confirm Deletion of Payment Detail" %}
+                        {% elif object %}
+                            {% blocktranslate with service_name=object.servicio_adicional|truncatechars:30 %}Edit Payment Detail: {{ service_name }}{% endblocktranslate %}
+                        {% else %}
+                            {% translate "Create New Payment Detail" %}
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        {% if view.__class__.__name__ == 'DetallePagoDeleteView' %}
+                            <p>{% translate "Are you sure you want to delete the following payment detail?" %}</p>
+                            <ul class="list-group mb-3">
+                                <li class="list-group-item"><strong>{% translate "Service" %}:</strong> {{ object.servicio_adicional }}</li>
+                                <li class="list-group-item"><strong>{% translate "Quantity" %}:</strong> {{ object.cantidad }}</li>
+                                <li class="list-group-item"><strong>{% translate "Subtotal" %}:</strong> {{ object.subtotal|floatformat:2 }}</li>
+                                {% if object.pago %}
+                                <li class="list-group-item"><strong>{% translate "Associated with Payment ID" %}:</strong> {{ object.pago.id }}</li>
+                                {% endif %}
+                            </ul>
+                        {% else %}
+                            {% if form.non_field_errors %}
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    {% for error in form.non_field_errors %}
+                                        <p class="mb-0">{{ error }}</p>
+                                    {% endfor %}
+                                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                            {% endif %}
+                            
+                            {% crispy form %}
+                        {% endif %}
+
+                        <div class="mt-4 d-flex justify-content-end">
+                            <a href="{% url 'doctor:detalle_pago_list' %}" class="btn btn-outline-secondary mr-2">
+                                {% translate "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn 
+                                {% if view.__class__.__name__ == 'DetallePagoDeleteView' %}
+                                    btn-danger
+                                {% else %}
+                                    btn-success
+                                {% endif %}
+                            ">
+                                {% if view.__class__.__name__ == 'DetallePagoDeleteView' %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill mr-1" viewBox="0 0 16 16">
+                                        <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
+                                    </svg>
+                                    {% translate "Yes, Delete" %}
+                                {% else %}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle-fill mr-1" viewBox="0 0 16 16">
+                                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                                    </svg>
+                                    {% translate "Save Changes" %}
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if object and object.pago and view.__class__.__name__ != 'DetallePagoDeleteView' %}
+                <p class="mt-3 text-center">
+                    {# Idealmente, enlazar a la vista de detalle del Pago principal #}
+                    <a href="#">{% translate "View Associated Payment" %} (ID: {{ object.pago.id }})</a>
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const aplicaSeguroCheckbox = document.querySelector('#id_aplica_seguro');
+    const valorSeguroField = document.querySelector('#id_valor_seguro');
+    const descripcionSeguroField = document.querySelector('#id_descripcion_seguro');
+
+    // Función para actualizar el estado de los campos de seguro
+    function toggleSeguroFields() {
+        if (!aplicaSeguroCheckbox || !valorSeguroField || !descripcionSeguroField) {
+            // Si alguno de los campos no existe, no hacer nada.
+            return;
+        }
+
+        const isChecked = aplicaSeguroCheckbox.checked;
+        
+        // Habilitar/deshabilitar campos
+        valorSeguroField.disabled = !isChecked;
+        descripcionSeguroField.disabled = !isChecked;
+
+        // Si "Aplica Seguro" no está marcado, podrías limpiar los campos,
+        // aunque la lógica de limpieza principal está en el `clean` del formulario.
+        // Esto es más para la UX.
+        if (!isChecked) {
+            // valorSeguroField.value = ''; // Comentado para no perder datos si se desmarca por error
+            // descripcionSeguroField.value = ''; // Comentado
+        }
+        
+        // Podrías también añadir/quitar una clase para ocultar/mostrar visualmente
+        // el contenedor de los campos si es necesario.
+        // Ejemplo: document.querySelector('#div_id_valor_seguro').style.display = isChecked ? '' : 'none';
+        // (Esto depende de cómo Crispy Forms (o tu renderizador) estructure el HTML)
+    }
+
+    if (aplicaSeguroCheckbox) {
+        // Ejecutar al cargar la página para establecer el estado inicial
+        toggleSeguroFields();
+        // Añadir listener para cambios
+        aplicaSeguroCheckbox.addEventListener('change', toggleSeguroFields);
+    }
+});
+</script>
+{% endblock %}
