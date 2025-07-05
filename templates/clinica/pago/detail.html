@@ -1,145 +1,264 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% load static %} {# Para static si usas alguna imagen o CSS específico aquí #}
+{% load static %}
+
+{% block title %}{% translate "Detalle del Pago" %} #{{ pago.id|stringformat:"03d" }}{% endblock %}
+
+{% block extrastyles %}
+{{ block.super }}
+<style>
+    .card-header-custom-info {
+        background-color: #4A5568; /* Un gris oscuro elegante para info */
+        color: white;
+    }
+    .card-header-custom-info .btn-light {
+        --bs-btn-hover-bg: #718096;
+        --bs-btn-hover-border-color: #718096;
+        --bs-btn-hover-color: white;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #4A5568; /* Gris oscuro */
+        font-size: 0.9rem;
+    }
+    .info-value {
+        color: #2D3748; /* Gris muy oscuro */
+        font-size: 0.95rem;
+    }
+    .info-value .badge { /* Para el estado del pago */
+        font-size: 0.85rem;
+        padding: 0.4em 0.7em;
+    }
+    .monto-total-display {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #5a67d8; /* Color primario */
+    }
+    .section-divider {
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    .detalles-card {
+        background-color: #f8f9fc; /* Fondo ligeramente diferente para la sección de detalles */
+        border: 1px solid #e9ecef;
+        border-radius: .5rem;
+    }
+    .detalle-item {
+        border-bottom: 1px solid #e9ecef;
+        padding: 1rem;
+    }
+    .detalle-item:last-child {
+        border-bottom: none;
+    }
+    .detalle-item h6 {
+        font-weight: 600;
+        color: #374151;
+    }
+    .detalle-item .text-muted {
+        font-size: 0.85rem;
+    }
+    .detalle-item .subtotal {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #10b981; /* Verde para subtotal */
+    }
+    .card-footer-custom {
+        background-color: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        font-size: 0.8rem;
+        color: #718096;
+    }
+    .img-thumbnail-custom {
+        border: 1px solid #dee2e6;
+        padding: .25rem;
+        background-color: #fff;
+        border-radius: .375rem;
+        max-width: 250px;
+        max-height: 250px;
+        object-fit: cover; /* Para que la imagen se ajuste bien */
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-5">
+<div class="container mt-4 my-md-5">
     <div class="row justify-content-center">
-        <div class="col-md-10 col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0">
+        <div class="col-md-10 col-lg-9">
+            <div class="card shadow-lg border-0" style="border-radius: .75rem;">
+                <div class="card-header card-header-custom-info d-flex justify-content-between align-items-center p-3">
+                    <h4 class="mb-0 h5">
                         <i class="fas fa-file-invoice-dollar me-2"></i>
-                        {% translate "Detalle del Pago" %} #{{ pago.id|stringformat:"03d" }}
+                        {% translate "Detalle del Pago" %} #{{ pago.id|stringformat:"04d" }}
                     </h4>
                     <div>
                         <a href="{% url 'doctor:pago_update' pago.pk %}" class="btn btn-sm btn-light me-2" title="{% translate 'Editar Pago' %}">
                             <i class="fas fa-edit"></i> {% translate "Editar" %}
                         </a>
-                        <a href="{% url 'doctor:pago_list' %}" class="btn btn-sm btn-outline-light" title="{% translate 'Volver a la Lista de Pagos' %}">
+                        <a href="{% url 'doctor:pago_list' %}" class="btn btn-sm btn-outline-light" title="{% translate 'Volver a la Lista' %}">
                             <i class="fas fa-list"></i> {% translate "Lista" %}
                         </a>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <p><strong>{% translate "ID de Pago:" %}</strong> #{{ pago.id|stringformat:"03d" }}</p>
-                            {% if pago.atencion %}
-                            <p><strong>{% translate "Atención Médica:" %}</strong>
-                                <a href="#"> {# Reemplazar con url 'doctor:atencion_detail' pago.atencion.pk si existe #}
-                                    {{ pago.atencion }}
-                                </a>
-                            </p>
-                            {% if pago.atencion.paciente %}
-                            <p><strong>{% translate "Paciente:" %}</strong> {{ pago.atencion.paciente.nombre_completo }} ({{ pago.atencion.paciente.dni }})</p>
-                            {% endif %}
-                            {% else %}
-                            <p><strong>{% translate "Atención Médica:" %}</strong> <span class="text-muted">{% translate "No especificada" %}</span></p>
-                            {% endif %}
-                            <p><strong>{% translate "Método de Pago:" %}</strong> {{ pago.get_metodo_pago_display }}</p>
-                            <p><strong>{% translate "Estado:" %}</strong>
-                                <span class="badge bg-{% if pago.estado == 'PAGADO' %}success{% elif pago.estado == 'PENDIENTE' %}warning text-dark{% else %}danger{% endif %}">
-                                    {{ pago.get_estado_display }}
-                                </span>
-                            </p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>{% translate "Monto Total:" %}</strong> <span class="fs-5 fw-bold text-primary">${{ pago.monto_total|floatformat:2 }}</span></p>
-                            <p><strong>{% translate "Fecha de Creación:" %}</strong> {{ pago.date_creation|date:"d/m/Y H:i" }}</p>
-                            {% if pago.fecha_pago %}
-                            <p><strong>{% translate "Fecha de Pago:" %}</strong> {{ pago.fecha_pago|date:"d/m/Y H:i" }}</p>
-                            {% endif %}
-                            {% if pago.nombre_pagador %}
-                            <p><strong>{% translate "Pagado por:" %}</strong> {{ pago.nombre_pagador }}</p>
-                            {% endif %}
-                            {% if pago.referencia_externa %}
-                            <p><strong>{% translate "Referencia Externa:" %}</strong> {{ pago.referencia_externa }}</p>
-                            {% endif %}
-                            <p><strong>{% translate "Activo:" %}</strong>
-                                {% if pago.activo %}
-                                    <i class="fas fa-check-circle text-success"></i> {% translate "Sí" %}
-                                {% else %}
-                                    <i class="fas fa-times-circle text-danger"></i> {% translate "No" %}
+
+                <div class="card-body p-4 p-md-5">
+                    <div class="row mb-4">
+                        <div class="col-lg-7">
+                            <h5 class="mb-3 text-primary">{% translate "Información General del Pago" %}</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <span class="info-label d-block">{% translate "ID de Pago:" %}</span>
+                                    <span class="info-value">#{{ pago.id|stringformat:"04d" }}</span>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <span class="info-label d-block">{% translate "Estado:" %}</span>
+                                    <span class="info-value">
+                                        <span class="badge estado-{{ pago.estado }}">
+                                            {{ pago.get_estado_display }}
+                                        </span>
+                                    </span>
+                                </div>
+                                {% if pago.atencion %}
+                                <div class="col-md-12 mb-3">
+                                    <span class="info-label d-block">{% translate "Atención Médica:" %}</span>
+                                    <span class="info-value">
+                                        <a href="{% url 'doctor:atencion_detail' pago.atencion.pk %}" class="text-decoration-none"> {# Asumiendo que tienes atencion_detail #}
+                                            {{ pago.atencion }}
+                                        </a>
+                                        {% if pago.atencion.paciente %}
+                                            <small class="d-block text-muted">{% translate "Paciente:" %} {{ pago.atencion.paciente.nombre_completo }} ({{ pago.atencion.paciente.dni }})</small>
+                                        {% endif %}
+                                    </span>
+                                </div>
                                 {% endif %}
-                            </p>
+                                <div class="col-md-6 mb-3">
+                                    <span class="info-label d-block">{% translate "Método de Pago:" %}</span>
+                                    <span class="info-value">{{ pago.get_metodo_pago_display }}</span>
+                                </div>
+                                {% if pago.fecha_pago %}
+                                <div class="col-md-6 mb-3">
+                                    <span class="info-label d-block">{% translate "Fecha de Pago:" %}</span>
+                                    <span class="info-value">{{ pago.fecha_pago|date:"d/m/Y, H:i" }}</span>
+                                </div>
+                                {% endif %}
+                                {% if pago.nombre_pagador %}
+                                <div class="col-md-6 mb-3">
+                                    <span class="info-label d-block">{% translate "Pagado por:" %}</span>
+                                    <span class="info-value">{{ pago.nombre_pagador }}</span>
+                                </div>
+                                {% endif %}
+                                {% if pago.referencia_externa %}
+                                <div class="col-md-6 mb-3">
+                                    <span class="info-label d-block">{% translate "Referencia Externa:" %}</span>
+                                    <span class="info-value">{{ pago.referencia_externa }}</span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-lg-5 text-lg-end">
+                             <h5 class="mb-3 text-primary d-none d-lg-block">&nbsp;</h5> {# Spacer for alignment #}
+                            <div class="mb-3">
+                                <span class="info-label d-block text-lg-end">{% translate "Monto Total:" %}</span>
+                                <span class="monto-total-display d-block">${{ pago.monto_total|floatformat:2 }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <span class="info-label d-block text-lg-end">{% translate "Activo:" %}</span>
+                                <span class="info-value">
+                                    {% if pago.activo %}
+                                        <i class="fas fa-check-circle text-success"></i> {% translate "Sí" %}
+                                    {% else %}
+                                        <i class="fas fa-times-circle text-danger"></i> {% translate "No" %}
+                                    {% endif %}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
                     {% if pago.observaciones %}
-                    <div class="mb-3">
-                        <h5>{% translate "Observaciones del Pago:" %}</h5>
-                        <p class="text-muted" style="white-space: pre-wrap;">{{ pago.observaciones }}</p>
+                    <div class="mb-4">
+                        <h6 class="info-label">{% translate "Observaciones del Pago:" %}</h6>
+                        <p class="info-value bg-light p-3 rounded" style="white-space: pre-wrap;">{{ pago.observaciones }}</p>
                     </div>
                     {% endif %}
 
                     {% if pago.evidencia_pago %}
-                    <div class="mb-3">
-                        <h5>{% translate "Evidencia de Pago:" %}</h5>
-                        <a href="{{ pago.evidencia_pago.url }}" target="_blank">
-                            <img src="{{ pago.evidencia_pago.url }}" alt="{% translate 'Evidencia de Pago' %}" class="img-thumbnail" style="max-width: 300px; max-height: 300px;">
+                    <div class="mb-4">
+                        <h6 class="info-label">{% translate "Evidencia de Pago:" %}</h6>
+                        <a href="{{ pago.evidencia_pago.url }}" target="_blank" data-bs-toggle="tooltip" title="{% translate 'Ver imagen completa' %}">
+                            <img src="{{ pago.evidencia_pago.url }}" alt="{% translate 'Evidencia de Pago' %}" class="img-thumbnail-custom">
                         </a>
                     </div>
                     {% endif %}
 
-                    <hr class="my-4">
+                    <div class="section-divider"></div>
 
-                    <div>
-                        <h5>{% translate "Detalles de este Pago" %}</h5>
-                        <div id="detalle-pago-list-container" class="mb-3">
-                            {% for detalle in pago.detalles_doctor_app.all %}
-                                <div class="card mb-2">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="card-title mb-1">{{ detalle.servicio_adicional.nombre_servicio }}</h6>
-                                                <p class="card-text mb-0">
-                                                    <small>
-                                                        {% translate "Cantidad:" %} {{ detalle.cantidad }} &times;
-                                                        {% translate "P. Unit.:" %} ${{ detalle.precio_unitario|floatformat:2 }}
-                                                        {% if detalle.descuento_porcentaje > 0 %}
-                                                        | {% translate "Desc.:" %} {{ detalle.descuento_porcentaje|floatformat:0 }}%
-                                                        {% endif %}
-                                                    </small>
-                                                </p>
-                                                {% if detalle.aplica_seguro %}
-                                                <p class="card-text mb-0">
-                                                    <small>
-                                                        <i class="fas fa-shield-alt text-info"></i> {% translate "Seguro:" %} {{ detalle.descripcion_seguro }} - {% translate "Valor Cubierto:" %} ${{ detalle.valor_seguro|floatformat:2 }}
-                                                    </small>
-                                                </p>
-                                                {% endif %}
-                                            </div>
-                                            <div class="text-end">
-                                                <p class="fw-bold fs-5 mb-1">${{ detalle.subtotal|floatformat:2 }}</p>
-                                                <div>
-                                                    <a href="{% url 'doctor:detalle_pago_update' detalle.pk %}" class="btn btn-sm btn-outline-primary py-0 px-1" title="{% translate 'Editar Detalle' %}"><i class="fas fa-edit"></i></a>
-                                                    <a href="{% url 'doctor:detalle_pago_delete' detalle.pk %}" class="btn btn-sm btn-outline-danger py-0 px-1" title="{% translate 'Eliminar Detalle' %}"><i class="fas fa-trash"></i></a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            {% empty %}
-                                <p class="text-muted"><em>{% translate "No hay detalles para este pago." %}</em></p>
-                            {% endfor %}
-                        </div>
-                        <div class="mt-3">
-                            <a href="{% url 'doctor:detalle_pago_create' %}?pago_id={{ pago.pk }}" class="btn btn-sm btn-info">
-                                <i class="fas fa-plus me-1"></i> {% translate "Añadir Nuevo Detalle de Pago" %}
+                    <div class="detalles-card p-3 p-md-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0 text-primary">{% translate "Desglose del Pago" %}</h5>
+                            <a href="{% url 'doctor:detalle_pago_create' %}?pago_id={{ pago.pk }}" class="btn btn-sm btn-success rounded-pill py-1 px-3">
+                                <i class="fas fa-plus me-1"></i> {% translate "Añadir Detalle" %}
                             </a>
                         </div>
+
+                        {% for detalle in pago.detalles_doctor_app.all %}
+                            <div class="detalle-item">
+                                <div class="row align-items-center">
+                                    <div class="col-md-7">
+                                        <h6>{{ detalle.servicio_adicional.nombre_servicio }}</h6>
+                                        <p class="text-muted mb-1">
+                                            {% translate "Cantidad:" %} {{ detalle.cantidad }} &times;
+                                            {% translate "P.U.:" %} ${{ detalle.precio_unitario|floatformat:2 }}
+                                            {% if detalle.descuento_porcentaje > 0 %}
+                                            <span class="text-warning">({% translate "Desc.:" %} {{ detalle.descuento_porcentaje|floatformat:0 }}%)</span>
+                                            {% endif %}
+                                        </p>
+                                        {% if detalle.aplica_seguro %}
+                                        <p class="text-muted mb-0">
+                                            <i class="fas fa-shield-alt text-info me-1"></i> {{ detalle.descripcion_seguro|default_if_none:"" }}
+                                            <span class="text-info">({% translate "Cubre:" %} ${{ detalle.valor_seguro|floatformat:2 }})</span>
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3 text-md-end mt-2 mt-md-0">
+                                        <span class="subtotal">${{ detalle.subtotal|floatformat:2 }}</span>
+                                    </div>
+                                    <div class="col-md-2 text-md-end mt-2 mt-md-0">
+                                        <a href="{% url 'doctor:detalle_pago_update' detalle.pk %}" class="btn btn-sm btn-outline-primary btn-action-custom me-1" title="{% translate 'Editar Detalle' %}"><i class="fas fa-edit"></i></a>
+                                        <a href="{% url 'doctor:detalle_pago_delete' detalle.pk %}" class="btn btn-sm btn-outline-danger btn-action-custom" title="{% translate 'Eliminar Detalle' %}"><i class="fas fa-trash"></i></a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted text-center py-3"><em>{% translate "No hay detalles para este pago." %}</em></p>
+                        {% endfor %}
                     </div>
 
                 </div>
-                <div class="card-footer text-muted text-sm">
-                    {% translate "Creado por:" %} {{ pago.user_creation|default:"N/A" }} {% translate "el" %} {{ pago.date_creation|date:"d/m/Y H:i" }}.
-                    {% if pago.user_updated %}
-                        {% translate "Última actualización por:" %} {{ pago.user_updated }} {% translate "el" %} {{ pago.date_updated|date:"d/m/Y H:i" }}.
-                    {% endif %}
+                <div class="card-footer card-footer-custom">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% translate "Creado por:" %} {{ pago.user_creation|default:"N/A" }} <span class="mx-1">&bull;</span> {{ pago.date_creation|date:"d/m/Y, H:i" }}
+                        </div>
+                        {% if pago.user_updated and pago.date_updated|timesince != pago.date_creation|timesince %}
+                        <div class="col-md-6 text-md-end">
+                            {% translate "Actualizado por:" %} {{ pago.user_updated }} <span class="mx-1">&bull;</span> {{ pago.date_updated|date:"d/m/Y, H:i" }}
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Inicializar tooltips de Bootstrap si se usan
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
 {% endblock %}

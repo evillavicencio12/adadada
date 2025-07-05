@@ -2,12 +2,55 @@
 {% load i18n %}
 {% load crispy_forms_tags %}
 
+{% block title %}
+    {% if object %}
+        {% translate "Editar Pago" %} #{{ object.id|stringformat:"03d" }}
+    {% else %}
+        {% translate "Registrar Nuevo Pago" %}
+    {% endif %}
+{% endblock %}
+
+{% block extrastyles %}
+{{ block.super }}
+<style>
+    .card-header-custom {
+        background-color: #5a67d8; /* Color primario del tema */
+        color: white;
+    }
+    .form-section-card {
+        border: 1px solid #e2e8f0;
+        border-radius: .5rem;
+        margin-bottom: 1.5rem;
+    }
+    .form-section-card .card-header {
+        background-color: #f8f9fc;
+        border-bottom: 1px solid #e2e8f0;
+        font-weight: 600;
+        color: #4a5568;
+        font-size: 1rem;
+        padding: 0.75rem 1.25rem;
+    }
+    .detalle-pago-item {
+        border: 1px solid #e9ecef;
+        border-radius: .375rem;
+        transition: box-shadow 0.2s ease-in-out;
+    }
+    .detalle-pago-item:hover {
+        box-shadow: 0 0 .5rem rgba(0,0,0,0.1);
+    }
+    .btn-action-detalle {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4 mb-5">
     <div class="row justify-content-center">
         <div class="col-md-10 col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
+            <div class="card shadow-lg border-0" style="border-radius: .75rem;">
+                <div class="card-header card-header-custom">
                     <h4 class="mb-0">
                         <i class="fas {% if object %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
                         {% if object %}
@@ -17,24 +60,70 @@
                         {% endif %}
                     </h4>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4 p-md-5">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
-                        {{ form|crispy }}
+                        {% comment %} Renderizar campos del formulario PagoForm con Crispy Forms {% endcomment %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    <p>{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.atencion|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.estado|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.metodo_pago|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mb-3" id="div_id_fecha_pago_wrapper"> {# Wrapper para JS #}
+                                {{ form.fecha_pago|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="row">
+                             <div class="col-md-6 mb-3">
+                                {{ form.nombre_pagador|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.referencia_externa|as_crispy_field }}
+                            </div>
+                        </div>
+                         <div class="mb-3">
+                            {{ form.observaciones|as_crispy_field }}
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.evidencia_pago|as_crispy_field }}
+                            </div>
+                             <div class="col-md-6 mb-3 align-self-center">
+                                {{ form.activo|as_crispy_field }}
+                            </div>
+                        </div>
 
                         {% if object and object.monto_total is not None %}
-                        <div class="alert alert-info mt-3">
-                            <strong>{% translate "Monto Total Calculado:" %}</strong> ${{ object.monto_total|floatformat:2 }}
-                            <br><small>({% translate "Este monto se actualiza automáticamente basado en los detalles del pago." %})</small>
+                        <div class="alert alert-info mt-4 py-3 d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="d-block fs-6">{% translate "Monto Total Calculado:" %}</strong>
+                                <small>({% translate "Este monto se actualiza automáticamente basado en los detalles del pago." %})</small>
+                            </div>
+                            <span class="fs-4 fw-bold text-primary">${{ object.monto_total|floatformat:2 }}</span>
                         </div>
                         {% endif %}
 
-                        <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
-                            <a href="{% if object and object.pk %}{% url 'doctor:pago_detail' object.pk %}{% else %}{% url 'doctor:pago_list' %}{% endif %}" class="btn btn-outline-secondary">
+                        <div class="mt-4 pt-4 border-top d-flex justify-content-end gap-2">
+                            <a href="{% if object and object.pk %}{% url 'doctor:pago_detail' object.pk %}{% else %}{% url 'doctor:pago_list' %}{% endif %}" class="btn btn-outline-secondary rounded-pill px-4">
                                 <i class="fas fa-times me-1"></i> {% translate "Cancelar" %}
                             </a>
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="btn btn-success rounded-pill px-4">
                                 <i class="fas fa-save me-1"></i> {% translate "Guardar Pago" %}
                             </button>
                         </div>
@@ -42,36 +131,41 @@
 
                     {% if object and object.pk %} {# Solo mostrar detalles si el objeto Pago ya existe #}
                         <hr class="my-4">
-                        <div>
-                            <h5>{% translate "Detalles de este Pago" %}</h5>
-                            {# Incluir aquí una sub-plantilla para listar y gestionar detalles de pago #}
-                            {# Ejemplo: {% include 'clinica/pago/partials/detalle_pago_inline_list.html' with pago=object %} #}
-
-                            <div id="detalle-pago-list-container" class="mb-3">
-                                {% for detalle in object.detalles_doctor_app.all %}
-                                    <div class="card mb-2">
-                                        <div class="card-body p-2 d-flex justify-content-between align-items-center">
-                                            <div>
-                                                {{ detalle.servicio_adicional.nombre_servicio }} ({{ detalle.cantidad }} x ${{ detalle.precio_unitario|floatformat:2 }})
-                                                {% if detalle.descuento_porcentaje > 0 %} - {% translate "Desc." %} {{ detalle.descuento_porcentaje|floatformat:0 }}%{% endif %}
-                                                {% if detalle.aplica_seguro %} ({% translate "Seguro:" %} ${{ detalle.valor_seguro|floatformat:2 }}){% endif %}
-                                                = <strong>${{ detalle.subtotal|floatformat:2 }}</strong>
-                                            </div>
-                                            <div>
-                                                <a href="{% url 'doctor:detalle_pago_update' detalle.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
-                                                <a href="{% url 'doctor:detalle_pago_delete' detalle.pk %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% empty %}
-                                    <p class="text-muted"><em>{% translate "No hay detalles para este pago todavía." %}</em></p>
-                                {% endfor %}
-                            </div>
-
-                            <div class="mt-3">
-                                <a href="{% url 'doctor:detalle_pago_create' %}?pago_id={{ object.pk }}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-plus me-1"></i> {% translate "Añadir Detalle de Pago" %}
+                        <div class="form-section-card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                {% translate "Detalles de este Pago" %}
+                                <a href="{% url 'doctor:detalle_pago_create' %}?pago_id={{ object.pk }}" class="btn btn-sm btn-primary rounded-pill py-1 px-3">
+                                    <i class="fas fa-plus me-1"></i> {% translate "Añadir Detalle" %}
                                 </a>
+                            </div>
+                            <div class="card-body p-3">
+                                {% if object.detalles_doctor_app.all %}
+                                    <ul class="list-group list-group-flush">
+                                        {% for detalle in object.detalles_doctor_app.all %}
+                                            <li class="list-group-item detalle-pago-item p-3 mb-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <h6 class="mb-0">{{ detalle.servicio_adicional.nombre_servicio }}</h6>
+                                                        <small class="text-muted">
+                                                            {{ detalle.cantidad }} &times; ${{ detalle.precio_unitario|floatformat:2 }}
+                                                            {% if detalle.descuento_porcentaje > 0 %} <span class="text-warning">(-{{ detalle.descuento_porcentaje|floatformat:0 }}%)</span>{% endif %}
+                                                            {% if detalle.aplica_seguro %} <span class="text-info">({% translate "Seguro:" %} ${{ detalle.valor_seguro|floatformat:2 }})</span>{% endif %}
+                                                        </small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <strong class="d-block mb-1 fs-5 text-success">${{ detalle.subtotal|floatformat:2 }}</strong>
+                                                        <div>
+                                                            <a href="{% url 'doctor:detalle_pago_update' detalle.pk %}" class="btn btn-outline-primary btn-action-detalle" title="{% translate 'Editar Detalle' %}"><i class="fas fa-edit"></i></a>
+                                                            <a href="{% url 'doctor:detalle_pago_delete' detalle.pk %}" class="btn btn-outline-danger btn-action-detalle" title="{% translate 'Eliminar Detalle' %}"><i class="fas fa-trash"></i></a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="text-muted text-center py-3"><em>{% translate "No hay detalles para este pago todavía." %}</em></p>
+                                {% endif %}
                             </div>
                         </div>
                     {% endif %}
@@ -86,25 +180,31 @@
 {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar Select2 para campos si es necesario (ej. campo 'atencion')
+    // Aplicar Select2 si los campos lo tienen configurado en el form
+    // Ejemplo: si 'atencion' es un ModelChoiceField que usa Select2
     // if (typeof $ !== 'undefined' && $.fn.select2) {
-    //     $('.select2bs4').select2({
-    //         theme: 'bootstrap4' // O el tema que estés usando con crispy-bootstrap4
+    //     $('#id_atencion').select2({ // Asegúrate que el ID sea correcto
+    //         theme: 'bootstrap-5', // O el tema que estés usando con crispy-bootstrap5
+    //         width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
+    //         placeholder: $(this).data('placeholder'),
+    //         allowClear: Boolean($(this).data('allow-clear')),
     //     });
     // }
 
     const estadoField = document.getElementById('id_estado');
-    const fechaPagoField = document.getElementById('id_fecha_pago');
-    const fechaPagoWrapper = document.getElementById('div_id_fecha_pago'); // Asumiendo Crispy Forms
+    // El ID del wrapper puede variar ligeramente con Crispy Forms, inspecciona el HTML generado.
+    // Comúnmente es 'div_id_nombre_del_campo'.
+    const fechaPagoWrapper = document.getElementById('div_id_fecha_pago_wrapper') || document.getElementById('div_id_fecha_pago');
+
 
     function toggleFechaPagoVisibility() {
-        if (estadoField && fechaPagoField && fechaPagoWrapper) {
-            if (estadoField.value === 'PAGADO') {
+        if (estadoField && fechaPagoWrapper) {
+            if (estadoField.value === 'PAGADO') { // Asegúrate que 'PAGADO' sea el valor real del choice
                 fechaPagoWrapper.style.display = '';
-                // La obligatoriedad se maneja en el modelo/formulario, pero se puede reforzar visualmente
             } else {
                 fechaPagoWrapper.style.display = 'none';
-                fechaPagoField.value = ''; // Limpiar si se oculta y no es pagado
+                const fechaPagoField = document.getElementById('id_fecha_pago');
+                if(fechaPagoField) fechaPagoField.value = ''; // Limpiar si se oculta y no es pagado
             }
         }
     }

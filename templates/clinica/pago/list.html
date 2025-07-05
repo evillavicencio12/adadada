@@ -1,383 +1,354 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lista de Pagos</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        
-        .page-header {
-            background: linear-gradient(135deg, #4f46e5, #06b6d4);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-        }
-        
-        .stats-card {
-            background: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        
-        .stat-item {
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #4f46e5;
-        }
-        
-        .stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        
-        .table-container {
-            background: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .btn-nuevo {
-            background: linear-gradient(135deg, #10b981, #059669);
-            border: none;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 500;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-nuevo:hover {
-            transform: translateY(-2px);
-            color: white;
-        }
-        
-        .estado-badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .estado-pendiente {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        
-        .estado-pagado {
-            background-color: #d1e7dd;
-            color: #0f5132;
-        }
-        
-        .estado-cancelado {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .search-box {
-            position: relative;
-        }
-        
-        .search-box input {
-            padding-left: 2.5rem;
-        }
-        
-        .search-box i {
-            position: absolute;
-            left: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #6c757d;
-        }
-        
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6c757d;
-        }
-        
-        .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-        
-        @media (max-width: 768px) {
-            .stats-card .row > div {
-                margin-bottom: 1rem;
-            }
-            
-            .table-responsive {
-                font-size: 0.875rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <div class="page-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <h1 class="mb-0">
-                        <i class="fas fa-credit-card me-3"></i>
-                        Gestión de Pagos
-                    </h1>
-                    <p class="mb-0 mt-2 opacity-75">Administra los pagos de las consultas médicas</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <a href="{% url 'doctor:pago_create' %}" class="btn btn-nuevo">
-                        <i class="fas fa-plus me-2"></i>
-                        Nuevo Pago
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
 
+{% block title %}{% translate "Lista de Pagos" %}{% endblock %}
+
+{% block extrastyles %}
+{{ block.super }}
+<style>
+    body {
+        /* background-color: #f8f9fa; Eliminado para heredar de base.html o usar uno más neutro si es necesario */
+    }
+
+    .page-header-custom {
+        background: linear-gradient(135deg, #667eea, #764ba2); /* Gradiente más suave y profesional */
+        color: white;
+        padding: 2.5rem 1.5rem; /* Aumentar padding */
+        margin-bottom: 2.5rem; /* Aumentar margen */
+        border-radius: .75rem; /* Bordes redondeados */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    .page-header-custom h1 {
+        font-weight: 300; /* Fuente más ligera para el título */
+        font-size: 2.25rem;
+    }
+    .page-header-custom p {
+        font-size: 1rem;
+        opacity: 0.85;
+    }
+
+    .stats-card-custom {
+        background: white;
+        border-radius: .75rem;
+        padding: 1.75rem; /* Aumentar padding */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.07); /* Sombra más sutil */
+        margin-bottom: 2.5rem;
+        border: 1px solid #e9ecef; /* Borde ligero */
+    }
+
+    .stat-item-custom .stat-number {
+        font-size: 2.25rem; /* Ligeramente más grande */
+        font-weight: 600; /* Más peso */
+        color: #4a5568; /* Color de texto principal */
+    }
+    .stat-item-custom .stat-number.text-primary { /* Para un número destacado */
+        color: #5a67d8;
+    }
+
+    .stat-item-custom .stat-label {
+        color: #718096; /* Gris más oscuro para etiquetas */
+        font-size: 0.875rem; /* Ligeramente más pequeño */
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+
+    .table-container-custom {
+        background: white;
+        border-radius: .75rem;
+        padding: 2rem; /* Aumentar padding */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+        border: 1px solid #e9ecef;
+    }
+
+    .btn-nuevo-custom {
+        background: #5a67d8; /* Color primario del tema */
+        /* background: linear-gradient(135deg, #5a67d8, #7f5af0); */
+        border: none;
+        color: white;
+        padding: 0.65rem 1.25rem; /* Ajustar padding */
+        border-radius: .5rem; /* Bordes más suaves */
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease-in-out;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .btn-nuevo-custom:hover {
+        background: #4c51bf; /* Un poco más oscuro al hacer hover */
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        color: white;
+    }
+
+    .estado-badge { /* Estilo base común */
+        padding: 0.35em 0.75em;
+        border-radius: 50px; /* Más redondeado (píldora) */
+        font-size: 0.78rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border: 1px solid transparent;
+    }
+
+    .estado-PENDIENTE { /* Usar los valores reales de los choices */
+        background-color: #fff3cd; /* Amarillo Bootstrap para warning */
+        color: #664d03;
+        border-color: #ffecb5;
+    }
+
+    .estado-PAGADO {
+        background-color: #d1e7dd; /* Verde Bootstrap para success */
+        color: #0f5132;
+        border-color: #badbcc;
+    }
+
+    .estado-CANCELADO { /* Asumiendo que podría haber un estado CANCELADO */
+        background-color: #f8d7da; /* Rojo Bootstrap para danger */
+        color: #58151c;
+        border-color: #f1aeB5;
+    }
+    .estado-ANULADO { /* Otro posible estado */
+        background-color: #e2e3e5; /* Gris Bootstrap para secondary */
+        color: #41464b;
+        border-color: #d3d6d8;
+    }
+
+    .search-box-custom .form-control,
+    .filter-box-custom .form-select {
+        border-radius: .5rem;
+        font-size: 0.9rem;
+        padding: .6rem 1rem;
+    }
+    .search-box-custom .input-group-text {
+        border-radius: .5rem 0 0 .5rem;
+    }
+
+    .table th {
+        font-weight: 600;
+        color: #4a5568;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-bottom-width: 1px; /* Línea más fina */
+    }
+    .table td {
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fc; /* Hover más sutil */
+    }
+
+    .btn-action-custom {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+        border-radius: .375rem;
+    }
+    .btn-action-custom.btn-outline-primary:hover { color: white; }
+    .btn-action-custom.btn-outline-danger:hover { color: white; }
+    .btn-action-custom.btn-outline-info:hover { color: white; }
+
+    .empty-state-custom {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        color: #a0aec0; /* Color de texto más suave */
+    }
+
+    .empty-state-custom i {
+        font-size: 3.5rem; /* Icono más grande */
+        margin-bottom: 1.5rem;
+        opacity: 0.6;
+    }
+    .empty-state-custom h5{
+        color: #4a5568;
+        font-weight: 500;
+    }
+    .pagination .page-link {
+        border-radius: .375rem;
+        margin: 0 3px;
+        color: #5a67d8;
+        border-color: #e2e8f0;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #5a67d8;
+        border-color: #5a67d8;
+        color: white;
+    }
+    .pagination .page-item.disabled .page-link {
+        color: #a0aec0;
+    }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="page-header-custom">
     <div class="container">
-        <!-- Estadísticas -->
-        <div class="stats-card">
-            <div class="row">
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
-                        <div class="stat-number" id="totalPagos">{{ pagos.count }}</div>
-                        <div class="stat-label">Total Pagos</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
-                        <div class="stat-number" id="pagosPendientes">{{ pagos_pendientes }}</div>
-                        <div class="stat-label">Pendientes</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
-                        <div class="stat-number" id="pagosPagados">{{ pagos_pagados }}</div>
-                        <div class="stat-label">Pagados</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
-                        <div class="stat-number" id="montoTotal">${{ monto_total|floatformat:2 }}</div>
-                        <div class="stat-label">Monto Total</div>
-                    </div>
-                </div>
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h1 class="mb-1">
+                    <i class="fas fa-file-invoice-dollar me-3"></i>
+                    {% translate "Gestión de Pagos" %}
+                </h1>
+                <p class="mb-0">{% translate "Administra los pagos de las consultas médicas y servicios." %}</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <a href="{% url 'doctor:pago_create' %}" class="btn btn-nuevo-custom">
+                    <i class="fas fa-plus me-2"></i>
+                    {% translate "Nuevo Pago" %}
+                </a>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Controles -->
-        <div class="table-container">
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <div class="search-box">
-                        <input type="text" class="form-control" placeholder="Buscar pagos..." id="searchInput">
-                        <i class="fas fa-search"></i>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select" id="estadoFilter">
-                        <option value="">Todos los estados</option>
-                        <option value="pendiente">Pendiente</option>
-                        <option value="pagado">Pagado</option>
-                        <option value="cancelado">Cancelado</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select" id="fechaFilter">
-                        <option value="">Todas las fechas</option>
-                        <option value="hoy">Hoy</option>
-                        <option value="semana">Esta semana</option>
-                        <option value="mes">Este mes</option>
-                    </select>
-                </div>
+<div class="container">
+    <!-- Estadísticas -->
+    <div class="stats-card-custom">
+        <div class="row text-center">
+            <div class="col-md-3 col-6 stat-item-custom mb-3 mb-md-0">
+                <div class="stat-number text-primary" id="totalPagos">{{ object_list.count }}</div>
+                <div class="stat-label">{% translate "Total Pagos" %}</div>
             </div>
-
-            <!-- Tabla -->
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>ID</th>
-                            <th>Paciente</th>
-                            <th>Doctor</th>
-                            <th>Monto</th>
-                            <th>Estado</th>
-                            <th>Fecha</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pagosTableBody">
-                        {% for pago in pagos %}
-                        <tr data-estado="{{ pago.estado }}">
-                            <td><strong>#{{ pago.id }}</strong></td>
-                            <td>{{ pago.atencion.paciente.nombres }} {{ pago.atencion.paciente.apellidos }}</td>
-                            <td>{{ pago.atencion.doctor.nombres }} {{ pago.atencion.doctor.apellidos }}</td>
-                            <td><strong>${{ pago.monto|floatformat:2 }}</strong></td>
-                            <td>
-                                <span class="estado-badge estado-{{ pago.estado }}">
-                                    {% if pago.estado == 'pagado' %}
-                                        <i class="fas fa-check-circle me-1"></i>
-                                    {% elif pago.estado == 'pendiente' %}
-                                        <i class="fas fa-clock me-1"></i>
-                                    {% else %}
-                                        <i class="fas fa-times-circle me-1"></i>
-                                    {% endif %}
-                                    {{ pago.get_estado_display }}
-                                </span>
-                            </td>
-                            <td>
-                                <div>
-                                    <strong>{{ pago.fecha_pago|date:"d/m/Y" }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ pago.fecha_pago|date:"H:i" }}</small>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'doctor:pago_update' pago.pk %}" class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form method="post" action="{% url 'doctor:pago_delete' pago.pk %}" class="d-inline" onsubmit="return confirm('¿Estás seguro de eliminar este pago?')">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-outline-danger btn-sm">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="text-center">
-                                <div class="empty-state">
-                                    <i class="fas fa-credit-card"></i>
-                                    <h5>No hay pagos registrados</h5>
-                                    <p>Comienza creando tu primer pago</p>
-                                    <a href="{% url 'doctor:pago_create' %}" class="btn btn-nuevo">
-                                        <i class="fas fa-plus me-2"></i>
-                                        Crear Primer Pago
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div class="col-md-3 col-6 stat-item-custom mb-3 mb-md-0">
+                <div class="stat-number" id="pagosPendientes">{{ pagos_pendientes_count|default:0 }}</div> {# Asume que pasas esto desde la vista #}
+                <div class="stat-label">{% translate "Pendientes" %}</div>
             </div>
-
-            <!-- Paginación -->
-            {% if pagos.has_other_pages %}
-            <nav aria-label="Navegación de páginas">
-                <ul class="pagination justify-content-center">
-                    {% if pagos.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1">&laquo; Primera</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ pagos.previous_page_number }}">Anterior</a>
-                        </li>
-                    {% endif %}
-
-                    {% for num in pagos.paginator.page_range %}
-                        {% if pagos.number == num %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ num }}</span>
-                            </li>
-                        {% elif num > pagos.number|add:'-3' and num < pagos.number|add:'3' %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-
-                    {% if pagos.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ pagos.next_page_number }}">Siguiente</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ pagos.paginator.num_pages }}">Última &raquo;</a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
+            <div class="col-md-3 col-6 stat-item-custom">
+                <div class="stat-number" id="pagosPagados">{{ pagos_pagados_count|default:0 }}</div> {# Asume que pasas esto desde la vista #}
+                <div class="stat-label">{% translate "Pagados" %}</div>
+            </div>
+            <div class="col-md-3 col-6 stat-item-custom">
+                <div class="stat-number" id="montoTotal">${{ total_recaudado|floatformat:2|default:"0.00" }}</div> {# Asume que pasas esto desde la vista #}
+                <div class="stat-label">{% translate "Monto Recaudado" %}</div>
+            </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Búsqueda en tiempo real
-        document.getElementById('searchInput').addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#pagosTableBody tr');
-            
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
+    <!-- Controles y Tabla -->
+    <div class="table-container-custom">
+        <form method="get" class="mb-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-5">
+                    <label for="searchInput" class="form-label visually-hidden">{% translate "Buscar" %}</label>
+                    <div class="input-group search-box-custom">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" name="q" value="{{ request.GET.q|default:'' }}" placeholder="{% translate 'Buscar por paciente, referencia...' %}" id="searchInput">
+                    </div>
+                </div>
+                <div class="col-md-3 filter-box-custom">
+                    <label for="estadoFilter" class="form-label visually-hidden">{% translate "Estado" %}</label>
+                    <select class="form-select" name="estado" id="estadoFilter">
+                        <option value="">{% translate "Todos los estados" %}</option>
+                        {% for choice_val, choice_disp in estado_choices %} {# Asume que pasas estado_choices desde la vista #}
+                            <option value="{{ choice_val }}" {% if request.GET.estado == choice_val %}selected{% endif %}>{{ choice_disp }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 filter-box-custom">
+                     <label for="fechaFilter" class="form-label visually-hidden">{% translate "Fecha" %}</label>
+                    <input type="date" class="form-control" name="fecha" value="{{ request.GET.fecha|default:'' }}" id="fechaFilter">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">{% translate "Filtrar" %}</button>
+                </div>
+            </div>
+        </form>
 
-        // Filtro por estado
-        document.getElementById('estadoFilter').addEventListener('change', function() {
-            const estado = this.value;
-            const rows = document.querySelectorAll('#pagosTableBody tr');
-            
-            rows.forEach(row => {
-                const rowEstado = row.getAttribute('data-estado');
-                if (estado === '' || rowEstado === estado) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        });
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% translate "ID" %}</th>
+                        <th>{% translate "Paciente" %}</th>
+                        <th>{% translate "Atención" %}</th>
+                        <th class="text-end">{% translate "Monto" %}</th>
+                        <th class="text-center">{% translate "Estado" %}</th>
+                        <th>{% translate "Método" %}</th>
+                        <th>{% translate "Fecha Pago" %}</th>
+                        <th class="text-center">{% translate "Acciones" %}</th>
+                    </tr>
+                </thead>
+                <tbody id="pagosTableBody">
+                    {% for pago in pagos %} {# 'pagos' es el context_object_name por defecto de ListView #}
+                    <tr data-estado="{{ pago.estado }}">
+                        <td>
+                            <a href="{% url 'doctor:pago_detail' pago.pk %}" class="fw-bold text-decoration-none">#{{ pago.id|stringformat:"04d" }}</a>
+                        </td>
+                        <td>
+                            {% if pago.atencion and pago.atencion.paciente %}
+                                {{ pago.atencion.paciente.nombre_completo|default:pago.nombre_pagador|default:"N/A" }}
+                            {% else %}
+                                {{ pago.nombre_pagador|default:"N/A" }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if pago.atencion %}
+                                <small class="text-muted">{{ pago.atencion.fecha_atencion_real|date:"d/m/y H:i" }}</small>
+                            {% else %}
+                                <small class="text-muted">N/A</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-end fw-semibold">${{ pago.monto_total|floatformat:2 }}</td>
+                        <td class="text-center">
+                            <span class="estado-badge estado-{{ pago.estado }}">
+                                {{ pago.get_estado_display }}
+                            </span>
+                        </td>
+                        <td>{{ pago.get_metodo_pago_display }}</td>
+                        <td>
+                            {% if pago.fecha_pago %}
+                                {{ pago.fecha_pago|date:"d/m/Y" }}
+                                <br><small class="text-muted">{{ pago.fecha_pago|time:"H:i" }}</small>
+                            {% else %}
+                                <span class="text-muted">--</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'doctor:pago_detail' pago.pk %}" class="btn btn-sm btn-outline-info btn-action-custom" title="{% translate 'Ver Detalles' %}">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'doctor:pago_update' pago.pk %}" class="btn btn-sm btn-outline-primary btn-action-custom" title="{% translate 'Editar' %}">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'doctor:pago_delete' pago.pk %}" class="btn btn-sm btn-outline-danger btn-action-custom" title="{% translate 'Eliminar' %}">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state-custom">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                                <h5>{% translate "No hay pagos registrados" %}</h5>
+                                <p>{% translate "Comienza creando tu primer pago o ajusta los filtros." %}</p>
+                                <a href="{% url 'doctor:pago_create' %}" class="btn btn-nuevo-custom mt-2">
+                                    <i class="fas fa-plus me-2"></i>
+                                    {% translate "Crear Primer Pago" %}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-        // Filtro por fecha (básico)
-        document.getElementById('fechaFilter').addEventListener('change', function() {
-            const filtro = this.value;
-            const rows = document.querySelectorAll('#pagosTableBody tr');
-            const hoy = new Date();
-            
-            rows.forEach(row => {
-                const fechaCell = row.querySelector('td:nth-child(6) strong');
-                if (!fechaCell) return;
-                
-                const fechaTexto = fechaCell.textContent;
-                const fechaPago = new Date(fechaTexto.split('/').reverse().join('-'));
-                
-                let mostrar = true;
-                
-                if (filtro === 'hoy') {
-                    mostrar = fechaPago.toDateString() === hoy.toDateString();
-                } else if (filtro === 'semana') {
-                    const semanaAtras = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
-                    mostrar = fechaPago >= semanaAtras;
-                } else if (filtro === 'mes') {
-                    mostrar = fechaPago.getMonth() === hoy.getMonth() && 
-                             fechaPago.getFullYear() === hoy.getFullYear();
-                }
-                
-                row.style.display = mostrar ? '' : 'none';
-            });
-        });
-    </script>
-</body>
-</html>
+        {% include "fragments/pagination.html" with page_obj=page_obj %} {# Usar el nombre de contexto de paginación de Django #}
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // Los filtros ahora se manejan por el backend al hacer submit al form.
+    // Si se quisiera filtrado en tiempo real sin recargar la página, se necesitaría AJAX.
+    // El script de filtrado por JS que estaba aquí se ha eliminado para evitar confusión,
+    // ya que ahora el formulario GET se encarga del filtrado.
+</script>
+{% endblock %}
