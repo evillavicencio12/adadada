@@ -1,0 +1,133 @@
+{% extends 'home.html' %} 
+{% load static %}
+
+{% block title %}{{ title|default:"Listado de Especialidades" }} | SaludTotal{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+
+    {% include "fragments/messages.html" %}
+
+    <div class="bg-white shadow-xl rounded-2xl p-6 md:p-8 mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
+                <i class="fas fa-tags text-purple-600 mr-2"></i>{{ title|default:"Listado de Especialidades Médicas" }}
+            </h1>
+            <div>
+                {% if permissions.add_especialidad %}
+                <a href="{{ create_url|default:request.META.HTTP_REFERER }}" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-px">
+                    <i class="fas fa-plus mr-2"></i> Nueva Especialidad
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <form method="get" class="mb-6">
+            <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3">
+                <div class="relative flex-grow w-full md:w-auto">
+                    <input type="text" name="q" class="form-input w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out" placeholder="Buscar por nombre o descripción..." value="{{ request.GET.q }}">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+                <button type="submit" class="w-full md:w-auto bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out">
+                    Buscar
+                </button>
+            </div>
+        </form>
+
+        <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for especialidad in especialidades %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ especialidad.nombre }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-700 max-w-xs truncate" title="{{ especialidad.descripcion|default_if_none:"" }}">{{ especialidad.descripcion|default_if_none:""|truncatewords:15 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if especialidad.activo %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Sí
+                                </span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>No
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                            {% if permissions.change_especialidad %}
+                            <a href="{% url 'core:especialidad_update' especialidad.pk %}" class="text-yellow-500 hover:text-yellow-700 transition duration-150 ease-in-out" title="Editar">
+                                <i class="fas fa-pencil-alt fa-lg"></i>
+                            </a>
+                            {% endif %}
+                            {% if permissions.delete_especialidad %}
+                            <a href="{% url 'core:especialidad_delete' especialidad.pk %}" class="text-red-500 hover:text-red-700 transition duration-150 ease-in-out" title="Eliminar">
+                                <i class="fas fa-trash-alt fa-lg"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-folder-open fa-3x text-gray-400 mb-3"></i>
+                                No hay especialidades registradas que coincidan con su búsqueda.
+                                {% if not request.GET.q %}
+                                     <a href="{{ create_url|default:'#' }}" class="mt-2 text-purple-600 hover:underline">Crear la primera</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+        <div class="mt-8 flex justify-center">
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-left h-5 w-5"></i>
+                    </a>
+                {% endif %}
+                {% for num in paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <a href="#" aria-current="page" class="z-10 bg-purple-50 border-purple-500 text-purple-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                            {{ num }}
+                        </a>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                            {{ num }}
+                        </a>
+                    {% elif num == paginator.page_range.0 or num == paginator.page_range|last and paginator.num_pages > 5 %}
+                         {% ifchanged %}<span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>{% endifchanged %}
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <i class="fas fa-chevron-right h-5 w-5"></i>
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
+
+{% block js %}
+{{ super }}
+<script>
+    console.log("Página de listado de especialidades cargada.");
+</script>
+{% endblock js %}

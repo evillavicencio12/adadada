@@ -1,0 +1,197 @@
+{% extends 'home.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"Listado de Citas Médicas" }}{% endblock %}
+
+{% block content %}
+
+<section class="dark:bg-principal mt-2">
+    <div class="text-center" data-aos="fade-up" data-aos-delay="200">
+        <div class="sm:pt-8 lg:pt-4">
+            <h1
+                class="rounded-2xl bg-blue-600 px-4 py-2 text-white uppercase text-3xl flex items-center justify-center gap-2 mx-auto max-w-max">
+                <i class="fas fa-calendar-alt"></i> {{ title|default:"Listado de Citas Médicas" }}
+            </h1>
+        </div>
+        
+        <!-- Barra de búsqueda y filtros -->
+        <div class="lg:p-4 rounded-3xl max-w-7xl mx-auto mt-6" data-aos="fade-up" data-aos-delay="200">
+            <form method="GET" class="flex flex-wrap justify-center gap-4">
+                <input type="text" name="search" placeholder="Buscar paciente..." value="{{ search_query|default:'' }}"
+                    class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-principal dark:border-secundario dark:text-white dark:placeholder-gray-400" />
+
+                <select name="estado"
+                    class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-principal dark:border-secundario dark:text-black">
+                    <option value="">Todos los estados</option>
+                    {% for value, label in estados_choices %}
+                    <option value="{{ value }}" {% if estado_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+
+                <input type="date" name="fecha_desde" value="{{ fecha_desde_filter|date:'Y-m-d'|default:'' }}"
+                    class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-principal dark:border-secundario dark:text-black" />
+
+                <input type="date" name="fecha_hasta" value="{{ fecha_hasta_filter|date:'Y-m-d'|default:'' }}"
+                    class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-principal dark:border-secundario dark:text-black" />
+
+                <div class="flex items-center gap-2">
+                    <button type="submit"
+                        class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors duration-300">
+                        <i class="fas fa-search"></i> Filtrar
+                    </button>
+                    <a href="{% url 'doctor:cita_medica_list' %}"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-full flex items-center gap-2 transition-colors duration-300">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                    <a href="{% url 'doctor:calendario_dashboard' %}"
+                        class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors duration-300">
+                        <i class="fa-solid fa-calendar-days mr-2"></i> Ver Calendario
+                    </a>
+                        <a href="{% url 'doctor:cita_medica_create' %}"
+                            class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-full flex items-center gap-2 transition-colors duration-300">
+                            <i class="fa-solid fa-plus mr-2"></i> Nueva Cita
+                        </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Mensajes -->
+        {% include 'fragments/messages.html' %}
+
+        <!-- Tabla de citas -->
+        <div class="overflow-x-auto mt-6 max-w-7xl mx-auto rounded-3xl shadow-lg">
+            <table
+                class="w-full text-center text-lg dark:text-gray-400 bg-white dark:bg-[#0b1121] rounded-3xl overflow-hidden">
+                <thead class="uppercase font-Tiny5 bg-gray-50 dark:bg-secundario dark:text-blue-300">
+                    <tr>
+                        <th class="px-6 py-3">ID</th>
+                        <th class="px-6 py-3">Paciente</th>
+                        <th class="px-6 py-3">Fecha</th>
+                        <th class="px-6 py-3">Hora</th>
+                        <th class="px-6 py-3">Estado</th>
+                        <th class="px-6 py-3">Observaciones</th>
+                        <th class="px-6 py-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cita_item in page_obj %}
+                    <tr
+                        class="bg-white dark:bg-[#0b1121] dark:border-secundario border-b hover:bg-gray-50 dark:hover:bg-[#121c33]">
+                        <td class="px-6 py-4">{{ cita_item.id }}</td>
+                        <td class="px-6 py-4 font-semibold text-left">
+                            {{ cita_item.paciente.primer_nombre }} {{ cita_item.paciente.apellido }}
+                            <br>
+                            <small class="text-sm text-gray-500 dark:text-gray-400">{{ cita_item.paciente.dni }}</small>
+                        </td>
+                        <td class="px-6 py-4">{{ cita_item.fecha|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4">{{ cita_item.hora_cita|time:"H:i" }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full
+                                {% if cita_item.estado == 'PENDIENTE' %}bg-yellow-100 text-yellow-800
+                                {% elif cita_item.estado == 'CONFIRMADA' %}bg-green-100 text-green-800
+                                {% elif cita_item.estado == 'CANCELADA' %}bg-red-100 text-red-800
+                                {% elif cita_item.estado == 'COMPLETADA' %}bg-blue-100 text-blue-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ cita_item.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs mx-auto">{{ cita_item.observaciones|default:"-" }}</td>
+                        <td class="px-6 py-4">
+                            <div class="flex justify-center gap-3 text-lg">
+                                {% if permissions.view_cita_medica %}
+                                <a href="{% url 'doctor:cita_medica_detail' cita_item.pk %}" title="Ver detalle"
+                                    class="text-blue-600 dark:text-blue-500 hover:text-blue-800 dark:hover:text-blue-300">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                {% endif %}
+                                <a href="{% url 'doctor:cita_medica_update' cita_item.id %}" title="Editar"
+                                    class="text-indigo-600 dark:text-indigo-500 hover:text-indigo-800 dark:hover:text-indigo-300">
+                                    <i class="fa-solid fa-edit"></i>
+                                </a>
+                            
+                                <a href="#" title="Eliminar"
+                                    class="text-red-600 dark:text-red-500 hover:text-red-800 dark:hover:text-red-300"
+                                    onclick="openDeleteModal('{{ cita_item.id }}', '{{ cita_item.paciente.primer_nombre }} {{ cita_item.paciente.apellido }}')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="py-6 text-gray-500 italic">
+                            No se encontraron citas médicas.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="flex justify-center mt-6">
+            <nav aria-label="Paginación">
+                <ul class="inline-flex -space-x-px">
+                    {% if page_obj.has_previous %}
+                    <li>
+                        <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if fecha_desde_filter %}&fecha_desde={{ fecha_desde_filter|date:'Y-m-d' }}{% endif %}{% if fecha_hasta_filter %}&fecha_hasta={{ fecha_hasta_filter|date:'Y-m-d' }}{% endif %}"
+                            class="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-[#0b1121] dark:border-secundario dark:text-gray-400 dark:hover:bg-[#121c33] dark:hover:text-white">Anterior</a>
+                    </li>
+                    {% endif %}
+                    {% for num in page_obj.paginator.page_range %}
+                    <li>
+                        <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if fecha_desde_filter %}&fecha_desde={{ fecha_desde_filter|date:'Y-m-d' }}{% endif %}{% if fecha_hasta_filter %}&fecha_hasta={{ fecha_hasta_filter|date:'Y-m-d' }}{% endif %}"
+                            class="flex items-center justify-center px-3 h-8 leading-tight {% if num == page_obj.number %}text-blue-600 bg-blue-50 border border-gray-300 hover:bg-blue-100 hover:text-blue-700 dark:bg-secundario dark:border-principal dark:text-blue-300{% else %}text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-[#0b1121] dark:border-secundario dark:text-gray-400 dark:hover:bg-[#121c33] dark:hover:text-white{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <li>
+                        <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if estado_filter %}&estado={{ estado_filter }}{% endif %}{% if fecha_desde_filter %}&fecha_desde={{ fecha_desde_filter|date:'Y-m-d' }}{% endif %}{% if fecha_hasta_filter %}&fecha_hasta={{ fecha_hasta_filter|date:'Y-m-d' }}{% endif %}"
+                            class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-[#0b1121] dark:border-secundario dark:text-gray-400 dark:hover:bg-[#121c33] dark:hover:text-white">Siguiente</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+
+        <!-- Enlaces adicionales -->
+
+            <a href="{% url 'home' %}"
+                class="bg-blue-700 hover:bg-blue-800 text-black py-2 px-6 rounded-full flex items-center justify-center transition-colors duration-300">
+                <i class="fa-solid fa-house"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+{% include 'fragments/delete.html' %}
+
+<script>
+    function openDeleteModal(id, pacienteName) {
+        const deleteForm = document.getElementById('deleteForm');
+        deleteForm.action = `{% url 'doctor:cita_medica_delete' 0 %}`.replace('0', id);
+        document.getElementById('Description').textContent = `Cita ID: ${id} - Paciente: ${pacienteName}`;
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+    }
+
+    // Cambiar texto del botón al enviar formulario
+    document.addEventListener('DOMContentLoaded', function () {
+        const deleteForm = document.getElementById('deleteForm');
+        if (deleteForm) {
+            deleteForm.addEventListener('submit', function (e) {
+                const submitBtn = deleteForm.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Eliminando...';
+                    submitBtn.disabled = true;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

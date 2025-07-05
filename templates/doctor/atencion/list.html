@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Listado de Atenciones Médicas{% endblock %}
+
+{% block content %}
+<section class="dark:bg-principal mt-2">
+  <div class="text-center" data-aos="fade-up" data-aos-delay="200">
+    <div class="sm:pt-8 lg:pt-4">
+      <h1 class="rounded-2xl bg-indigo-500 px-2 py-1 text-white uppercase text-4xl">
+        Atenciones Médicas
+      </h1>
+    </div>
+    <div class="lg:p-4 rounded-3xl" data-aos="fade-up" data-aos-delay="200">
+
+      <!-- Filtro -->
+      <form method="get" class="p-4 rounded-3xl bg-white border border-gray-200 shadow dark:bg-principal dark:border-secundario">
+  <div class="grid grid-cols-7 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-4 items-end">
+  {% for field in filter_form.visible_fields %}
+  <div class="flex flex-col col-span-1 min-w-[100px]">
+    <label for="{{ field.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+      {{ field.label }}
+    </label>
+    {% render_field field class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700 dark:text-gray-700 bg-white dark:bg-white dark:border-gray-600" %}
+  </div>
+  {% endfor %}
+  {% if perms.doctor.add_atencion %}
+    <div class="flex flex-col col-span-1 min-w-[100px]">
+    <a href="{% url 'doctor:atencion_create' %}" class="bg-indigo-600 hover:bg-indigo-800 text-slate-100 font-medium py-2 px-5 rounded-lg shadow hover:shadow-lg transition-all duration-300 whitespace-nowrap">
+      <i class="fas fa-plus mr-2"></i> Nueva Atención
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+  <div class="mt-4 flex flex-wrap justify-end gap-3">
+    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-5 rounded-full flex items-center justify-center transition-colors duration-300">
+      <i class="fas fa-filter mr-2"></i> Filtrar
+    </button>
+    <a href="{% url 'doctor:atencion_list' %}" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-5 rounded-full flex items-center justify-center transition-colors duration-300">
+      <i class="fas fa-eraser mr-2"></i> Limpiar
+    </a>
+  </div>
+</form>
+
+
+      <!-- Mensajes -->
+      {% if messages %}
+        {% for message in messages %}
+        <div class="mb-4 p-4 rounded-md text-slate-100 {% if message.tags == 'success' %}bg-green-600{% elif message.tags == 'error' %}bg-red-600{% else %}bg-indigo-600{% endif %}">
+          {{ message }}
+        </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Tabla -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-center text-sm">
+          <thead class="uppercase font-Tiny5 bg-gray-50 dark:bg-secundario dark:text-blue-300">
+            <tr>
+              <th scope="col" class="px-6 py-3">Paciente</th>
+              <th scope="col" class="px-6 py-3">Fecha Atención</th>
+              <th scope="col" class="px-6 py-3">Motivo Consulta</th>
+              <th scope="col" class="px-6 py-3">Diagnóstico(s)</th>
+              <th scope="col" class="px-6 py-3">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for atencion in atenciones %}
+            <tr class="dark:text-gray-400 bg-white border-b dark:bg-[#0b1121] dark:border-secundario hover:bg-gray-50 dark:hover:bg-[#121c33] transition-colors duration-200">
+              <td class="px-6 py-4" scope="row">
+                <div class="font-medium">{{ atencion.paciente.nombre_completo }}</div>
+                <div class="text-xs text-gray-500">CI: {{ atencion.paciente.cedula_ecuatoriana|default:atencion.paciente.dni }}</div>
+              </td>
+              <td class="px-6 py-4">{{ atencion.fecha_atencion_real|date:"d/m/Y H:i" }}</td>
+              <td class="px-6 py-4">{{ atencion.motivo_consulta|truncatewords:10 }}</td>
+              <td class="px-6 py-4">
+                {% for diag in atencion.diagnostico.all %}
+                <span class="inline-block bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full mr-2">{{ diag.descripcion }}</span>
+                {% empty %}
+                <span class="text-gray-500">N/A</span>
+                {% endfor %}
+              </td>
+              <td class="px-6 py-4">
+                {% if perms.doctor.change_atencion or perms.doctor.delete_atencion %}
+                  {% if perms.doctor.change_atencion %}
+                  <a href="{% url 'doctor:atencion_update' atencion.pk %}" class="text-blue-600 dark:text-blue-500 hover:text-blue-800 mx-1" title="Editar">
+                    <i class="fas fa-edit text-lg"></i>
+                  </a>
+                  {% endif %}
+                  {% if perms.doctor.delete_atencion %}
+                  <a href="#" class="text-red-600 dark:text-red-500 hover:text-red-800 mx-1" onclick="openDeleteModal('{{ atencion.pk }}', '{{ atencion.paciente.nombre_completo|escapejs }}')">
+                    <i class="fas fa-trash-alt text-lg"></i>
+                  </a>
+                  {% endif %}
+                {% else %}
+                <span class="text-gray-400 italic">Sin acciones</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-10 text-gray-500">
+                <i class="fas fa-folder-open fa-3x mb-3"></i>
+                <p class="text-xl">No hay atenciones registradas.</p>
+                {% if request.GET %}
+                <p class="mt-2">Intente con otros filtros o <a href="{% url 'doctor:atencion_list' %}" class="text-indigo-600 hover:underline">restablezca los filtros</a>.</p>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      {% if is_paginated %}
+      <div class="py-6 flex justify-center">
+        <nav aria-label="Page navigation example">
+          <ul class="inline-flex -space-x-px">
+            {% if page_obj.has_previous %}
+            <li>
+              <a href="?page=1{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}" class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-[#0b1121] dark:border-secundario dark:text-gray-400 dark:hover:bg-[#121c33] dark:hover:text-white">Anterior</a>
+            </li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+            <li>
+              <a href="?page={{num}}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}" class="flex items-center justify-center px-3 h-8 leading-tight {% if num == page_obj.number %}text-blue-600 bg-blue-50 border border-gray-300 hover:bg-blue-100 hover:text-blue-700 dark:bg-secundario dark:border-principal dark:text-blue-300{% else %}text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-[#0b1121] dark:border-secundario dark:text-gray-400 dark:hover:bg-[#121c33] dark:hover:text-white{% endif %}">
+                {{ num }}
+              </a>
+            </li>
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li>
+              <a href="?page={{page_obj.next_page_number}}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{k}}={{v}}{% endif %}{% endfor %}" class="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-[#0b1121] dark:border-secundario dark:text-gray-400 dark:hover:bg-[#121c33] dark:hover:text-white">Siguiente</a>
+            </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+
+      <!-- Botón volver -->
+      <div class="flex justify-center mt-4">
+        <a href="{% url 'home' %}" class="bg-blue-700 hover:bg-blue-800 text-white py-2 px-4 rounded-full flex items-center justify-center transition-colors duration-300">
+          <i class="fas fa-house mr-2"></i> Inicio
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Modal de eliminación -->
+{% include 'fragments/delete.html' %}
+
+<script>
+function openDeleteModal(id, nombre) {
+  const form = document.getElementById('deleteForm');
+  form.action = `{% url 'doctor:atencion_delete' 0 %}`.replace('0', id);
+  document.getElementById('Description').textContent = `Atención de: ${nombre}`;
+  document.getElementById('deleteModal').classList.remove('hidden');
+}
+function closeModal() {
+  document.getElementById('deleteModal').classList.add('hidden');
+}
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('deleteForm');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      const btn = form.querySelector('button[type="submit"]');
+      if (btn) {
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Eliminando...';
+        btn.disabled = true;
+      }
+    });
+  }
+});
+</script>
+{% endblock %}
