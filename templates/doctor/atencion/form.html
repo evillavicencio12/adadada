@@ -1,25 +1,120 @@
 {% extends "base.html" %}
 {% load static %}
 {% load widget_tweaks %}
+{% load i18n %}
 
-{% block title %}{{ view.model_name_title|default:"Gestión" }} - {% if object %}Editar{% else %}Crear{% endif %}{% endblock %}
+{% block title %}
+    {% if object %}{% translate "Editar Atención Médica" %} #{{object.id}}{% else %}{% translate "Nueva Atención Médica" %}{% endif %}
+{% endblock %}
+
+{% block extrastyles %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{# Considerar un tema de Select2 compatible con el tema general (Bootstrap 5 si es el caso) #}
+{# <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" /> #}
+<style>
+    .form-section {
+        @apply mb-10 p-6 border border-gray-200 rounded-xl shadow-lg; /* Sombra más pronunciada y bordes redondeados */
+    }
+    .form-section-title {
+        @apply text-xl font-semibold text-gray-800 mb-6 flex items-center pb-3 border-b-2 border-indigo-200;
+    }
+    .form-section-title i {
+        @apply mr-3 text-xl text-indigo-600;
+    }
+    .form-label {
+        @apply block text-sm font-medium text-gray-700 mb-1.5; /* Más margen inferior */
+    }
+    .form-input-tailwind,
+    .form-textarea-tailwind,
+    .form-select-tailwind,
+    select[class*="select2"] { /* Aplicar a Select2 también */
+        @apply mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-600 sm:text-sm py-2.5 px-3.5;
+        /* Bordes más gruesos en foco, padding ajustado */
+    }
+    .form-textarea-tailwind {
+        min-height: 80px; /* Altura mínima para textareas */
+    }
+    .form-checkbox-tailwind {
+        @apply h-5 w-5 text-indigo-600 border-gray-300 rounded-md focus:ring-indigo-500 focus:ring-offset-1; /* Offset en foco */
+    }
+
+    /* Estilos para Select2 (genéricos, ajustar si se usa un tema específico) */
+    .select2-container--default .select2-selection--single,
+    .select2-container--default .select2-selection--multiple {
+        @apply border-gray-300 rounded-lg shadow-sm;
+        min-height: calc(1.5em + .75rem + 8px); /* Alineación altura con otros inputs */
+        padding-top: 0.1rem;
+        padding-bottom: 0.1rem;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        @apply leading-tight pt-1.5;
+    }
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        @apply bg-indigo-100 text-indigo-700 border-indigo-200;
+    }
+
+    .btn-primary-custom {
+        @apply bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out flex items-center justify-center;
+    }
+    .btn-secondary-custom {
+        @apply bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition duration-150 ease-in-out flex items-center justify-center;
+    }
+     .btn-danger-custom { /* Para botones de eliminar */
+        @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ease-in-out flex items-center justify-center;
+    }
+    .btn-info-custom { /* Para botones como "Agregar Medicamento" */
+        @apply bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-3 rounded-lg shadow-sm hover:shadow-md transition duration-150 ease-in-out flex items-center justify-center text-sm;
+    }
+
+    .detalle-form {
+        @apply p-5 border border-gray-200 rounded-lg bg-slate-50 relative; /* Ligeramente más padding y color de fondo */
+        transition: box-shadow 0.2s ease-in-out;
+    }
+    .detalle-form:hover {
+        @apply shadow-lg; /* Sombra más notable al hacer hover */
+    }
+    #infoPacienteSeleccionado {
+        @apply md:col-span-2 text-sm text-gray-700 p-4 bg-indigo-50 rounded-xl border-2 border-indigo-100; /* Más padding y borde */
+    }
+    #infoPacienteSeleccionado strong {
+        @apply font-semibold text-indigo-800;
+    }
+    .modal-content-custom { /* Para los modales */
+        @apply bg-white rounded-xl shadow-xl overflow-hidden;
+    }
+    .modal-header-custom {
+        @apply px-6 py-4 bg-gray-50 border-b border-gray-200;
+    }
+    .modal-body-custom {
+        @apply p-6 space-y-4;
+    }
+    .modal-footer-custom {
+        @apply px-6 py-4 bg-gray-50 text-right space-x-2;
+    }
+</style>
+{% endblock %}
+
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <div class="bg-white shadow-xl rounded-lg p-8">
-        <div class="flex justify-between items-center mb-6 pb-3 border-b border-gray-200">
-            <h1 class="text-3xl font-bold text-gray-800">
-                <i class="fas fa-notes-medical mr-3 text-blue-500"></i>
-                {% if object %}Editar{% else %}Nueva{% endif %} Atención Médica
-            </h1>
-            <a href="{% url 'doctor:atencion_list' %}" class="text-gray-600 hover:text-gray-800 transition duration-300">
-                <i class="fas fa-arrow-left mr-2"></i> Volver al Listado
+<div class="container mx-auto px-2 sm:px-4 py-8">
+    <div class="bg-white shadow-2xl rounded-xl p-4 sm:p-6 md:p-10">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 pb-4 border-b border-gray-300">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+                    <i class="fas fa-notes-medical mr-3 text-indigo-600"></i>
+                    {% if object %}{% translate "Editar Atención Médica" %} #{{object.id}}{% else %}{% translate "Nueva Atención Médica" %}{% endif %}
+                </h1>
+                <p class="text-sm text-gray-500 mt-1">{% translate "Complete los detalles de la consulta médica." %}</p>
+            </div>
+            <a href="{% url 'doctor:atencion_list' %}" class="mt-3 sm:mt-0 inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition duration-150">
+                <i class="fas fa-arrow-left mr-2"></i> {% translate "Volver al Listado" %}
             </a>
         </div>
 
         {% if messages %}
             {% for message in messages %}
-                <div class="mb-4 p-4 rounded-md text-white {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% else %}bg-blue-500{% endif %}">
+                <div class="mb-6 p-4 rounded-lg text-sm {% if message.tags == 'success' %}bg-green-100 border border-green-300 text-green-800{% elif message.tags == 'error' %}bg-red-100 border border-red-300 text-red-800{% else %}bg-blue-100 border border-blue-300 text-blue-800{% endif %} shadow">
                     {{ message }}
                 </div>
             {% endfor %}
@@ -29,147 +124,141 @@
             {% csrf_token %}
 
             <!-- Sección Paciente -->
-            <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center">
-                    <i class="fas fa-user-injured mr-2 text-blue-500"></i> Datos del Paciente
+            <div class="form-section bg-slate-50">
+                <h2 class="form-section-title">
+                    <i class="fas fa-user-injured text-indigo-500"></i> {% translate "Datos del Paciente" %}
                 </h2>
-                
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-
-                        <label for="id_paciente" class="block text-sm font-medium text-gray-700 mb-1">Paciente</label>
-                        <select id="id_paciente" name="paciente" style="width: 100%;"></select>
-                        <div id="resultadosBusquedaPaciente"
-                            class="mt-2 p-2 border rounded hidden max-h-48 overflow-auto bg-white shadow-md z-50 relative">
-                            <ul id="listaPacientesEncontrados" class="text-sm text-gray-700"></ul>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 items-start">
+                    <div class="md:col-span-1">
+                        <label for="{{ form.paciente_nombre.id_for_label }}" class="form-label">{{ form.paciente_nombre.label }}</label>
+                        {% render_field form.paciente_nombre id="paciente_nombre_display" class+="form-input-tailwind" placeholder="Buscar paciente..." data_initial_text=form.paciente_nombre.value|default:'' %}
+                        <div class="hidden"> {{ form.paciente }} </div>
+                        {% if form.paciente_nombre.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.paciente_nombre.errors|join:", " }}</p>{% endif %}
+                        {% if form.paciente.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.paciente.errors|join:", " }}</p>{% endif %}
+                        <div class="mt-2">
+                             <button type="button" id="abrirCrearPacienteBtn" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition duration-150">
+                                <i class="fas fa-user-plus mr-1"></i> {% translate "Crear Nuevo Paciente" %}
+                            </button>
                         </div>
-                        <a href="/doctor/patients/crear/" class="btn btn-primary">
-                            Crear Paciente
-                        </a>
                     </div>
-                    <div id="infoPacienteSeleccionado" class="md:col-span-2 text-sm text-gray-600">
+                    <div id="infoPacienteSeleccionado">
                         {% if selected_paciente %}
-                            <p><strong>Cédula:</strong> {{ selected_paciente.cedula_ecuatoriana|default:selected_paciente.dni }}</p>
-                            <p><strong>Edad:</strong> {{ selected_paciente.edad }} años</p>
-                            <p><strong>Teléfono:</strong> {{ selected_paciente.telefono }}</p>
+                            <h4 class="font-semibold text-indigo-700 mb-2 text-sm">{% translate "Info. del Paciente:" %}</h4>
+                            <p><strong>{% translate "Nombre:" %}</strong> {{ selected_paciente.primer_nombre }} {{ selected_paciente.apellido }}</p>
+                            <p><strong>{% translate "DNI:" %}</strong> {{ selected_paciente.dni }}</p>
+                            <p><strong>{% translate "Edad:" %}</strong> {{ selected_paciente.edad_calculada|default:"N/A" }} {% translate "años" %}</p>
+                            <p><strong>{% translate "Teléfono:" %}</strong> {{ selected_paciente.phone|default:"N/A" }}</p>
+                        {% elif form.instance.pk and form.instance.paciente %}
+                            <h4 class="font-semibold text-indigo-700 mb-2 text-sm">{% translate "Info. del Paciente:" %}</h4>
+                            <p><strong>{% translate "Nombre:" %}</strong> {{ form.instance.paciente.primer_nombre }} {{ form.instance.paciente.apellido }}</p>
+                            <p><strong>{% translate "DNI:" %}</strong> {{ form.instance.paciente.dni }}</p>
+                            <p><strong>{% translate "Edad:" %}</strong> {{ form.instance.paciente.edad_calculada|default:"N/A" }} {% translate "años" %}</p>
+                            <p><strong>{% translate "Teléfono:" %}</strong> {{ form.instance.paciente.phone|default:"N/A" }}</p>
                         {% else %}
-                            <p class="italic">Seleccione un paciente para ver más detalles.</p>
+                            <p class="italic text-gray-500 py-4">{% translate "Seleccione un paciente para ver sus detalles aquí." %}</p>
                         {% endif %}
                     </div>
                 </div>
-                 {% if form.paciente_nombre.errors or form.paciente.errors %}
-                    <p class="text-red-500 text-xs italic mt-1">
-                        {{ form.paciente_nombre.errors|join:", " }} {{ form.paciente.errors|join:", " }}
-                        {% if form.paciente_nombre.field.required and not form.paciente_nombre.value %}
-                            Este campo es obligatorio.
-                        {% endif %}
-                    </p>
-                {% endif %}
             </div>
 
             <!-- Sección Signos Vitales -->
-            <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-heartbeat mr-2 text-red-500"></i> Signos Vitales</h2>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {% for field in form %}
-                        {% if field.name in "presion_arterial pulso temperatura frecuencia_respiratoria saturacion_oxigeno peso altura" %}
-                        <div>
-                            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
-                            {% render_field field class+="form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %}
-                            {% if field.help_text %}<p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>{% endif %}
-                            {% if field.errors %}<p class="text-red-500 text-xs italic mt-1">{{ field.errors|join:", " }}</p>{% endif %}
-                        </div>
-                        {% endif %}
+            <div class="form-section">
+                <h2 class="form-section-title"><i class="fas fa-heartbeat text-red-500"></i> {% translate "Signos Vitales" %}</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-6 gap-y-4 items-end">
+                    {% for field_name in "presion_arterial pulso temperatura frecuencia_respiratoria saturacion_oxigeno peso altura"|split:" " %}
+                        {% with field=form|getattr:field_name %}
+                            <div>
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {% render_field field class+="form-input-tailwind" %}
+                                {% if field.help_text %}<p class="mt-1 text-xs text-gray-500">{{ field.help_text }}</p>{% endif %}
+                                {% if field.errors %}<p class="text-red-500 text-xs italic mt-1">{{ field.errors|join:", " }}</p>{% endif %}
+                            </div>
+                        {% endwith %}
                     {% endfor %}
-                    <div class="flex items-center mt-5">
-                        {% render_field form.es_control class+="form-checkbox h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500" %}
-                        <label for="{{ form.es_control.id_for_label }}" class="ml-2 block text-sm font-medium text-gray-700">{{ form.es_control.label }}</label>
-                         {% if form.es_control.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.es_control.errors|join:", " }}</p>{% endif %}
+                    <div class="col-span-full sm:col-span-1 flex items-center mt-2 sm:mt-4">
+                        <label for="{{ form.es_control.id_for_label }}" class="form-label flex items-center cursor-pointer">
+                            {% render_field form.es_control class+="form-checkbox-tailwind" %}
+                            <span class="ml-2">{{ form.es_control.label }}</span>
+                        </label>
+                         {% if form.es_control.errors %}<p class="text-red-500 text-xs italic ml-2">{{ form.es_control.errors|join:", " }}</p>{% endif %}
                     </div>
                 </div>
             </div>
 
             <!-- Sección Evaluación Clínica -->
-            <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-stethoscope mr-2 text-green-500"></i> Evaluación Clínica</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="form-section">
+                <h2 class="form-section-title"><i class="fas fa-stethoscope text-green-500"></i> {% translate "Evaluación Clínica" %}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <div>
-                        <label for="{{ form.motivo_consulta.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.motivo_consulta.label }}</label>
-                        {% render_field form.motivo_consulta class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="3" %}
+                        <label for="{{ form.motivo_consulta.id_for_label }}" class="form-label">{{ form.motivo_consulta.label }}</label>
+                        {% render_field form.motivo_consulta class+="form-textarea-tailwind" rows="3" %}
                         {% if form.motivo_consulta.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.motivo_consulta.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div>
-                        <label for="{{ form.sintomas.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.sintomas.label }}</label>
-                        {% render_field form.sintomas class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="3" %}
+                        <label for="{{ form.sintomas.id_for_label }}" class="form-label">{{ form.sintomas.label }}</label>
+                        {% render_field form.sintomas class+="form-textarea-tailwind" rows="3" %}
                         {% if form.sintomas.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.sintomas.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div class="md:col-span-2">
-                        <label for="{{ form.examen_fisico.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.examen_fisico.label }}</label>
-                        {% render_field form.examen_fisico class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="3" %}
+                        <label for="{{ form.examen_fisico.id_for_label }}" class="form-label">{{ form.examen_fisico.label }}</label>
+                        {% render_field form.examen_fisico class+="form-textarea-tailwind" rows="3" %}
                         {% if form.examen_fisico.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.examen_fisico.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div class="md:col-span-2">
-                        <label for="{{ form.diagnostico.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.diagnostico.label }}</label>
-                        {% render_field form.diagnostico class+="select2-diagnosticos block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" %}
+                        <label for="{{ form.diagnostico.id_for_label }}" class="form-label">{{ form.diagnostico.label }}</label>
+                        {% render_field form.diagnostico class+="select2-diagnosticos form-input-tailwind" %}
                         {% if form.diagnostico.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.diagnostico.errors|join:", " }}</p>{% endif %}
                     </div>
                 </div>
             </div>
 
             <!-- Sección Plan Terapéutico y Medicamentos -->
-            <div class="mb-8 p-6 border border-gray-200 rounded-lg shadow-sm">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-pills mr-2 text-yellow-500"></i> Plan Terapéutico y Medicamentos</h2>
-                <div>
-                    <label for="{{ form.tratamiento.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.tratamiento.label }}</label>
-                    {% render_field form.tratamiento class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="3" %}
+            <div class="form-section">
+                <h2 class="form-section-title"><i class="fas fa-pills text-yellow-500"></i> {% translate "Plan Terapéutico y Medicamentos" %}</h2>
+                <div class="mb-6">
+                    <label for="{{ form.tratamiento.id_for_label }}" class="form-label">{{ form.tratamiento.label }}</label>
+                    {% render_field form.tratamiento class+="form-textarea-tailwind" rows="3" %}
                     {% if form.tratamiento.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.tratamiento.errors|join:", " }}</p>{% endif %}
                 </div>
 
-                <h3 class="text-lg font-medium text-gray-700 mt-6 mb-3">Medicamentos Recetados</h3>
+                <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-4 pb-2 border-b border-gray-200">{% translate "Medicamentos Recetados" %}</h3>
                 {{ detalle_formset.management_form }}
-                <div id="detalleAtencionFormset" class="space-y-6">
-                    {% for detalle_form in detalle_formset %}
-                    <div class="detalle-form p-4 border border-gray-200 rounded-md bg-gray-50 relative" data-prefix="{{ detalle_form.prefix }}">
-                        {{ detalle_form.id }} {# Campo oculto para el ID del detalle si existe #}
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
-                            <div class="lg:col-span-2">
-                                <label for="id_{{ detalle_form.prefix }}-medicamento_select" class="block text-xs font-medium text-gray-600">Medicamento</label>
-                                <select id="id_{{ detalle_form.prefix }}-medicamento_select" name="{{ detalle_form.prefix }}-medicamento_select" class="medicamento-select2 form-select mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" style="width: 100%;"></select>
-                                {{ detalle_form.medicamento }} {# Campo oculto para el ID del medicamento, e.g., <input type="hidden" name="detalleatencion_set-0-medicamento" id="id_detalleatencion_set-0-medicamento"> #}
-                                <a href="/core/medicamentos/crear/" class="btn btn-primary">
-                                    Crear Medicamento
-                                </a>
-                                {% if detalle_form.medicamento.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.medicamento.errors|join:", " }}</p>{% endif %}
-                                {% if detalle_form.medicamento_nombre.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.medicamento_nombre.errors|join:", " }}</p>{% endif %}
-                            </div>
-                            <div>
-                                <label for="{{ detalle_form.cantidad.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.cantidad.label }}</label>
-                                {% render_field detalle_form.cantidad class+="form-input mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %}
-                                {% if detalle_form.cantidad.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.cantidad.errors|join:", " }}</p>{% endif %}
-                            </div>
-                            <div class="lg:col-span-3">
-                                <label for="{{ detalle_form.prescripcion.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.prescripcion.label }}</label>
-                                {% render_field detalle_form.prescripcion class+="form-textarea mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" rows="1" %}
-                                {% if detalle_form.prescripcion.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.prescripcion.errors|join:", " }}</p>{% endif %}
-                            </div>
-                             <div class="hidden"> <!-- Campos adicionales, ocultos por defecto o mostrados según necesidad -->
-                                <label for="{{ detalle_form.duracion_tratamiento.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.duracion_tratamiento.label }}</label>
-                                {% render_field detalle_form.duracion_tratamiento class+="form-input mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %}
 
-                                <label for="{{ detalle_form.frecuencia_diaria.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.frecuencia_diaria.label }}</label>
-                                {% render_field detalle_form.frecuencia_diaria class+="form-input mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" %}
+                <div id="detalleAtencionFormset" class="space-y-4">
+                    {% for detalle_form in detalle_formset.forms %}
+                    <div class="detalle-form" data-prefix="{{ detalle_form.prefix }}">
+                        {{ detalle_form.id }}
+                        {% if detalle_form.instance.pk and detalle_formset.can_delete %}
+                            <div class="absolute top-3 right-3">
+                                {% render_field detalle_form.DELETE class+="form-checkbox-tailwind" %}
+                                <label for="{{ detalle_form.DELETE.id_for_label }}" class="ml-1 text-xs text-red-700 hover:text-red-800">{% translate "Eliminar" %}</label>
                             </div>
-                            <div class="flex items-center">
-                                {% if detalle_formset.can_delete and detalle_form.instance.pk %}
-                                <div class="mr-2">
-                                    {% render_field detalle_form.DELETE class+="form-checkbox h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500" %}
-                                    <label for="{{ detalle_form.DELETE.id_for_label }}" class="ml-1 text-xs text-red-700">Eliminar</label>
-                                </div>
-                                {% endif %}
-                                {% if forloop.last %}
-                                <button type="button" class="remove-form-row hidden text-red-500 hover:text-red-700 transition duration-150" title="Eliminar este medicamento">
-                                    <i class="fas fa-trash-alt"></i>
+                        {% endif %}
+                        <div class="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-x-4 gap-y-3 items-start">
+                            <div class="lg:col-span-4 md:col-span-6">
+                                <label for="id_{{ detalle_form.prefix }}-medicamento_select_display" class="form-label text-xs">{% translate "Medicamento" %}</label>
+                                <select id="id_{{ detalle_form.prefix }}-medicamento_select_display" name="{{ detalle_form.prefix }}-medicamento_select_display" class="medicamento-select2 form-input-tailwind" style="width: 100%;"></select>
+                                <div class="hidden">{{ detalle_form.medicamento }}</div>
+                                {% if detalle_form.medicamento.errors %}<p class="text-red-500 text-xs italic mt-1">{{ detalle_form.medicamento.errors|join:", " }}</p>{% endif %}
+                            </div>
+                            <div class="lg:col-span-2 md:col-span-2">
+                                <label for="{{ detalle_form.cantidad.id_for_label }}" class="form-label text-xs">{{ detalle_form.cantidad.label }}</label>
+                                {% render_field detalle_form.cantidad class+="form-input-tailwind" %}
+                                {% if detalle_form.cantidad.errors %}<p class="text-red-500 text-xs italic mt-1">{{ detalle_form.cantidad.errors|join:", " }}</p>{% endif %}
+                            </div>
+                            <div class="lg:col-span-4 md:col-span-4">
+                                <label for="{{ detalle_form.prescripcion.id_for_label }}" class="form-label text-xs">{{ detalle_form.prescripcion.label }}</label>
+                                {% render_field detalle_form.prescripcion class+="form-textarea-tailwind" rows="1" %}
+                                {% if detalle_form.prescripcion.errors %}<p class="text-red-500 text-xs italic mt-1">{{ detalle_form.prescripcion.errors|join:", " }}</p>{% endif %}
+                            </div>
+                            <div class="hidden">
+                                {% render_field detalle_form.duracion_tratamiento %}
+                                {% render_field detalle_form.frecuencia_diaria %}
+                            </div>
+                            <div class="lg:col-span-2 md:col-span-full flex items-start justify-end pt-4 md:pt-5">
+                                {% if not detalle_form.instance.pk and detalle_formset.can_delete_extra %}
+                                <button type="button" class="remove-form-row-dynamic text-red-500 hover:text-red-700 transition duration-150" title="{% translate 'Eliminar este medicamento' %}">
+                                    <i class="fas fa-minus-circle"></i> <span class="ml-1 text-xs">{% translate "Quitar" %}</span>
                                 </button>
                                 {% endif %}
                             </div>
@@ -177,24 +266,57 @@
                     </div>
                     {% endfor %}
                 </div>
-                <button type="button" id="addDetalleAtencion" class="mt-4 bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition duration-150">
-                    <i class="fas fa-plus mr-1"></i> Agregar Medicamento
-                </button>
-                <button type="submit" id="crearNuevoMedicamentoBtn" class="mt-4 ml-2 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg text-sm shadow transition duration-150">
-                    <i class="fas fa-capsules mr-1"></i> Crear Nuevo Medicamento
-                </button>
 
+                <template id="detalleAtencionTemplate">
+                    <div class="detalle-form" data-prefix="__prefix__">
+                        <div class="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-x-4 gap-y-3 items-start">
+                            <div class="lg:col-span-4 md:col-span-6">
+                                <label for="id_detalles-__prefix__-medicamento_select_display" class="form-label text-xs">{% translate "Medicamento" %}</label>
+                                <select id="id_detalles-__prefix__-medicamento_select_display" name="detalles-__prefix__-medicamento_select_display" class="medicamento-select2 form-input-tailwind" style="width: 100%;"></select>
+                                <div class="hidden"><input type="hidden" name="detalles-__prefix__-medicamento" id="id_detalles-__prefix__-medicamento"></div>
+                            </div>
+                            <div class="lg:col-span-2 md:col-span-2">
+                                <label for="id_detalles-__prefix__-cantidad" class="form-label text-xs">{% translate "Cantidad" %}</label>
+                                <input type="number" name="detalles-__prefix__-cantidad" class="form-input-tailwind" min="1" id="id_detalles-__prefix__-cantidad">
+                            </div>
+                            <div class="lg:col-span-4 md:col-span-4">
+                                <label for="id_detalles-__prefix__-prescripcion" class="form-label text-xs">{% translate "Prescripción" %}</label>
+                                <textarea name="detalles-__prefix__-prescripcion" class="form-textarea-tailwind" rows="1" id="id_detalles-__prefix__-prescripcion"></textarea>
+                            </div>
+                            <div class="hidden">
+                                <input type="hidden" name="detalles-__prefix__-id" id="id_detalles-__prefix__-id">
+                                <input type="checkbox" name="detalles-__prefix__-DELETE" id="id_detalles-__prefix__-DELETE" class="hidden">
+                                <input type="number" name="detalles-__prefix__-duracion_tratamiento" id="id_detalles-__prefix__-duracion_tratamiento">
+                                <input type="number" name="detalles-__prefix__-frecuencia_diaria" id="id_detalles-__prefix__-frecuencia_diaria">
+                            </div>
+                            <div class="lg:col-span-2 md:col-span-full flex items-start justify-end pt-4 md:pt-5">
+                                <button type="button" class="remove-form-row-dynamic text-red-500 hover:text-red-700 transition duration-150" title="{% translate 'Eliminar este medicamento' %}">
+                                     <i class="fas fa-minus-circle"></i> <span class="ml-1 text-xs">{% translate "Quitar" %}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div class="mt-4 flex flex-wrap gap-2">
+                    <button type="button" id="addDetalleAtencion" class="btn-info-custom">
+                        <i class="fas fa-plus mr-2"></i> {% translate "Agregar Medicamento" %}
+                    </button>
+                    <button type="button" id="crearNuevoMedicamentoBtn" class="btn-primary-custom">
+                        <i class="fas fa-capsules mr-2"></i> {% translate "Crear Nuevo Medicamento (Catálogo)" %}
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-6">
                     <div>
-                        <label for="{{ form.examenes_enviados.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.examenes_enviados.label }}</label>
-                        {% render_field form.examenes_enviados class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" rows="2" %}
+                        <label for="{{ form.examenes_enviados.id_for_label }}" class="form-label">{{ form.examenes_enviados.label }}</label>
+                        {% render_field form.examenes_enviados class+="form-textarea-tailwind" rows="2" %}
                         {% if form.examenes_enviados.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.examenes_enviados.errors|join:", " }}</p>{% endif %}
                     </div>
                     <div class="relative">
-                        <label for="{{ form.comentario_adicional.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.comentario_adicional.label }}</label>
-                        {% render_field form.comentario_adicional class+="form-textarea block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm pr-10" rows="2" %}
-                        <button type="button" id="startVoiceComentario" title="Grabar comentario por voz" class="absolute top-7 right-2 p-2 text-gray-500 hover:text-blue-500 focus:outline-none">
+                        <label for="{{ form.comentario_adicional.id_for_label }}" class="form-label">{{ form.comentario_adicional.label }}</label>
+                        {% render_field form.comentario_adicional class+="form-textarea-tailwind pr-10" rows="2" %}
+                        <button type="button" id="startVoiceComentario" title="{% translate 'Grabar comentario por voz' %}" class="absolute top-9 right-3 text-gray-500 hover:text-indigo-500 focus:outline-none"> {# Ajustada posición del botón #}
                             <i class="fas fa-microphone"></i>
                         </button>
                         {% if form.comentario_adicional.errors %}<p class="text-red-500 text-xs italic mt-1">{{ form.comentario_adicional.errors|join:", " }}</p>{% endif %}
@@ -203,668 +325,621 @@
             </div>
 
             <!-- Botones de Acción -->
-            <div class="mt-8 flex justify-end space-x-3">
-                <button type="submit" class="bg-green-600 hover:bg-green-700 text-black font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out">
-                    <i class="fas fa-save mr-2"></i> {% if object %}Actualizar{% else %}Guardar{% endif %} Atención
-                </button>
-                <a href="{% url 'doctor:atencion_list' %}" class="bg-gray-500 hover:bg-gray-600 text-black font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out">
-                    Cancelar
+            <div class="mt-10 pt-6 border-t border-gray-300 flex justify-end space-x-3">
+                <a href="{% url 'doctor:atencion_list' %}" class="btn-secondary-custom">
+                    <i class="fas fa-times mr-2"></i> {% translate "Cancelar" %}
                 </a>
+                <button type="submit" class="btn-primary-custom">
+                    <i class="fas fa-save mr-2"></i> {% if object %}{% translate "Actualizar Atención" %}{% else %}{% translate "Guardar Atención" %}{% endif %}
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal para buscar paciente -->
-{% include "fragments/modal_paciente.html" %}
-
 <!-- Modal para Crear Nuevo Paciente -->
- 
-<div id="crearPacienteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50">
-  <div class="bg-white rounded-lg p-6 w-full max-w-md">
-    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-      <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title-crear-paciente">Crear Nuevo Paciente</h3>
-      <form id="formCrearPaciente" class="mt-4 space-y-3">
-        {% csrf_token %}
+<div id="crearPacienteModal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-60 flex justify-center items-center z-50 p-4 transition-opacity duration-300 ease-in-out">
+  <div class="modal-content-custom w-full max-w-lg">
+    <div class="modal-header-custom flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-800" id="modal-title-crear-paciente">{% translate "Crear Nuevo Paciente" %}</h3>
+      <button type="button" id="closeCrearPacienteModal" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times fa-lg"></i>
+      </button>
+    </div>
+    <form id="formCrearPaciente" novalidate class="modal-body-custom">
+        {% csrf_token %} {# Para el fetch POST #}
+        {# Campos del formulario de paciente aquí, con clases form-label y form-input-tailwind #}
         <div>
-          <label for="id_primer_nombre" class="block text-sm font-medium text-gray-700">Nombres</label>
-          <input type="text" name="primer_nombre" id="id_primer_nombre" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+          <label for="id_primer_nombre_modal" class="form-label">{% translate "Nombres" %}<span class="text-red-500">*</span></label>
+          <input type="text" name="primer_nombre" id="id_primer_nombre_modal" required class="form-input-tailwind">
         </div>
         <div>
-          <label for="id_apellido" class="block text-sm font-medium text-gray-700">Apellidos</label>
-          <input type="text" name="apellido" id="id_apellido" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+          <label for="id_apellido_modal" class="form-label">{% translate "Apellidos" %}<span class="text-red-500">*</span></label>
+          <input type="text" name="apellido" id="id_apellido_modal" required class="form-input-tailwind">
         </div>
         <div>
-          <label for="id_dni" class="block text-sm font-medium text-gray-700">Cédula/DNI</label>
-          <input type="text" name="dni" id="id_dni" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+          <label for="id_dni_modal" class="form-label">{% translate "Cédula/DNI" %}<span class="text-red-500">*</span></label>
+          <input type="text" name="dni" id="id_dni_modal" required class="form-input-tailwind">
         </div>
         <div>
-          <label for="id_birth_date" class="block text-sm font-medium text-gray-700">Fecha de Nacimiento</label>
-          <input type="date" name="birth_date" id="id_birth_date" required class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+          <label for="id_birth_date_modal" class="form-label">{% translate "Fecha de Nacimiento" %}<span class="text-red-500">*</span></label>
+          <input type="date" name="birth_date" id="id_birth_date_modal" required class="form-input-tailwind">
         </div>
         <div>
-          <label for="id_gender" class="block text-sm font-medium text-gray-700">Género</label>
-          <select name="gender" id="id_gender" required class="mt-1 form-select block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
-            <option value="M">Masculino</option>
-            <option value="F">Femenino</option>
-            <option value="O">Otro</option>
+          <label for="id_gender_modal" class="form-label">{% translate "Género" %}<span class="text-red-500">*</span></label>
+          <select name="gender" id="id_gender_modal" required class="form-select-tailwind">
+            <option value="M">{% translate "Masculino" %}</option>
+            <option value="F">{% translate "Femenino" %}</option>
+            <option value="O">{% translate "Otro" %}</option>
           </select>
         </div>
         <div>
-          <label for="id_phone" class="block text-sm font-medium text-gray-700">Teléfono (Opcional)</label>
-          <input type="text" name="phone" id="id_phone" class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+          <label for="id_phone_modal" class="form-label">{% translate "Teléfono (Opcional)" %}</label>
+          <input type="text" name="phone" id="id_phone_modal" class="form-input-tailwind">
         </div>
         <div>
-          <label for="id_email" class="block text-sm font-medium text-gray-700">Email (Opcional)</label>
-          <input type="email" name="email" id="id_email" class="mt-1 form-input block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500 sm:text-sm">
+          <label for="id_email_modal" class="form-label">{% translate "Email (Opcional)" %}</label>
+          <input type="email" name="email" id="id_email_modal" class="form-input-tailwind">
         </div>
-        <div class="flex justify-end space-x-2 pt-4">
-          <button type="button" id="cancelarCrearPacienteBtn" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancelar</button>
-        </div>
-        <div>
-            <button type="submit" id="guardarNuevoPacienteBtn" class="px-4 py-2 bg-green-600 text-black rounded hover:bg-green-700">Guardar Paciente</button>
-        </div>
-      </form>
+    </form>
+    <div class="modal-footer-custom">
+        <button type="button" id="cancelarCrearPacienteBtn" class="btn-secondary-custom text-sm py-2 px-4">{% translate "Cancelar" %}</button>
+        <button type="submit" form="formCrearPaciente" id="guardarNuevoPacienteBtn" class="btn-primary-custom text-sm py-2 px-4">{% translate "Guardar Paciente" %}</button>
     </div>
   </div>
 </div>
 
-
-<!-- Modal para previsualización -->
-<div id="previsualizacionModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div class="sm:flex sm:items-start">
-                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
-                        <i class="fas fa-file-medical-alt text-blue-600"></i>
-                    </div>
-                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Previsualización de Atención</h3>
-                        <div class="mt-2" id="previsualizacionContenido">
-                            <!-- Contenido de la previsualización se cargará aquí -->
-                            <p class="text-sm text-gray-500">Cargando previsualización...</p>
-                        </div>
-                    </div>
-                </div>
+<!-- Modal para Previsualización -->
+<div id="previsualizacionModal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-60 flex justify-center items-center z-50 p-4 transition-opacity duration-300 ease-in-out">
+    <div class="modal-content-custom w-full max-w-xl">
+        <div class="modal-header-custom flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-gray-800" id="modal-title-previsualizacion">{% translate "Previsualización de Atención" %}</h3>
+            <button type="button" id="closePrevisualizacionModal" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+        </div>
+        <div class="modal-body-custom max-h-[70vh] overflow-y-auto">
+            <div id="previsualizacionContenido">
+                <p class="text-sm text-gray-500 italic">{% translate "Cargando previsualización..." %}</p>
             </div>
-            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button type="button" id="cerrarPrevisualizacionBtn" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                    Cerrar
-                </button>
-            </div>
+        </div>
+        <div class="modal-footer-custom">
+            <button type="button" id="cerrarPrevisualizacionBtn" class="btn-secondary-custom text-sm py-2 px-4">{% translate "Cerrar" %}</button>
         </div>
     </div>
 </div>
 
-<!-- Modal para crear nuevo medicamento -->
-<!-- Botón para abrir modal -->
-
-
-<!-- Modal para crear nuevo medicamento -->
-<div id="crearMedicamentoModal" class="fixed z-50 inset-0 overflow-y-auto hidden" role="dialog" aria-modal="true">
-  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-
-    <!-- Fondo oscuro -->
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-
-    <!-- Centrado vertical -->
-    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-    <!-- Contenido del modal -->
-    <div
-      class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-      <form id="formCrearMedicamento" method="POST" action="{% url 'core:medicamento_create' %}">
+<!-- Modal para Crear Nuevo Medicamento -->
+<div id="crearMedicamentoModal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-60 flex justify-center items-center z-50 p-4 transition-opacity duration-300 ease-in-out">
+  <div class="modal-content-custom w-full max-w-lg">
+    <div class="modal-header-custom flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-gray-800" id="modal-title-crear-medicamento">{% translate "Crear Nuevo Medicamento" %}</h3>
+       <button type="button" id="closeCrearMedicamentoModal" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times fa-lg"></i></button>
+    </div>
+    <form id="formCrearMedicamento" novalidate class="modal-body-custom">
         {% csrf_token %}
-        <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-          <div class="sm:flex sm:items-start">
-
-            <!-- Icono -->
-            <div
-              class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 sm:mx-0 sm:h-10 sm:w-10">
-              <i class="fas fa-pills text-purple-600"></i>
-            </div>
-
-            <!-- Contenido principal -->
-            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-
-              <div class="mt-4 space-y-4">
-                <!-- Nombre -->
-                <div>
-                  <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre del Medicamento <span
-                      class="text-red-500">*</span></label>
-                  <input type="text" name="nombre_medicamento_modal" id="nombre" required
-                    class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
-                </div>
-
-                <!-- Tipo -->
-                <div>
-                  <label for="tipo_medicamento" class="block text-sm font-medium text-gray-700">Tipo de Medicamento <span
-                      class="text-red-500">*</span></label>
-                  <select name="tipo_medicamento_modal" id="tipo_medicamento" required
-                    class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md select2-simple focus:ring-purple-500 focus:border-purple-500">
-                    <option value="">Seleccione...</option>
-                    {% for tipo in tipos_medicamento_existentes %}
-                    <option value="{{ tipo.pk }}">{{ tipo.nombre }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-
-                <!-- Precio y Cantidad -->
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label for="precio" class="block text-sm font-medium text-gray-700">Precio <span
-                        class="text-red-500">*</span></label>
-                    <input type="number" name="precio_modal" id="precio" step="0.01" min="0" value="0.00" required
-                      class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
-                  </div>
-                  <div>
-                    <label for="cantidad" class="block text-sm font-medium text-gray-700">Stock Inicial <span
-                        class="text-red-500">*</span></label>
-                    <input type="number" name="cantidad_modal" id="cantidad" min="0" value="0" required
-                      class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
-                  </div>
-                </div>
-
-                <!-- Concentración -->
-                <div>
-                  <label for="concentracion" class="block text-sm font-medium text-gray-700">Concentración (Ej: 500mg)</label>
-                  <input type="text" name="concentracion_modal" id="concentracion"
-                    class="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
-                </div>
-                <div>
-                    <label for="via_administracion_modal" class="block text-sm font-medium text-gray-700">Vía de Administración <span
-                            class="text-red-500">*</span></label>
-                    <select name="via_administracion_modal" id="via_administracion" required
-                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500">
-                        <option value="">Seleccione...</option>
-                        <option value="oral">Oral</option>
-                        <option value="sublingual">sublingual</option>
-                        <option value="topica">topica</option>
-                        <option value="inhalatoria">inhalatoria</option>
-                        <option value="intravenosa">intravenosa</option>
-                        <option value="intramuscular">intramuscular</option>
-                        <option value="subcutanea">subcutanea</option>
-                        <option value="intratecal">intratecal</option>
-
-                        <option value="intraarticular">intraarticular</option>
-                        <option value="rectal">rectal</option>
-                        <option value="oftalmica">oftalmica</option>
-                        <option value="nasal">nasal</option>
-                        <option value="otra">otra</option>
-
-                        
-                        <!-- ... otras según tu modelo ... -->
-                    </select>
-                </div>
-
-                <p class="text-xs text-gray-500">Los campos marcados con <span class="text-red-500">*</span> son obligatorios.
-                  Puede editar el medicamento luego desde su sección correspondiente.</p>
-              </div>
-            </div>
+        <div>
+          <label for="nombre_medicamento_modal" class="form-label">{% translate "Nombre del Medicamento" %} <span class="text-red-500">*</span></label>
+          <input type="text" name="nombre_medicamento_modal" id="nombre_medicamento_modal" required class="form-input-tailwind">
+        </div>
+        <div>
+          <label for="tipo_medicamento_modal" class="form-label">{% translate "Tipo de Medicamento" %} <span class="text-red-500">*</span></label>
+          <select name="tipo_medicamento_modal" id="tipo_medicamento_modal" required class="form-select-tailwind select2-simple">
+            <option value="">{% translate "Seleccione..." %}</option>
+            {% for tipo in tipos_medicamento_existentes %}
+            <option value="{{ tipo.pk }}">{{ tipo.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="precio_modal" class="form-label">{% translate "Precio" %} <span class="text-red-500">*</span></label>
+            <input type="number" name="precio_modal" id="precio_modal" step="0.01" min="0" value="0.00" required class="form-input-tailwind">
+          </div>
+          <div>
+            <label for="cantidad_modal" class="form-label">{% translate "Stock Inicial" %} <span class="text-red-500">*</span></label>
+            <input type="number" name="cantidad_modal" id="cantidad_modal" min="0" value="0" required class="form-input-tailwind">
           </div>
         </div>
-
-        <!-- Footer botones -->
-        <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-          <button type="submit" id="guardarNuevoMedicamentoBtn"
-            class="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:text-sm">
-            Guardar Medicamento
-          </button>
-          <button type="button" id="cancelarCrearMedicamentoBtn"
-            class="mt-3 w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-gray-200 text-gray-900 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:text-sm">
-            Cancelar
-          </button>
+        <div>
+          <label for="concentracion_modal" class="form-label">{% translate "Concentración (Ej: 500mg)" %}</label>
+          <input type="text" name="concentracion_modal" id="concentracion_modal" class="form-input-tailwind">
         </div>
-      </form>
+        <div>
+            <label for="via_administracion_modal" class="form-label">{% translate "Vía de Administración" %} <span class="text-red-500">*</span></label>
+            <select name="via_administracion_modal" id="via_administracion_modal" required class="form-select-tailwind">
+                <option value="">{% translate "Seleccione..." %}</option>
+                <option value="oral">{% translate "Oral" %}</option>
+                <option value="sublingual">{% translate "Sublingual" %}</option>
+                <option value="topica">{% translate "Tópica" %}</option>
+                <option value="inhalatoria">{% translate "Inhalatoria" %}</option>
+                <option value="intravenosa">{% translate "Intravenosa" %}</option>
+                <option value="intramuscular">{% translate "Intramuscular" %}</option>
+                <option value="subcutanea">{% translate "Subcutánea" %}</option>
+                <option value="intratecal">{% translate "Intratecal" %}</option>
+                <option value="intraarticular">{% translate "Intraarticular" %}</option>
+                <option value="rectal">{% translate "Rectal" %}</option>
+                <option value="oftalmica">{% translate "Oftálmica" %}</option>
+                <option value="nasal">{% translate "Nasal" %}</option>
+                <option value="otra">{% translate "Otra" %}</option>
+            </select>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">{% translate "Los campos marcados con" %} <span class="text-red-500">*</span> {% translate "son obligatorios." %}</p>
+    </form>
+    <div class="modal-footer-custom">
+        <button type="button" id="cancelarCrearMedicamentoBtn" class="btn-secondary-custom text-sm py-2 px-4">{% translate "Cancelar" %}</button>
+        <button type="submit" form="formCrearMedicamento" id="guardarNuevoMedicamentoBtnSubmit" class="btn-primary-custom text-sm py-2 px-4">{% translate "Guardar Medicamento" %}</button>
     </div>
   </div>
 </div>
-
 
 {% endblock %}
 
 {% block js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
     // --------------------- UTILIDADES COMUNES ---------------------
-    function toggleModal(modal, show = true) {
-        modal.classList.toggle('hidden', !show);
+    function toggleModal(modalId, show = true) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.toggle('hidden', !show);
     }
 
-    function resetForm(form) {
-        form.reset();
-        form.querySelectorAll('.error-message, .form-error-message').forEach(e => e.remove());
-    }
-
-    function mostrarErrores(form, errors) {
-        resetForm(form);
-        for (const campo in errors) {
-            const input = form.querySelector(`[name=${campo}]`);
-            if (input) {
-                const errorMsg = document.createElement('p');
-                errorMsg.classList.add('error-message', 'text-red-600', 'text-sm', 'mt-1');
-                errorMsg.textContent = errors[campo].join(', ');
-                input.parentNode.appendChild(errorMsg);
-            }
+    function resetForm(formElement) {
+        if(formElement) {
+            formElement.reset();
+            formElement.querySelectorAll('.error-message').forEach(e => e.remove());
+            $(formElement).find('.select2-simple').val(null).trigger('change'); // Para Select2 dentro de modales
         }
     }
 
-    function getCSRFToken(form) {
-        return form.querySelector('input[name="csrfmiddlewaretoken"]').value;
+    function mostrarErrores(formElement, errors) {
+        if(!formElement) return;
+        formElement.querySelectorAll('.error-message').forEach(e => e.remove());
+
+        for (const campo in errors) {
+            const inputName = campo.endsWith('_modal') ? campo : `${campo}_modal`; // Adaptar a nombres de campo en modales
+            const input = formElement.querySelector(`[name=${inputName}], [name=${campo}]`);
+            if (input) {
+                const errorContainer = document.createElement('p');
+                errorContainer.classList.add('error-message', 'text-red-600', 'text-xs', 'italic', 'mt-1');
+                let errorText = "";
+                if (Array.isArray(errors[campo])) {
+                    errorText = errors[campo].map(e => e.message || e).join(', ');
+                } else if (typeof errors[campo] === 'string') {
+                    errorText = errors[campo];
+                }
+                errorContainer.textContent = errorText;
+                const parent = $(input).data('select2') ? $(input).next('.select2-container').parent() : $(input).parent();
+                parent.append(errorContainer);
+            }
+        }
+         if (errors['__all__']) {
+            const generalErrorDiv = document.createElement('div');
+            generalErrorDiv.classList.add('error-message', 'mb-3', 'p-3', 'bg-red-100', 'text-red-700', 'text-sm', 'rounded-md');
+            generalErrorDiv.textContent = errors['__all__'].join(', ');
+            formElement.prepend(generalErrorDiv);
+        }
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('#atencionForm input[name="csrfmiddlewaretoken"]').value;
     }
 
     // --------------------- RECONOCIMIENTO DE VOZ ---------------------
     (function voiceRecognition() {
         const btn = document.getElementById('startVoiceComentario');
-        const textarea = document.getElementById('id_comentario_adicional');
+        const textarea = document.getElementById('id_comentario_adicional'); // Asumiendo que widget_tweaks o Crispy genera este ID
+        if (!btn || !textarea) return;
 
         if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            if (btn) btn.style.display = 'none';
+            btn.style.display = 'none';
             console.warn('Este navegador no soporta reconocimiento de voz.');
             return;
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
-        const icon = btn ? btn.querySelector('i') : null;
-
+        const icon = btn.querySelector('i');
         recognition.lang = 'es-ES';
         recognition.interimResults = true;
         recognition.continuous = false;
 
         let isRecognizing = false;
-        const originalIconClass = icon ? icon.className : 'fas fa-microphone';
+        const originalIconClass = icon.className;
         const recordingIconClass = 'fas fa-stop-circle animate-pulse text-red-500';
 
-        btn?.addEventListener('click', function () {
+        btn.addEventListener('click', function () {
             if (isRecognizing) {
                 recognition.stop();
             } else {
-                textarea?.focus();
-                try {
-                    recognition.start();
-                } catch (e) {
-                    console.error("Error al iniciar reconocimiento: ", e);
-                    recognition.abort();
-                    isRecognizing = false;
-                    if (icon) icon.className = originalIconClass;
-                    Swal.fire('Error', 'No se pudo iniciar el reconocimiento de voz. Verifique permisos del micrófono.', 'error');
+                textarea.focus();
+                try { recognition.start(); }
+                catch (e) {
+                    console.error("Error al iniciar reconocimiento: ", e); recognition.abort();
+                    Swal.fire('Error', 'No se pudo iniciar el reconocimiento de voz. Verifique permisos.', 'error');
                 }
             }
         });
-
-        recognition.onstart = () => {
-            isRecognizing = true;
-            if (icon) icon.className = recordingIconClass;
-            btn.title = "Detener grabación";
-        };
-
-        recognition.onerror = (event) => {
-            console.error('Error reconocimiento:', event.error);
-            Swal.fire('Error', `Ocurrió un error en el reconocimiento: ${event.error}`, 'error');
-        };
-
-        recognition.onend = () => {
-            isRecognizing = false;
-            if (icon) icon.className = originalIconClass;
-            btn.title = "Grabar comentario por voz";
-        };
-
+        recognition.onstart = () => { isRecognizing = true; icon.className = recordingIconClass; btn.title = "Detener grabación"; };
+        recognition.onerror = (event) => { if (event.error !== 'no-speech' && event.error !== 'aborted') Swal.fire('Error', `Error en reconocimiento: ${event.error}`, 'error');};
+        recognition.onend = () => { isRecognizing = false; icon.className = originalIconClass; btn.title = "Grabar comentario por voz"; };
         recognition.onresult = (event) => {
             let finalTranscript = '';
             for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
-                }
+                if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
             }
-            if (textarea && finalTranscript) {
-                textarea.value += (textarea.value.endsWith(' ') ? '' : ' ') + finalTranscript.trim() + ' ';
+            if (finalTranscript) {
+                const currentVal = textarea.value;
+                const separator = (currentVal.length > 0 && !currentVal.endsWith(' ')) ? ' ' : '';
+                textarea.value += separator + finalTranscript.trim() + ' ';
             }
         };
     })();
 
-    // --------------------- SELECT2 BUSCAR PACIENTES ---------------------
-    $('#id_paciente').select2({
-        placeholder: 'Buscar paciente por nombre',
-        minimumInputLength: 2,
-        ajax: {
-            url: "{% url 'doctor:ajax_search_patient_by_name' %}", // Asegúrate que esta URL exista y funcione
-            dataType: 'json',
-            delay: 250,
-            data: function (params) {
-                return {
-                    nombre: params.term, // Parámetro de búsqueda
-                    page: params.page
-                };
-            },
-            processResults: function (data, params) {
-                params.page = params.page || 1;
-                return {
-                    results: data.pacientes.map(p => ({ // `data.pacientes` debe ser la lista de pacientes en la respuesta JSON
-                        id: p.id,
-                        text: `${p.primer_nombre} ${p.apellido}${p.dni ? ' - ' + p.dni : ''}`,
-                        // Puedes añadir aquí más datos del paciente si los necesitas al seleccionar
-                        // Por ejemplo: full_data: p
-                    })),
-                    pagination: {
-                        more: (params.page * 10) < data.total_count // Asumiendo que `data.total_count` es el total de pacientes
-                    }
-                };
-            },
-            cache: true
-        },
-        escapeMarkup: function (markup) { return markup; }, // Permite HTML en los resultados, si es necesario
-    });
+    // --------------------- SELECT2 PARA CAMPO PACIENTE ---------------------
+    const pacienteDisplayInput = $('#paciente_nombre_display'); // Este es el input visible para Select2
+    const pacienteHiddenDjangoInput = $('#id_paciente');    // Este es el <input type="hidden" name="paciente"> de Django
 
-    // --------------------- MEDICAMENTOS: SELECT2 Y CREACIÓN ---------------------
-    let currentMedicamentoSelect2 = null; // Para saber qué select de medicamento actualizar después de crear uno nuevo
+    if (pacienteDisplayInput.length) {
+        pacienteDisplayInput.select2({
+            placeholder: '{% translate "Buscar paciente por nombre, apellido o DNI..." %}',
+            minimumInputLength: 2,
+            allowClear: true,
+            // theme: "bootstrap-5", // Descomentar si se usa el tema de Bootstrap 5 para Select2
+            ajax: {
+                url: "{% url 'doctor:ajax_search_patient_by_name' %}",
+                dataType: 'json',
+                delay: 300,
+                data: params => ({ term: params.term, page: params.page || 1 }),
+                processResults: (data, params) => ({
+                    results: data.results.map(p => ({ id: p.id, text: p.text, full_data: p.full_data })),
+                    pagination: { more: data.pagination.more }
+                }),
+                cache: true
+            },
+            escapeMarkup: markup => markup,
+        }).on('select2:select', function (e) {
+            var data = e.params.data;
+            if (data && data.id) {
+                pacienteHiddenDjangoInput.val(data.id).trigger('change'); // Actualizar el campo oculto de Django
+                if (data.full_data) {
+                    const p = data.full_data;
+                    $('#infoPacienteSeleccionado').html(`
+                        <h4 class="font-semibold text-indigo-700 mb-2 text-sm">{% translate "Info. del Paciente:" %}</h4>
+                        <p><strong>{% translate "Nombre:" %}</strong> ${p.primer_nombre || ''} ${p.apellido || ''}</p>
+                        <p><strong>{% translate "DNI:" %}</strong> ${p.dni || 'N/A'}</p>
+                        <p><strong>{% translate "Edad:" %}</strong> ${p.edad_calculada || 'N/A'} {% translate "años" %}</p>
+                        <p><strong>{% translate "Teléfono:" %}</strong> ${p.phone || 'N/A'}</p>`);
+                }
+            }
+        }).on('select2:unselect', function (e) {
+            pacienteHiddenDjangoInput.val('').trigger('change'); // Limpiar el campo oculto
+            $('#infoPacienteSeleccionado').html(`<p class="italic text-gray-500 py-4">{% translate "Seleccione un paciente para ver sus detalles aquí." %}</p>`);
+        });
+
+        // Inicializar con valor existente si estamos editando
+        const initialPacienteId = pacienteHiddenDjangoInput.val();
+        const initialPacienteNombre = pacienteDisplayInput.data('initial-text') || ("{{ form.paciente_nombre.value|escapejs }}" || "");
+        if (initialPacienteId && initialPacienteNombre) {
+            var option = new Option(initialPacienteNombre, initialPacienteId, true, true);
+            pacienteDisplayInput.append(option).trigger('change');
+        }
+    }
+
+    // --------------------- SELECT2 PARA DIAGNÓSTICOS ---------------------
+    const diagnosticoSelect = $('.select2-diagnosticos');
+    if (diagnosticoSelect.length) {
+        diagnosticoSelect.select2({
+            placeholder: '{% translate "Seleccionar diagnósticos..." %}',
+            width: '100%',
+            allowClear: true,
+            // theme: "bootstrap-5", // Descomentar si se usa el tema de Bootstrap 5 para Select2
+        });
+    }
+
+    // --------------------- MEDICAMENTOS: SELECT2 Y FORMSET ---------------------
+    let currentMedicamentoSelect2Target = null;
 
     function initializeMedicamentoSelect2(selector) {
-        $(selector).select2({
-            placeholder: 'Buscar medicamento...',
+        const $selector = $(selector);
+        if ($selector.hasClass('select2-hidden-accessible')) $selector.select2('destroy');
+
+        $selector.select2({
+            placeholder: '{% translate "Buscar medicamento..." %}',
             minimumInputLength: 1,
+            allowClear: true,
+            width: '100%',
+            // theme: "bootstrap-5",
             ajax: {
-                url: "{% url 'core:ajax_search_medicamento' %}", // URL para buscar medicamentos
+                url: "{% url 'doctor:ajax_search_medicamento' %}",
                 dataType: 'json',
                 delay: 250,
-                data: params => ({ nombre: params.term }),
-                processResults: data => ({
-                    results: data.results || [],
-                    pagination: data.pagination || {}
-                }),
+                data: params => ({ term: params.term }),
+                processResults: data => ({ results: data.results.map(m => ({ id: m.id, text: m.text })) || [] }),
                 cache: true
             }
         }).on('select2:select', function(e) {
             const data = e.params.data;
-            const prefix = $(this).closest('.detalle-form').data('prefix');
-            // Actualizar el campo oculto del ID del medicamento para el formset
-            $(`#id_${prefix}-medicamento`).val(data.id);
+            const formRow = $(this).closest('.detalle-form');
+            formRow.find('input[name$="-medicamento"]').val(data.id);
+        }).on('select2:unselect', function(e) {
+            const formRow = $(this).closest('.detalle-form');
+            formRow.find('input[name$="-medicamento"]').val('');
         });
     }
 
-    // Inicializar Select2 para los campos de medicamento existentes
-    $('.medicamento-select2').each(function() {
-        initializeMedicamentoSelect2(this);
-        // Si hay un valor inicial en el campo oculto de medicamento (al editar),
-        // se debería cargar el nombre del medicamento en el Select2.
-        const prefix = $(this).closest('.detalle-form').data('prefix');
-        const medicamentoId = $(`#id_${prefix}-medicamento`).val();
-        const medicamentoNombreInput = $(`#id_${prefix}-medicamento_nombre`); // Asumiendo que tienes este campo o similar
+    $('#detalleAtencionFormset .detalle-form').each(function() {
+        const formRow = $(this);
+        const selectDisplay = formRow.find('.medicamento-select2'); // El select visible
+        const hiddenInput = formRow.find('input[name$="-medicamento"]'); // El input hidden de Django
+        const initialMedicamentoId = hiddenInput.val();
 
-        if (medicamentoId && medicamentoNombreInput.val()) { // medicamentoNombreInput puede ser el campo que Django renderiza
-             var option = new Option(medicamentoNombreInput.val(), medicamentoId, true, true);
-             $(this).append(option).trigger('change');
-        } else if (medicamentoId) {
-            // Si solo tienes el ID, necesitarías hacer un AJAX para obtener el nombre y mostrarlo
-            // Esto es importante para la edición de formularios existentes.
-            // fetch(`/api/medicamento-detail/${medicamentoId}/`) // URL hipotética
-            // .then(res => res.json())
-            // .then(data => {
-            //     var option = new Option(data.nombre, data.id, true, true);
-            //     $(this).append(option).trigger('change');
-            // });
-        }
-    });
+        initializeMedicamentoSelect2(selectDisplay);
 
-    // Evento para los botones "Crear medicamento" DENTRO de cada fila del formset
-    $('#detalleAtencionFormset').on('click', '.abrirCrearMedicamentoFilaBtn', function() {
-        currentMedicamentoSelect2 = $(this).closest('.lg\\:col-span-2').find('.medicamento-select2');
-        const modal = document.getElementById('crearMedicamentoModal');
-        const form = document.getElementById('formCrearMedicamento');
-        resetForm(form);
-        // initSelect2DelModalMedicamento(); // Asegúrate que el select2 dentro del modal esté bien
-        toggleModal(modal, true);
-        form.querySelector('input[name="nombre_medicamento_modal"]').focus();
-    });
-    
-    // Botón general "Crear Nuevo Medicamento" (fuera del formset)
-    // Este botón ya está asociado al modal en el código original, pero no tiene contexto de fila.
-    // Lo mantendremos así, y el usuario tendrá que seleccionar el medicamento en una fila manualmente.
-    // O, podríamos hacer que al crear, se añada a la *primera fila vacía* o *nueva fila*.
-    // Por ahora, el `currentMedicamentoSelect2` será null si se usa este botón general.
-    document.getElementById('crearNuevoMedicamentoBtn')?.addEventListener('click', () => {
-        currentMedicamentoSelect2 = null; // No hay un select específico de fila asociado
-        const modal = document.getElementById('crearMedicamentoModal');
-        const form = document.getElementById('formCrearMedicamento');
-        resetForm(form);
-        // initSelect2DelModalMedicamento();
-        toggleModal(modal, true);
-        form.querySelector('input[name="nombre_medicamento_modal"]').focus();
-    });
-
-
-    // MODAL CREAR MEDICAMENTO (Adaptado)
-    (function crearMedicamento() {
-    const modal = document.getElementById('crearMedicamentoModal');
-    const form = document.getElementById('formCrearMedicamento');
-    const abrirBtn = document.getElementById('abrirCrearMedicamentoBtn');
-    const cancelarBtn = document.getElementById('cancelarCrearMedicamentoBtn');
-    const guardarBtn = document.getElementById('guardarNuevoMedicamentoBtn');
-
-    // Inicializar Select2 una vez al abrir modal
-    function initSelect2() {
-      const select = $('#tipo_medicamento');
-      if (!$('#tipo_medicamento').hasClass('select2-hidden-accessible')) {
-            $('#tipo_medicamento').select2({
-                placeholder: "Seleccione...",
-                dropdownParent: $('#crearMedicamentoModal'),
-                width: '100%',
-                allowClear: true,
-                minimumResultsForSearch: 0
+        if (initialMedicamentoId) {
+            // Para el valor inicial, necesitamos el texto. La vista AJAX debería poder buscar por ID.
+            $.ajax({
+                type: 'GET',
+                url: "{% url 'doctor:ajax_search_medicamento' %}",
+                data: { 'id_exacto': initialMedicamentoId } // La vista AJAX debe soportar este param
+            }).then(function (data) {
+                if (data.results && data.results.length > 0) {
+                    var med = data.results[0];
+                    var option = new Option(med.text, med.id, true, true);
+                    selectDisplay.append(option).trigger('change');
+                }
             });
         }
-    }
-
-    abrirBtn?.addEventListener('click', () => {
-      resetForm(form);
-      initSelect2();
-      toggleModal(modal, true);
-      // Poner foco en nombre
-      form.querySelector('#nombre').focus();
     });
+    
+    (function() { // IIFE para el manejo del formset
+        const formsetContainer = document.getElementById('detalleAtencionFormset');
+        const addButton = document.getElementById('addDetalleAtencion');
+        const templateNode = document.getElementById('detalleAtencionTemplate'); // Es un <template>
+        const totalFormsInput = document.querySelector('input[name="detalles-TOTAL_FORMS"]');
+        const formsetPrefix = "detalles";
 
-    cancelarBtn?.addEventListener('click', () => {
-      toggleModal(modal, false);
-      resetForm(form);
-      // Limpiar select2
-      $('#tipo_medicamento').val(null).trigger('change');
-    });
+        if (!formsetContainer || !addButton || !templateNode || !totalFormsInput) {
+            console.error('Elementos del formset no encontrados.');
+            return;
+        }
 
-    guardarBtn?.addEventListener('click', (event) => {
-      // event.preventDefault();
-    });
-    //   resetForm(form);
-    //   const token = getCSRFToken(form);
-    //   console.log('Token CSRF en JS:', token);
-    //   guardarBtn.disabled = true;
-    //   guardarBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+        addButton.addEventListener('click', function() {
+            let formNum = parseInt(totalFormsInput.value);
 
-    //   fetch('/core/ajax/medicamento/crear/', {
-    //     method: 'POST',
-    //     headers: { 'X-CSRFToken': getCSRFToken(form) },
-    //     body: new FormData(form),
-    //   })
-    //     .then(res => res.ok ? res.json() : res.json().then(err => Promise.reject(err)))
-    //     .then(data => {
-    //       Swal.fire({
-    //         icon: 'success',
-    //         title: '¡Medicamento Creado!',
-    //         text: `Medicamento: ${data.medicamento.nombre}`,
-    //         timer: 2000,
-    //         showConfirmButton: false
-    //       });
+            const newFormHtml = templateNode.innerHTML.replace(/__prefix__/g, formNum);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = newFormHtml;
+            const newFormElement = tempDiv.firstElementChild;
 
-    //       toggleModal(modal, false);
-    //       resetForm(form);
-    //       $('#tipo_medicamento').val(null).trigger('change'); // Resetear select2 del modal
+            newFormElement.setAttribute('data-prefix', formNum);
+            formsetContainer.appendChild(newFormElement);
 
-    //       if (data.status === 'success' && data.medicamento) {
-    //         // Si currentMedicamentoSelect2 está definido (se hizo clic desde una fila)
-    //         if (currentMedicamentoSelect2 && currentMedicamentoSelect2.length) {
-    //             const newOption = new Option(data.medicamento.nombre, data.medicamento.id, true, true);
-    //             currentMedicamentoSelect2.append(newOption).trigger('change');
+            $(newFormElement).find('.medicamento-select2').each(function() {
+                initializeMedicamentoSelect2(this);
+            });
 
-    //             // Actualizar el campo oculto de ID del medicamento para esa fila
-    //             const prefix = currentMedicamentoSelect2.closest('.detalle-form').data('prefix');
-    //             $(`#id_${prefix}-medicamento`).val(data.medicamento.id);
+            totalFormsInput.value = formNum + 1;
+        });
 
-    //         } else {
-    //             // Si se creó desde el botón general, el usuario deberá seleccionarlo manualmente.
-    //             // Opcionalmente, podríamos añadirlo a una nueva fila o a la primera vacía.
-    //             // Por ahora, solo notificamos.
-    //             Swal.fire({
-    //                 icon: 'info',
-    //                 title: 'Medicamento Añadido',
-    //                 text: `${data.medicamento.nombre} ha sido añadido al sistema. Por favor, selecciónelo en la fila deseada.`,
-    //                 timer: 3000,
-    //                 showConfirmButton: true
-    //             });
-    //         }
-    //         // Resetear currentMedicamentoSelect2 para la próxima vez
-    //         currentMedicamentoSelect2 = null;
-    //       }
-    //     })
-    //     .catch(err => {
-    //       console.error('Error al crear medicamento:', err);
-    //       if (err.errors) {
-    //         mostrarErrores(form, err.errors);
-    //       } else if (err.message) {
-    //         Swal.fire('Error', err.message, 'error');
-    //       } else {
-    //         Swal.fire('Error', 'Error inesperado al crear medicamento.', 'error');
-    //       }
-    //     })
-    //     .finally(() => {
-    //       guardarBtn.disabled = false;
-    //       guardarBtn.textContent = 'Guardar Medicamento';
-    //     });
-    // });
-    // })();
+        formsetContainer.addEventListener('click', function(event) {
+            const removeButton = event.target.closest('.remove-form-row-dynamic');
+            if (removeButton) {
+                const formRow = removeButton.closest('.detalle-form');
+                const deleteCheckbox = formRow.querySelector(`input[name$="-DELETE"]`);
 
-    // --------------------- MODAL CREAR PACIENTE ---------------------
-    (function crearPaciente() {
+                if (deleteCheckbox) {
+                    deleteCheckbox.checked = true;
+                    formRow.style.display = 'none';
+                } else {
+                    formRow.remove();
+                }
+            }
+        });
+
+        formsetContainer.addEventListener('change', function(event) {
+            if (event.target.matches('input[type="checkbox"][name$="-DELETE"]')) {
+                const formRow = event.target.closest('.detalle-form');
+                if (formRow) {
+                    if (event.target.checked) {
+                        formRow.style.opacity = '0.5';
+                        formRow.querySelectorAll('input:not([type="checkbox"]), select:not(.select2-hidden-accessible), textarea').forEach(el => el.disabled = true);
+                        $(formRow).find('.medicamento-select2').select2('disable');
+                    } else {
+                        formRow.style.opacity = '1';
+                        formRow.querySelectorAll('input:not([type="checkbox"]), select:not(.select2-hidden-accessible), textarea').forEach(el => el.disabled = false);
+                        $(formRow).find('.medicamento-select2').select2('enable');
+                    }
+                }
+            }
+        });
+    })();
+
+    // --- MODAL CREAR MEDICAMENTO ---
+    (function() {
+        const modal = document.getElementById('crearMedicamentoModal');
+        const form = document.getElementById('formCrearMedicamento');
+        const cancelarBtn = document.getElementById('cancelarCrearMedicamentoBtn');
+        const closeBtn = document.getElementById('closeCrearMedicamentoModal');
+
+        document.getElementById('crearNuevoMedicamentoBtn')?.addEventListener('click', () => {
+            currentMedicamentoSelect2Target = null;
+            resetForm(form);
+            const tipoMedModalSelect = $('#tipo_medicamento_modal'); // ID del select en el modal
+            if(tipoMedModalSelect.length && !tipoMedModalSelect.hasClass('select2-hidden-accessible')){
+                tipoMedModalSelect.select2({
+                    placeholder: "{% translate 'Seleccione tipo...' %}",
+                    dropdownParent: $('#crearMedicamentoModal'),
+                    width: '100%', allowClear: true,
+                });
+            }
+            toggleModal('crearMedicamentoModal', true);
+            form.querySelector('#nombre_medicamento_modal').focus();
+        });
+
+        cancelarBtn?.addEventListener('click', () => toggleModal('crearMedicamentoModal', false));
+        closeBtn?.addEventListener('click', () => toggleModal('crearMedicamentoModal', false));
+
+        form?.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const guardarBtnSubmit = form.querySelector('button[type="submit"]');
+            const originalButtonText = guardarBtnSubmit.innerHTML;
+            guardarBtnSubmit.disabled = true;
+            guardarBtnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> {% translate "Guardando..." %}';
+            form.querySelectorAll('.error-message').forEach(e => e.remove());
+
+            fetch("{% url 'doctor:ajax_crear_medicamento' %}", {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRFToken() },
+                body: new FormData(form),
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.medicamento_id) {
+                    Swal.fire('{% translate "¡Éxito!" %}',`{% translate "Medicamento:" %} ${data.medicamento_nombre} {% translate "creado." %}`,'success');
+                    toggleModal('crearMedicamentoModal', false);
+                    resetForm(form);
+
+                    if (currentMedicamentoSelect2Target && currentMedicamentoSelect2Target.length) {
+                        const newOption = new Option(data.medicamento_text, data.medicamento_id, true, true);
+                        currentMedicamentoSelect2Target.append(newOption).trigger('change');
+                        const formRow = currentMedicamentoSelect2Target.closest('.detalle-form');
+                        formRow.find('input[name$="-medicamento"]').val(data.medicamento_id);
+                    } else {
+                         Swal.fire('{% translate "Info" %}',`${data.medicamento_nombre} {% translate "añadido. Selecciónelo en la lista." %}`,'info');
+                    }
+                    currentMedicamentoSelect2Target = null;
+                } else {
+                    let errorsObj = data.errors;
+                    if (typeof data.errors === 'string') {
+                        try { errorsObj = JSON.parse(data.errors); } catch (e) { console.error("Error parsing errors JSON", e); errorsObj = {'general': [data.message || '{% translate "Error desconocido" %}']}; }
+                    }
+                    mostrarErrores(form, errorsObj || {'general': [data.message || '{% translate "No se pudo crear el medicamento." %}']});
+                }
+            })
+            .catch(err => {
+                console.error('Error en fetch crear medicamento:', err);
+                Swal.fire('{% translate "Error de Conexión" %}', '{% translate "Error inesperado. Revise la consola." %}', 'error');
+            })
+            .finally(() => {
+                guardarBtnSubmit.disabled = false;
+                guardarBtnSubmit.innerHTML = originalButtonText;
+            });
+        });
+    })();
+
+    // --- MODAL CREAR PACIENTE ---
+    (function() {
         const modal = document.getElementById('crearPacienteModal');
         const form = document.getElementById('formCrearPaciente');
-        const pacienteSelect = $('#id_paciente'); // Select2 instance
+        const pacienteDisplaySelect2 = $('#paciente_nombre_display');
+        const closeBtn = document.getElementById('closeCrearPacienteModal');
 
         document.getElementById('abrirCrearPacienteBtn')?.addEventListener('click', () => {
             resetForm(form);
-            toggleModal(modal, true);
-            form.querySelector('#id_primer_nombre').focus();
+            toggleModal('crearPacienteModal', true);
+            form.querySelector('#id_primer_nombre_modal').focus();
         });
 
-        document.getElementById('cancelarCrearPacienteBtn')?.addEventListener('click', () => toggleModal(modal, false));
-        modal?.addEventListener('click', e => { if (e.target === modal) toggleModal(modal, false); });
+        document.getElementById('cancelarCrearPacienteBtn')?.addEventListener('click', () => toggleModal('crearPacienteModal', false));
+        closeBtn?.addEventListener('click', () => toggleModal('crearPacienteModal', false));
+        modal?.addEventListener('click', e => { if (e.target === modal) toggleModal('crearPacienteModal', false); });
 
-        form.addEventListener('submit', function(event) { // Changed to listen to form submit
-            event.preventDefault(); // Prevent default form submission
+        form?.addEventListener('submit', function(event) {
+            event.preventDefault();
             const guardarBtn = form.querySelector('#guardarNuevoPacienteBtn');
-            guardarBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
+            const originalButtonText = guardarBtn.innerHTML;
+            guardarBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> {% translate "Guardando..." %}';
             guardarBtn.disabled = true;
+            form.querySelectorAll('.error-message').forEach(e => e.remove());
 
             fetch("{% url 'doctor:ajax_create_patient' %}", {
                 method: 'POST',
-                headers: { 'X-CSRFToken': getCSRFToken(form) }, // Ensure getCSRFToken works with this form if different from main
+                headers: { 'X-CSRFToken': getCSRFToken() },
                 body: new FormData(form)
             })
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success' && data.paciente) {
-                    Swal.fire('¡Paciente Creado!', `El paciente ${data.paciente.primer_nombre} ${data.paciente.apellido} ha sido creado.`, 'success');
-                    toggleModal(modal, false);
+                    Swal.fire('{% translate "¡Éxito!" %}', `{% translate "Paciente" %} ${data.paciente.primer_nombre} ${data.paciente.apellido} {% translate "creado." %}`, 'success');
+                    toggleModal('crearPacienteModal', false);
 
-                    // Crear nueva opción para Select2
                     const newOption = new Option(
                         `${data.paciente.primer_nombre} ${data.paciente.apellido}${data.paciente.dni ? ' - ' + data.paciente.dni : ''}`,
-                        data.paciente.id,
-                        true, // defaultSelected
-                        true  // selected
-                    );
-                    pacienteSelect.append(newOption).trigger('change');
+                        data.paciente.id, true, true );
+                    pacienteDisplaySelect2.append(newOption).trigger('change');
 
-                    // Actualizar la información del paciente seleccionado
-                    document.getElementById('infoPacienteSeleccionado').innerHTML = `
-                        <p><strong>Cédula:</strong> ${data.paciente.dni || 'N/A'}</p>
-                        <p><strong>Edad:</strong> ${data.paciente.edad || 'N/A'} años</p>
-                        <p><strong>Teléfono:</strong> ${data.paciente.phone || 'N/A'}</p>
-                    `;
-                     // Disparar evento change en el select2 para actualizar cualquier otro listener
-                    pacienteSelect.trigger({
+                    pacienteDisplaySelect2.trigger({
                         type: 'select2:select',
-                        params: {
-                            data: {
-                                id: data.paciente.id,
-                                text: `${data.paciente.primer_nombre} ${data.paciente.apellido}${data.paciente.dni ? ' - ' + data.paciente.dni : ''}`,
-                                full_data: data.paciente // puedes pasar el objeto completo si es necesario
-                            }
-                        }
+                        params: { data: { id: data.paciente.id, text: newOption.text, full_data: data.paciente } }
                     });
-
-
                 } else {
-                    mostrarErrores(form, data.errors || {'general': ['No se pudo crear el paciente.']});
+                     let errorsObj = data.errors;
+                    if (typeof data.errors === 'string') {
+                        try { errorsObj = JSON.parse(data.errors); } catch (e) { console.error("Error parsing errors JSON", e); errorsObj = {'general': [data.message || '{% translate "Error desconocido" %}']}; }
+                    }
+                    mostrarErrores(form, errorsObj || {'general': [data.message||'{% translate "No se pudo crear el paciente." %}']});
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                Swal.fire('Error de Conexión', 'No se pudo conectar con el servidor. Intente de nuevo.', 'error');
+                Swal.fire('{% translate "Error de Conexión" %}', '{% translate "No se pudo conectar con el servidor." %}', 'error');
             })
             .finally(() => {
-                guardarBtn.innerHTML = 'Guardar Paciente';
+                guardarBtn.innerHTML = originalButtonText;
                 guardarBtn.disabled = false;
             });
         });
     })();
 
-    // Listener para cuando se selecciona un paciente en el Select2 principal
-    $('#id_paciente').on('select2:select', function (e) {
-        var data = e.params.data;
-        // Si la data completa del paciente no viene en e.params.data,
-        // necesitarías hacer otro AJAX call para obtener detalles o asegurar que ajax_search_patient_by_name devuelva más info.
-        // Por ahora, asumimos que la vista ajax_search_patient_by_name podría ser extendida o que la info básica es suficiente.
-        // Si 'full_data' fue añadido en la creación, podemos usarlo.
-        let pacienteInfo = data.full_data;
+    // --- MODAL PREVISUALIZACIÓN ---
+    (function() {
+        const previsualizacionModal = document.getElementById('previsualizacionModal');
+        const previsualizacionContenido = document.getElementById('previsualizacionContenido');
+        const cerrarPrevisualizacionBtn = document.getElementById('cerrarPrevisualizacionBtn');
+        const closePrevisualizacionModalBtn = document.getElementById('closePrevisualizacionModal');
+        // const abrirPrevisualizacionBtn = document.getElementById('abrirPrevisualizacionBtn'); // Si tuvieras un botón dedicado
 
-        if (pacienteInfo) {
-             document.getElementById('infoPacienteSeleccionado').innerHTML = `
-                <p><strong>Cédula:</strong> ${pacienteInfo.dni || 'N/A'}</p>
-                <p><strong>Edad:</strong> ${pacienteInfo.edad || 'N/A'} años</p>
-                <p><strong>Teléfono:</strong> ${pacienteInfo.phone || 'N/A'}</p>
-            `;
-        } else {
-            // Fallback si full_data no está, se podría hacer un fetch aquí para obtener más datos si es necesario
-            // O simplemente mostrar lo que se tiene:
-            document.getElementById('infoPacienteSeleccionado').innerHTML = `<p class="italic">Detalles adicionales no cargados completamente. Seleccione de nuevo o la búsqueda debe proveer más datos.</p>`;
-            // Para una mejor UX, la vista `ajax_search_patient_by_name` debería devolver todos los campos necesarios
-            // para actualizar `infoPacienteSeleccionado`.
-            // Por ahora, vamos a solicitar los datos del paciente.
-            fetch(`{% url 'doctor:ajax_search_patient_dni' %}?dni=${data.text.split(' - ')[1]}`) // Asume que el DNI está en el texto
-            .then(response => response.json())
-            .then(pacienteData => {
-                if (pacienteData.pacientes && pacienteData.pacientes.length > 0) {
-                    const p = pacienteData.pacientes[0];
-                     document.getElementById('infoPacienteSeleccionado').innerHTML = `
-                        <p><strong>Cédula:</strong> ${p.dni || 'N/A'}</p>
-                        <p><strong>Edad:</strong> ${p.edad || 'N/A'} años</p> {/* Asumiendo que 'edad' se calcula o se añade a la respuesta AJAX */}
-                        <p><strong>Teléfono:</strong> ${p.phone || 'N/A'}</p>
-                    `;
-                } else {
-                    document.getElementById('infoPacienteSeleccionado').innerHTML = `<p class="italic">No se pudieron cargar los detalles del paciente.</p>`;
-                }
-            }).catch(() => {
-                document.getElementById('infoPacienteSeleccionado').innerHTML = `<p class="italic">Error al cargar detalles del paciente.</p>`;
-            });
-        }
-    });
+        // if(abrirPrevisualizacionBtn) {
+        //     abrirPrevisualizacionBtn.addEventListener('click', function() {
+        //         previsualizacionContenido.innerHTML = `<p class="text-sm text-gray-500 italic">{% translate "Cargando previsualización..." %}</p>`;
+        //         toggleModal('previsualizacionModal', true);
+        //         fetch("{% url 'doctor:ajax_previsualizar_atencion' %}", {
+        //             method: 'POST',
+        //             headers: { 'X-CSRFToken': getCSRFToken() },
+        //             body: new FormData(document.getElementById('atencionForm'))
+        //         })
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             if (data.status === 'success') {
+        //                 previsualizacionContenido.innerHTML = data.html_preview;
+        //             } else {
+        //                 previsualizacionContenido.innerHTML = `<p class="text-red-500">Error: ${data.message || 'No se pudo cargar la previsualización.'}</p>`;
+        //             }
+        //         })
+        //         .catch(error => {
+        //             console.error('Error fetching preview:', error);
+        //             previsualizacionContenido.innerHTML = `<p class="text-red-500">{% translate "Error al cargar la previsualización." %}</p>`;
+        //         });
+        //     });
+        // }
+        cerrarPrevisualizacionBtn?.addEventListener('click', () => toggleModal('previsualizacionModal', false));
+        closePrevisualizacionModalBtn?.addEventListener('click', () => toggleModal('previsualizacionModal', false));
+        previsualizacionModal?.addEventListener('click', e => { if (e.target === previsualizacionModal) toggleModal('previsualizacionModal', false);});
+    })();
 
+    // Inicializar Select2 para diagnósticos que ya está en el DOM
+    const diagnosticoSelectGlobal = $('.select2-diagnosticos');
+    if (diagnosticoSelectGlobal.length > 0 && !diagnosticoSelectGlobal.hasClass('select2-hidden-accessible')) {
+        diagnosticoSelectGlobal.select2({
+            placeholder: '{% translate "Seleccionar diagnósticos..." %}',
+            width: '100%',
+            allowClear: true,
+            // theme: "bootstrap-5",
+        });
+    }
 });
-})
 </script>
-
-
-
 {% endblock js %}

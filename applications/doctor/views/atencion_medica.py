@@ -7,9 +7,12 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 
 from applications.security.components.mixin_crud import PermissionMixin, ListViewMixin, CreateViewMixin, UpdateViewMixin, DeleteViewMixin
-from applications.doctor.models import Atencion, DetalleAtencion
-from applications.core.models import Paciente, Medicamento, Diagnostico, TipoMedicamento # Asegúrate de importar Medicamento
-from applications.doctor.forms import AtencionForm, DetalleAtencionFormSet, AtencionFilterForm
+# Modelos de la app doctor
+from applications.doctor.models import Atencion, DetalleAtencion, Patient as DoctorPatient
+# Modelos de la app core que se usan
+from applications.core.models import Medicamento, Diagnostico, TipoMedicamento
+# Formularios
+from applications.doctor.forms.atencion import AtencionForm, DetalleAtencionFormSet, AtencionFilterForm
 from proy_clinico.util import save_audit # Asumiendo que tienes esta utilidad
 
 
@@ -21,69 +24,67 @@ class AtencionListView(PermissionMixin, ListViewMixin, ListView):
     form_class = AtencionFilterForm
 
     def get_queryset(self):
-        # Usar self.query que ya está inicializado en ListViewMixin
-        self.query = Q() # Reiniciar query para esta vista específica si es necesario
-        queryset = self.model.objects.select_related('paciente').prefetch_related('diagnostico', 'detalles__medicamento').order_by('-fecha_atencion_real')
+        self.query = Q()
+        # Atencion.paciente es ForeignKey a DoctorPatient.
+        # DoctorPatient tiene: primer_nombre, apellido, dni
+        queryset = self.model.objects.select_related('paciente').prefetch_related('diagnostico', 'detalles_doctor_app__medicamento').order_by('-fecha_atencion_real')
 
-        self.filter_form = self.form_class(self.request.GET or None) # Usar GET or None para evitar errores si no hay params
+        self.filter_form = self.form_class(self.request.GET or None)
         if self.filter_form.is_valid():
-            paciente_query = self.filter_form.cleaned_data.get('paciente')
+            paciente_query = self.filter_form.cleaned_data.get('paciente') # Este es un CharField del filter form
             fecha_desde = self.filter_form.cleaned_data.get('fecha_desde')
             fecha_hasta = self.filter_form.cleaned_data.get('fecha_hasta')
-            diagnostico_filter = self.filter_form.cleaned_data.get('diagnostico') # Renombrado para evitar conflicto
+            diagnostico_filter = self.filter_form.cleaned_data.get('diagnostico')
 
             if paciente_query:
                 self.query.add(
-                    Q(paciente__nombres__icontains=paciente_query) |
-                    Q(paciente__apellidos__icontains=paciente_query) |
-                    Q(paciente__cedula_ecuatoriana__icontains=paciente_query) |
+                    Q(paciente__primer_nombre__icontains=paciente_query) |
+                    Q(paciente__apellido__icontains=paciente_query) |
                     Q(paciente__dni__icontains=paciente_query), Q.AND
                 )
             if fecha_desde:
-                self.query.add(Q(fecha_atencion__date__gte=fecha_desde), Q.AND)
+                # Asumiendo que 'fecha_atencion_real' es el campo correcto en Atencion
+                self.query.add(Q(fecha_atencion_real__date__gte=fecha_desde), Q.AND)
             if fecha_hasta:
-                self.query.add(Q(fecha_atencion__date__lte=fecha_hasta), Q.AND)
-            if diagnostico_filter: # Usar la variable renombrada
+                self.query.add(Q(fecha_atencion_real__date__lte=fecha_hasta), Q.AND)
+            if diagnostico_filter:
                 self.query.add(Q(diagnostico=diagnostico_filter), Q.AND)
 
         return queryset.filter(self.query)
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['filter_form'] = self.filter_form # Pasar el formulario de filtro al contexto
+        context['filter_form'] = self.filter_form
         context['create_url'] = reverse_lazy('doctor:atencion_create')
-        # El título ya se maneja en ListViewMixin si se define model_name_title
-        # context['title'] = 'Listado de Atenciones Médicas'
         return context
 
 class AtencionCreateView(PermissionMixin, CreateViewMixin, CreateView):
     model = Atencion
     form_class = AtencionForm
-    template_name = 'doctor/atencion/form.html' # Cambiado a la nueva ruta
+    template_name = 'doctor/atencion/form.html'
     success_url = reverse_lazy('doctor:atencion_list')
     permission_required = 'doctor.add_atencion'
-    model_name_title = "Atención Médica" # Para el título dinámico
+    model_name_title = "Atención Médica"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # 'grabar' y 'back_url' ya se manejan en CreateViewMixin
         if self.request.POST:
             context['detalle_formset'] = DetalleAtencionFormSet(self.request.POST, prefix='detalles')
         else:
-            # Para pre-popular paciente si viene por GET
             paciente_id = self.request.GET.get('paciente_id')
             initial_form_data = {}
             if paciente_id:
-                paciente = get_object_or_404(Paciente, pk=paciente_id, activo=True)
-                initial_form_data['paciente_nombre'] = paciente.nombre_completo
-                initial_form_data['paciente'] = paciente.pk
-                context['selected_paciente'] = paciente # Para mostrar info del paciente
+                # Usar DoctorPatient consistentemente
+                paciente = get_object_or_404(DoctorPatient, pk=paciente_id) # Asumimos que DoctorPatient no tiene 'activo' o se filtra en el manager
+                initial_form_data['paciente_nombre'] = f"{paciente.primer_nombre} {paciente.apellido}"
+                initial_form_data['paciente'] = paciente.pk # El ID para el ModelChoiceField oculto
+                context['selected_paciente'] = paciente
 
-            context['form'] = self.form_class(initial=initial_form_data) # Aplicar iniciales al form principal
+            # Pasar initial_form_data al constructor del formulario
+            context['form'] = self.form_class(initial=initial_form_data)
             context['detalle_formset'] = DetalleAtencionFormSet(prefix='detalles')
 
-        context['medicamentos_existentes'] = Medicamento.objects.filter(activo=True).order_by('nombre') # Para el modal de selección
+        context['medicamentos_existentes'] = Medicamento.objects.filter(activo=True).order_by('nombre')
         context['tipos_medicamento_existentes'] = TipoMedicamento.objects.filter(activo=True).order_by('nombre') # Para el modal de creación rápida
         return context
 
@@ -259,17 +260,65 @@ class AtencionDeleteView(PermissionMixin, DeleteViewMixin, DeleteView):
 # --- Vistas para búsqueda de Pacientes y Medicamentos (AJAX) ---
 
 def buscar_paciente_ajax(request):
-    query = request.GET.get('term', '')
-    pacientes = Paciente.objects.filter(
-        Q(nombres__icontains=query) |
-        Q(apellidos__icontains=query) |
-        Q(cedula_ecuatoriana__icontains=query) |
-        Q(dni__icontains=query),
-        activo=True
-    ).only('id', 'nombres', 'apellidos', 'cedula_ecuatoriana', 'dni')[:10]
+    term = request.GET.get('term', '')
+    page = request.GET.get('page', 1)
 
-    results = [{"id": p.pk, "text": f"{p.nombre_completo} (C.I: {p.cedula_ecuatoriana or p.dni})"} for p in pacientes]
-    return JsonResponse(results, safe=False)
+    # Usar DoctorPatient
+    # Asumimos que DoctorPatient no tiene un campo 'activo', si lo tuviera, añadir .filter(activo=True)
+    pacientes_qs = DoctorPatient.objects.filter(
+        Q(primer_nombre__icontains=term) |
+        Q(apellido__icontains=term) |
+        Q(dni__icontains=term)
+    ).order_by('apellido', 'primer_nombre')
+
+    # Paginación para Select2 (opcional pero bueno para rendimiento)
+    # por ahora, limitamos a un número fijo de resultados como antes
+    limit = 15
+    # offset = (int(page) - 1) * limit
+    # pacientes = pacientes_qs[offset:offset+limit]
+    # total_count = pacientes_qs.count()
+    pacientes = pacientes_qs[:limit]
+
+
+    results = []
+    for p in pacientes:
+        # Construir el texto para Select2
+        text = f"{p.primer_nombre} {p.apellido}"
+        if p.dni:
+            text += f" (DNI: {p.dni})"
+
+        # Construir el objeto full_data para pasar más información al frontend si es necesario
+        # Especialmente para actualizar la sección de info del paciente
+        # Nota: 'edad_calculada' es una propiedad del modelo DoctorPatient, asegúrate que exista
+        # o calcúlala aquí si es necesario.
+        try:
+            edad = p.edad_calculada # Asumiendo que existe esta propiedad
+        except AttributeError:
+            from datetime import date
+            today = date.today()
+            edad = today.year - p.birth_date.year - ((today.month, today.day) < (p.birth_date.month, p.birth_date.day)) if p.birth_date else "N/A"
+
+
+        full_data = {
+            'id': p.id,
+            'primer_nombre': p.primer_nombre,
+            'apellido': p.apellido,
+            'dni': p.dni,
+            'phone': p.phone,
+            'email': p.email,
+            'birth_date': p.birth_date.strftime('%Y-%m-%d') if p.birth_date else None,
+            'edad_calculada': edad,
+            # Añade otros campos que quieras mostrar en `infoPacienteSeleccionado`
+        }
+        results.append({
+            "id": p.pk,
+            "text": text,
+            "full_data": full_data # Enviar datos completos para JS
+        })
+
+    # Para la paginación de Select2, necesitarías 'total_count' y un formato como:
+    # return JsonResponse({'results': results, 'pagination': {'more': offset + limit < total_count}}, safe=False)
+    return JsonResponse({'results': results, 'pagination': {'more': False}}, safe=False) # Simplificado sin paginación real Select2
 
 
 def buscar_medicamento_ajax(request):

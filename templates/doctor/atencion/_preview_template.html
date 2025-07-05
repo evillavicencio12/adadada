@@ -1,85 +1,89 @@
-{% load_get_part %}
-<div class="space-y-4 text-sm">
-    <h4 class="text-lg font-semibold text-gray-800 mb-2 border-b pb-1">Resumen de Atención Médica</h4>
+{% load i18n %}
 
-    <!-- Datos del Paciente (asumiendo que ya tienes el nombre y ID) -->
-    {% if atencion_data.paciente_nombre %}
-    <div class="p-3 bg-gray-50 rounded-md">
-        <h5 class="font-semibold text-gray-700">Paciente:</h5>
-        <p>{{ atencion_data.paciente_nombre }}
-            {% if atencion_data.paciente_obj %}
-                (C.I: {{ atencion_data.paciente_obj.dni }})
-            {% elif atencion_data.paciente %}
-                (ID: {{ atencion_data.paciente }})
+<div class="space-y-4 text-sm">
+    {% if atencion_data.paciente_obj %}
+        <h5 class="text-lg font-semibold text-gray-700 border-b pb-2">{% translate "Paciente" %}</h5>
+        <p><strong>{% translate "Nombre:" %}</strong> {{ atencion_data.paciente_obj.primer_nombre }} {{ atencion_data.paciente_obj.apellido }}</p>
+        <p><strong>{% translate "DNI:" %}</strong> {{ atencion_data.paciente_obj.dni }}</p>
+        {% if atencion_data.paciente_obj.birth_date %}
+        <p><strong>{% translate "F. Nac:" %}</strong>
+            {# Intentar formatear si es un objeto date, sino mostrar como string #}
+            {% if atencion_data.paciente_obj.birth_date.year %}
+                {{ atencion_data.paciente_obj.birth_date|date:"d/m/Y" }}
+            {% else %}
+                {{ atencion_data.paciente_obj.birth_date }}
+            {% endif %}
+        </p>
+        {% endif %}
+    {% elif atencion_data.paciente_nombre %}
+        <h5 class="text-lg font-semibold text-gray-700 border-b pb-2">{% translate "Paciente" %}</h5>
+        <p><strong>{% translate "Nombre (ingresado):" %}</strong> {{ atencion_data.paciente_nombre }}</p>
+        <p class="text-orange-600"><small>{% translate "Paciente no guardado o no encontrado en la base de datos." %}</small></p>
+    {% else %}
+         <p class="text-gray-500"><em>{% translate "Paciente no seleccionado." %}</em></p>
+    {% endif %}
+
+    <h5 class="text-lg font-semibold text-gray-700 border-b pb-2 mt-4">{% translate "Datos de la Atención" %}</h5>
+    <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+        <p><strong>{% translate "P. Arterial:" %}</strong> {{ atencion_data.presion_arterial|default:"N/A" }}</p>
+        <p><strong>{% translate "Pulso:" %}</strong> {{ atencion_data.pulso|default:"N/A" }} ppm</p>
+        <p><strong>{% translate "Temperatura:" %}</strong> {{ atencion_data.temperatura|default:"N/A" }} °C</p>
+        <p><strong>{% translate "Frec. Resp.:" %}</strong> {{ atencion_data.frecuencia_respiratoria|default:"N/A" }} rpm</p>
+        <p><strong>{% translate "Sat. O₂:" %}</strong> {{ atencion_data.saturacion_oxigeno|default:"N/A" }} %</p>
+        <p><strong>{% translate "Peso:" %}</strong> {{ atencion_data.peso|default:"N/A" }} kg</p>
+        <p><strong>{% translate "Altura:" %}</strong> {{ atencion_data.altura|default:"N/A" }} m</p>
+        <p><strong>{% translate "Control:" %}</strong>
+            {% if atencion_data.es_control == 'on' or atencion_data.es_control == True or atencion_data.es_control == 'true' %}
+                {% translate "Sí" %}
+            {% else %}
+                {% translate "No" %}
             {% endif %}
         </p>
     </div>
+
+    <h5 class="text-lg font-semibold text-gray-700 border-b pb-2 mt-4">{% translate "Evaluación Clínica" %}</h5>
+    <p><strong>{% translate "Motivo Consulta:" %}</strong><br>{{ atencion_data.motivo_consulta|default:"N/A"|linebreaksbr }}</p>
+    <p><strong>{% translate "Síntomas:" %}</strong><br>{{ atencion_data.sintomas|default:"N/A"|linebreaksbr }}</p>
+    <p><strong>{% translate "Examen Físico:" %}</strong><br>{{ atencion_data.examen_fisico|default:"N/A"|linebreaksbr }}</p>
+
+    {% if atencion_data.diagnostico_objs %}
+    <p><strong>{% translate "Diagnósticos:" %}</strong>
+        <ul class="list-disc list-inside ml-4">
+        {% for diag in atencion_data.diagnostico_objs %}
+            <li>{{ diag.codigo }} - {{ diag.descripcion }}</li>
+        {% endfor %}
+        </ul>
+    </p>
+    {% elif atencion_data.diagnostico %}
+         <p><strong>{% translate "Diagnósticos (IDs):" %}</strong> {{ atencion_data.diagnostico|join:", " }}</p> <!-- Asume que es una lista de IDs -->
     {% endif %}
 
-    <!-- Signos Vitales -->
-    <div class="p-3 bg-gray-50 rounded-md">
-        <h5 class="font-semibold text-gray-700 mb-1">Signos Vitales:</h5>
-        <div class="grid grid-cols-2 gap-x-4 gap-y-1">
-            {% if atencion_data.presion_arterial %}<p><strong>P. Arterial:</strong> {{ atencion_data.presion_arterial }}</p>{% endif %}
-            {% if atencion_data.pulso %}<p><strong>Pulso:</strong> {{ atencion_data.pulso }} ppm</p>{% endif %}
-            {% if atencion_data.temperatura %}<p><strong>Temperatura:</strong> {{ atencion_data.temperatura }} °C</p>{% endif %}
-            {% if atencion_data.frecuencia_respiratoria %}<p><strong>Frec. Resp.:</strong> {{ atencion_data.frecuencia_respiratoria }} rpm</p>{% endif %}
-            {% if atencion_data.saturacion_oxigeno %}<p><strong>Sat. O₂:</strong> {{ atencion_data.saturacion_oxigeno }} %</p>{% endif %}
-            {% if atencion_data.peso %}<p><strong>Peso:</strong> {{ atencion_data.peso }} kg</p>{% endif %}
-            {% if atencion_data.altura %}<p><strong>Altura:</strong> {{ atencion_data.altura }} m</p>{% endif %}
-        </div>
-        {% if atencion_data.es_control %}<p class="mt-1"><strong>Es control:</strong> Sí</p>{% endif %}
-    </div>
 
-    <!-- Evaluación Clínica -->
-    <div class="p-3 bg-gray-50 rounded-md">
-        <h5 class="font-semibold text-gray-700 mb-1">Evaluación Clínica:</h5>
-        {% if atencion_data.motivo_consulta %}<p><strong>Motivo:</strong> {{ atencion_data.motivo_consulta|linebreaksbr }}</p>{% endif %}
-        {% if atencion_data.sintomas %}<p><strong>Síntomas:</strong> {{ atencion_data.sintomas|linebreaksbr }}</p>{% endif %}
-        {% if atencion_data.examen_fisico %}<p><strong>Ex. Físico:</strong> {{ atencion_data.examen_fisico|linebreaksbr }}</p>{% endif %}
-        {% if atencion_data.diagnostico_objs %}
-            <p><strong>Diagnósticos:</strong>
-                {% for diag in atencion_data.diagnostico_objs %}
-                    {{ diag.codigo }} - {{ diag.descripcion }}{% if not forloop.last %}; {% endif %}
-                {% endfor %}
-            </p>
-        {% elif atencion_data.diagnostico %}
-             <p><strong>Diagnósticos (IDs):</strong> {{ atencion_data.diagnostico|join:", " }}</p>
-        {% endif %}
-    </div>
+    <h5 class="text-lg font-semibold text-gray-700 border-b pb-2 mt-4">{% translate "Plan Terapéutico" %}</h5>
+    <p><strong>{% translate "Tratamiento General:" %}</strong><br>{{ atencion_data.tratamiento|default:"N/A"|linebreaksbr }}</p>
 
-    <!-- Plan Terapéutico y Medicamentos -->
-    <div class="p-3 bg-gray-50 rounded-md">
-        <h5 class="font-semibold text-gray-700 mb-1">Plan Terapéutico:</h5>
-        {% if atencion_data.tratamiento %}<p>{{ atencion_data.tratamiento|linebreaksbr }}</p>{% endif %}
-
-        {% if detalles_data %}
-            <h6 class="font-medium text-gray-600 mt-2 mb-1">Medicamentos Recetados:</h6>
-            <ul class="list-disc list-inside pl-2 space-y-1">
-                {% for detalle in detalles_data %}
-                    {% if detalle.medicamento_nombre and not detalle.DELETE %}
-                        <li>
-                            <strong>{{ detalle.medicamento_nombre_resolved|default:detalle.medicamento_nombre }}</strong>
-                            {% if detalle.medicamento_obj and detalle.medicamento_obj.concentracion %}
-                                ({{ detalle.medicamento_obj.concentracion }})
-                            {% endif %}
-                            - Cant: {{ detalle.cantidad|default:"N/A" }}.
-                            Prescripción: {{ detalle.prescripcion|default:"N/A"|linebreaksbr }}
-                        </li>
+    {% if detalles_data %}
+        <h6 class="font-semibold text-gray-600 mt-3 mb-1">{% translate "Medicamentos Recetados:" %}</h6>
+        <ul class="space-y-1 list-disc list-inside ml-4">
+            {% for detalle in detalles_data %}
+                {% if not detalle.DELETE and detalle.DELETE != 'on' and detalle.DELETE != 'True' and detalle.DELETE != True %}
+                <li>
+                    {% if detalle.medicamento_obj %}
+                        {{ detalle.medicamento_obj.nombre }}
+                    {% elif detalle.medicamento_nombre %}
+                        {{ detalle.medicamento_nombre }} <span class="text-orange-500">({% translate "nuevo o no reconocido" %})</span>
+                    {% else %}
+                        <em>{% translate "Medicamento no especificado" %}</em>
                     {% endif %}
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-gray-500 italic">No se han especificado medicamentos.</p>
-        {% endif %}
-    </div>
+                    {% if detalle.cantidad %}({{ detalle.cantidad }}){% endif %}
+                    {% if detalle.prescripcion %}: {{ detalle.prescripcion }}{% endif %}
+                </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    {% endif %}
 
-    <!-- Exámenes y Comentarios -->
-    <div class="p-3 bg-gray-50 rounded-md">
-        <h5 class="font-semibold text-gray-700 mb-1">Exámenes y Comentarios:</h5>
-        {% if atencion_data.examenes_enviados %}<p><strong>Exámenes Solicitados:</strong> {{ atencion_data.examenes_enviados|linebreaksbr }}</p>{% endif %}
-        {% if atencion_data.comentario_adicional %}<p><strong>Comentario Adicional:</strong> {{ atencion_data.comentario_adicional|linebreaksbr }}</p>{% endif %}
-    </div>
+    <p class="mt-3"><strong>{% translate "Exámenes Solicitados:" %}</strong><br>{{ atencion_data.examenes_enviados|default:"N/A"|linebreaksbr }}</p>
+    <p><strong>{% translate "Comentario Adicional:" %}</strong><br>{{ atencion_data.comentario_adicional|default:"N/A"|linebreaksbr }}</p>
 
-    <p class="text-xs text-gray-500 mt-3 text-center">Esta es una previsualización. Verifique los datos antes de guardar.</p>
 </div>

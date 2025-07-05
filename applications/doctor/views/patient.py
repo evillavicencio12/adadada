@@ -229,29 +229,45 @@ def ajax_search_patient_by_name(request):
     data_list = []
     for p in page_obj.object_list:
         edad_calculada = None
-        if hasattr(p, 'get_edad_display') and callable(p.get_edad_display):
+        # Intentar obtener la edad de una propiedad o método del modelo
+        if hasattr(p, 'edad_calculada'): # Si 'edad_calculada' es una propiedad
+            edad_calculada = p.edad_calculada
+        elif hasattr(p, 'get_edad_display') and callable(p.get_edad_display): # Si es un método
             edad_calculada = p.get_edad_display()
-        elif hasattr(p, 'edad'):
+        elif hasattr(p, 'edad'): # Otro posible nombre de propiedad/método
             if callable(p.edad):
                 edad_calculada = p.edad()
             else:
                 edad_calculada = p.edad
+
+        # Fallback si no se pudo obtener la edad del modelo y hay fecha de nacimiento
         if edad_calculada is None and p.birth_date:
             today = date.today()
             born = p.birth_date
             edad_calculada = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
+        text_display = f"{p.primer_nombre} {p.apellido}"
+        if p.dni:
+            text_display += f" (DNI: {p.dni})"
+
         data_list.append({
-            'id': p.pk,
-            'primer_nombre': p.primer_nombre,
-            'apellido': p.apellido,
-            'dni': p.dni or '',
-            'phone': p.phone or '',
-            'edad': edad_calculada,
-            # include other fields if your select2 template needs them
+            'id': p.pk, # Para el valor del Select2
+            'text': text_display, # Para la visualización en Select2
+            'full_data': { # Datos adicionales para usar en el frontend
+                'id': p.pk,
+                'primer_nombre': p.primer_nombre,
+                'apellido': p.apellido,
+                'dni': p.dni or '',
+                'phone': p.phone or '',
+                'email': p.email or '',
+                'birth_date': p.birth_date.strftime('%Y-%m-%d') if p.birth_date else None,
+                'edad_calculada': edad_calculada if edad_calculada is not None else "N/A",
+            }
         })
 
     return JsonResponse({
-        'pacientes': data_list,
-        'total_count': paginator.count
+        'results': data_list, # Cambiado de 'pacientes' a 'results'
+        'pagination': {
+            'more': page_obj.has_next() # Select2 espera 'more'
+        }
     })
