@@ -123,11 +123,20 @@ def ajax_create_patient(request):
         try:
             patient = form.save()
             # Assuming 'edad' is a property on the Patient model that calculates age
-            edad = patient.edad if hasattr(patient, 'edad') else None
-            if edad is None and patient.birth_date: # Fallback if 'edad' property doesn't exist but birth_date does
+            # or a method. Let's try calling it if it's a method, or accessing if property.
+            edad_calculada = None
+            if hasattr(patient, 'get_edad_display') and callable(patient.get_edad_display):
+                 edad_calculada = patient.get_edad_display()
+            elif hasattr(patient, 'edad'):
+                if callable(patient.edad):
+                    edad_calculada = patient.edad()
+                else:
+                    edad_calculada = patient.edad
+
+            if edad_calculada is None and patient.birth_date: # Fallback calculation
                 today = date.today()
                 born = patient.birth_date
-                edad = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+                edad_calculada = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
 
             return JsonResponse({
                 'status': 'success',
@@ -135,11 +144,11 @@ def ajax_create_patient(request):
                     'id': patient.pk,
                     'primer_nombre': patient.primer_nombre,
                     'apellido': patient.apellido,
-                    'dni': patient.dni,
+                    'dni': patient.dni or "",
                     'birth_date': patient.birth_date.strftime('%Y-%m-%d') if patient.birth_date else None,
-                    'phone': patient.phone or "", # Ensure not None for JS
-                    'email': patient.email or "", # Ensure not None for JS
-                    'edad': edad
+                    'phone': patient.phone or "",
+                    'email': patient.email or "",
+                    'edad': edad_calculada
                 }
             })
         except Exception as e:
@@ -163,38 +172,86 @@ def ajax_create_patient(request):
 def ajax_search_patient_dni(request):
     dni = request.GET.get('dni', None)
     if dni:
-        patients = Patient.objects.filter(dni__iexact=dni)
-        if patients.exists():
-            # Returning a list, though DNI should be unique. JS currently takes the first.
-            data = [{
-                'id': p.pk,
-                'primer_nombre': p.primer_nombre,
-                'apellido': p.apellido,
-                'dni': p.dni,
-                'birth_date': p.birth_date.strftime('%Y-%m-%d') if p.birth_date else None,
-                'phone': p.phone,
-                'email': p.email,
-                # Add any other fields needed by 'seleccionarPaciente' JS function
-            } for p in patients]
-            return JsonResponse({'pacientes': data})
-        else:
-            return JsonResponse({'error': 'Paciente no encontrado con este DNI.'}, status=404)
-    return JsonResponse({'error': 'DNI no proporcionado.'}, status=400)
+        try:
+            patient = Patient.objects.get(dni__iexact=dni) # DNI should be unique
+            edad_calculada = None
+            if hasattr(patient, 'get_edad_display') and callable(patient.get_edad_display):
+                 edad_calculada = patient.get_edad_display()
+            elif hasattr(patient, 'edad'):
+                if callable(patient.edad):
+                    edad_calculada = patient.edad()
+                else:
+                    edad_calculada = patient.edad
+            if edad_calculada is None and patient.birth_date:
+                today = date.today()
+                born = patient.birth_date
+                edad_calculada = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+            data = {
+                'id': patient.pk,
+                'primer_nombre': patient.primer_nombre,
+                'apellido': patient.apellido,
+                'dni': patient.dni or "",
+                'birth_date': patient.birth_date.strftime('%Y-%m-%d') if patient.birth_date else None,
+                'phone': patient.phone or "",
+                'email': patient.email or "",
+                'edad': edad_calculada,
+                # Add any other fields needed
+            }
+            # The JS expects a list, even if it's one patient for DNI search
+            return JsonResponse({'pacientes': [data]})
+        except Patient.DoesNotExist:
+            return JsonResponse({'error': 'Paciente no encontrado con este DNI.', 'pacientes': []}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': f'Error interno: {str(e)}', 'pacientes': []}, status=500)
+    return JsonResponse({'error': 'DNI no proporcionado.', 'pacientes': []}, status=400)
+
+from django.core.paginator import Paginator
+
 @require_GET
 def ajax_search_patient_by_name(request):
     nombre = request.GET.get('nombre', '').strip()
+    page_number = request.GET.get('page', 1)
+
     if not nombre:
-        return JsonResponse({'pacientes': []})
+        return JsonResponse({'pacientes': [], 'total_count': 0})
 
-    pacientes = Patient.objects.filter(
+    base_queryset = Patient.objects.filter(
         Q(primer_nombre__icontains=nombre) | Q(apellido__icontains=nombre)
-    )[:20]  # limita a 20 resultados
+    ).order_by('apellido', 'primer_nombre')
 
-    data = [{
-        'id': p.pk,
-        'primer_nombre': p.primer_nombre,
-        'apellido': p.apellido,
-        'dni': p.dni or '',
-    } for p in pacientes]
+    paginator = Paginator(base_queryset, 10) # 10 items per page, adjust as needed
+    try:
+        page_obj = paginator.page(page_number)
+    except Exception: # E.g., PageNotAnInteger, EmptyPage
+        page_obj = paginator.page(1)
 
-    return JsonResponse({'pacientes': data})
+    data_list = []
+    for p in page_obj.object_list:
+        edad_calculada = None
+        if hasattr(p, 'get_edad_display') and callable(p.get_edad_display):
+            edad_calculada = p.get_edad_display()
+        elif hasattr(p, 'edad'):
+            if callable(p.edad):
+                edad_calculada = p.edad()
+            else:
+                edad_calculada = p.edad
+        if edad_calculada is None and p.birth_date:
+            today = date.today()
+            born = p.birth_date
+            edad_calculada = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+        data_list.append({
+            'id': p.pk,
+            'primer_nombre': p.primer_nombre,
+            'apellido': p.apellido,
+            'dni': p.dni or '',
+            'phone': p.phone or '',
+            'edad': edad_calculada,
+            # include other fields if your select2 template needs them
+        })
+
+    return JsonResponse({
+        'pacientes': data_list,
+        'total_count': paginator.count
+    })

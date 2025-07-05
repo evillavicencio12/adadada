@@ -235,43 +235,65 @@ class TipoMedicamentoDeleteView(PermissionMixin, DeleteViewMixin, DeleteView):
         messages.success(self.request, f"Éxito al eliminar el {self.model_name_title.lower()} '{object_repr}'.")
         return response
 #-----------------------AJAX MEDICAMENTOS------------------------
+from django.core.paginator import Paginator
+
 @require_POST
 def ajax_create_medicamento(request):
-    nombre = request.POST.get('nombre')
-    tipo_id = request.POST.get('tipo_medicamento')
-    precio = request.POST.get('precio')
-    cantidad = request.POST.get('cantidad')
-    concentracion = request.POST.get('concentracion', '')
+    form = MedicamentoForm(request.POST, request.FILES or None)
+    if form.is_valid():
+        try:
+            medicamento = form.save()
+            # Opcional: guardar auditoría si es necesario para creaciones AJAX
+            # save_audit(request, medicamento, "ADICION_AJAX")
+            return JsonResponse({
+                'status': 'success',
+                'medicamento': {
+                    'id': medicamento.pk,
+                    'nombre': medicamento.nombre,
+                    # Puedes añadir más campos aquí si el frontend los necesita inmediatamente
+                }
+            })
+        except Exception as e:
+            # Considerar logging aquí
+            return JsonResponse({'status': 'error', 'errors': {'__all__': [f'Error interno del servidor: {str(e)}']}}, status=500)
+    else:
+        # Convertir form.errors a un formato más amigable para JS si es necesario,
+        # o asegurarse que el JS puede manejar el formato de form.errors.as_json() o form.errors.get_json_data()
+        return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
 
-    if not nombre or not tipo_id or not precio or not cantidad:
-        return JsonResponse({'status': 'error', 'message': 'Faltan campos obligatorios'}, status=400)
-
-    try:
-        tipo = TipoMedicamento.objects.get(pk=tipo_id)
-        medicamento = Medicamento.objects.create(
-            nombre=nombre,
-            tipo=tipo,
-            precio=precio,
-            cantidad=cantidad,
-            concentracion=concentracion,
-        )
-        return JsonResponse({
-            'status': 'success',
-            'medicamento': {
-                'id': medicamento.id,
-                'nombre': medicamento.nombre,
-            }
-        })
-    except TipoMedicamento.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Tipo de medicamento no válido'}, status=400)
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': f'Error interno: {str(e)}'}, status=500)
 @require_GET
 def ajax_search_medicamento(request):
-    nombre = request.GET.get('nombre', '')
-    if nombre:
-        medicamentos = Medicamento.objects.filter(nombre__icontains=nombre)[:10]  # Limitar resultados
-        data = [{'id': m.id, 'nombre': m.nombre} for m in medicamentos]
-        return JsonResponse({'status': 'success', 'medicamentos': data})
-    else:
-        return JsonResponse({'status': 'error', 'message': 'No se proporcionó nombre para buscar'}, status=400)
+    nombre = request.GET.get('nombre', '').strip()
+    page_number = request.GET.get('page', 1)
+
+    if not nombre:
+        return JsonResponse({'medicamentos': [], 'total_count': 0})
+
+    base_queryset = Medicamento.objects.filter(
+        nombre__icontains=nombre,
+        activo=True # Solo buscar medicamentos activos
+    ).order_by('nombre')
+
+    paginator = Paginator(base_queryset, 10) # 10 items per page
+    try:
+        page_obj = paginator.page(page_number)
+    except Exception:
+        page_obj = paginator.page(1)
+
+    data_list = [{
+        'id': m.pk,
+        'text': m.nombre # Select2 espera 'text' por defecto
+        # puedes añadir más datos si el template de Select2 los usa:
+        # 'concentracion': m.concentracion,
+        # 'tipo': m.tipo.nombre if m.tipo else ''
+    } for m in page_obj.object_list]
+
+    return JsonResponse({
+        'results': data_list, # Select2 espera 'results' para la lista de items
+        'pagination': { # Select2 espera 'pagination.more'
+            'more': page_obj.has_next()
+        },
+        # Para compatibilidad con el JS anterior que esperaba 'medicamentos' y 'total_count'
+        'medicamentos': data_list,
+        'total_count': paginator.count
+    })

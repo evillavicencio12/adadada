@@ -130,18 +130,16 @@
                 {{ detalle_formset.management_form }}
                 <div id="detalleAtencionFormset" class="space-y-6">
                     {% for detalle_form in detalle_formset %}
-                    <div class="detalle-form p-4 border border-gray-200 rounded-md bg-gray-50 relative">
+                    <div class="detalle-form p-4 border border-gray-200 rounded-md bg-gray-50 relative" data-prefix="{{ detalle_form.prefix }}">
                         {{ detalle_form.id }} {# Campo oculto para el ID del detalle si existe #}
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
                             <div class="lg:col-span-2">
-                                <label for="{{ detalle_form.medicamento_nombre.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.medicamento_nombre.label }}</label>
-                                {% render_field detalle_form.medicamento_nombre class+="medicamento-nombre-select form-input mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Buscar o agregar..." %}
-                                {% render_field detalle_form.medicamento %} {# Campo oculto para el ID del medicamento #}
-                                <button type="button" class="btnBuscarMedicamento mt-1 text-sm text-blue-600 hover:underline">Buscar
-                                    medicamento</button>
-                                <button type="button" id="abrirCrearMedicamentoBtn" class="mt-1 text-sm text-green-600 hover:underline">Crear
-                                    medicamento</button>
-                                {% if detalle_form.medicamento_nombre.errors or detalle_form.medicamento.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.medicamento_nombre.errors|join:", " }} {{ detalle_form.medicamento.errors|join:", " }}</p>{% endif %}
+                                <label for="id_{{ detalle_form.prefix }}-medicamento_select" class="block text-xs font-medium text-gray-600">Medicamento</label>
+                                <select id="id_{{ detalle_form.prefix }}-medicamento_select" name="{{ detalle_form.prefix }}-medicamento_select" class="medicamento-select2 form-select mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" style="width: 100%;"></select>
+                                {{ detalle_form.medicamento }} {# Campo oculto para el ID del medicamento, e.g., <input type="hidden" name="detalleatencion_set-0-medicamento" id="id_detalleatencion_set-0-medicamento"> #}
+                                <button type="button" class="abrirCrearMedicamentoFilaBtn mt-1 text-sm text-green-600 hover:underline">Crear medicamento</button>
+                                {% if detalle_form.medicamento.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.medicamento.errors|join:", " }}</p>{% endif %}
+                                {% if detalle_form.medicamento_nombre.errors %}<p class="text-red-500 text-xs italic">{{ detalle_form.medicamento_nombre.errors|join:", " }}</p>{% endif %}
                             </div>
                             <div>
                                 <label for="{{ detalle_form.cantidad.id_for_label }}" class="block text-xs font-medium text-gray-600">{{ detalle_form.cantidad.label }}</label>
@@ -509,22 +507,111 @@ document.addEventListener('DOMContentLoaded', function () {
         placeholder: 'Buscar paciente por nombre',
         minimumInputLength: 2,
         ajax: {
-            url: "{% url 'doctor:ajax_search_patient_by_name' %}",
+            url: "{% url 'doctor:ajax_search_patient_by_name' %}", // Asegúrate que esta URL exista y funcione
             dataType: 'json',
             delay: 250,
-            data: params => ({ nombre: params.term }),
-            processResults: data => ({
-                results: data.pacientes.map(p => ({
-                    id: p.id,
-                    text: `${p.primer_nombre} ${p.apellido}${p.dni ? ' - ' + p.dni : ''}`
-                }))
-            }),
+            data: function (params) {
+                return {
+                    nombre: params.term, // Parámetro de búsqueda
+                    page: params.page
+                };
+            },
+            processResults: function (data, params) {
+                params.page = params.page || 1;
+                return {
+                    results: data.pacientes.map(p => ({ // `data.pacientes` debe ser la lista de pacientes en la respuesta JSON
+                        id: p.id,
+                        text: `${p.primer_nombre} ${p.apellido}${p.dni ? ' - ' + p.dni : ''}`,
+                        // Puedes añadir aquí más datos del paciente si los necesitas al seleccionar
+                        // Por ejemplo: full_data: p
+                    })),
+                    pagination: {
+                        more: (params.page * 10) < data.total_count // Asumiendo que `data.total_count` es el total de pacientes
+                    }
+                };
+            },
             cache: true
+        },
+        escapeMarkup: function (markup) { return markup; }, // Permite HTML en los resultados, si es necesario
+    });
+
+    // --------------------- MEDICAMENTOS: SELECT2 Y CREACIÓN ---------------------
+    let currentMedicamentoSelect2 = null; // Para saber qué select de medicamento actualizar después de crear uno nuevo
+
+    function initializeMedicamentoSelect2(selector) {
+        $(selector).select2({
+            placeholder: 'Buscar medicamento...',
+            minimumInputLength: 1,
+            ajax: {
+                url: "{% url 'core:ajax_search_medicamento' %}", // URL para buscar medicamentos
+                dataType: 'json',
+                delay: 250,
+                data: params => ({ nombre: params.term }),
+                processResults: data => ({
+                    results: data.medicamentos ? data.medicamentos.map(m => ({ id: m.id, text: m.nombre })) : []
+                }),
+                cache: true
+            }
+        }).on('select2:select', function(e) {
+            const data = e.params.data;
+            const prefix = $(this).closest('.detalle-form').data('prefix');
+            // Actualizar el campo oculto del ID del medicamento para el formset
+            $(`#id_${prefix}-medicamento`).val(data.id);
+        });
+    }
+
+    // Inicializar Select2 para los campos de medicamento existentes
+    $('.medicamento-select2').each(function() {
+        initializeMedicamentoSelect2(this);
+        // Si hay un valor inicial en el campo oculto de medicamento (al editar),
+        // se debería cargar el nombre del medicamento en el Select2.
+        const prefix = $(this).closest('.detalle-form').data('prefix');
+        const medicamentoId = $(`#id_${prefix}-medicamento`).val();
+        const medicamentoNombreInput = $(`#id_${prefix}-medicamento_nombre`); // Asumiendo que tienes este campo o similar
+
+        if (medicamentoId && medicamentoNombreInput.val()) { // medicamentoNombreInput puede ser el campo que Django renderiza
+             var option = new Option(medicamentoNombreInput.val(), medicamentoId, true, true);
+             $(this).append(option).trigger('change');
+        } else if (medicamentoId) {
+            // Si solo tienes el ID, necesitarías hacer un AJAX para obtener el nombre y mostrarlo
+            // Esto es importante para la edición de formularios existentes.
+            // fetch(`/api/medicamento-detail/${medicamentoId}/`) // URL hipotética
+            // .then(res => res.json())
+            // .then(data => {
+            //     var option = new Option(data.nombre, data.id, true, true);
+            //     $(this).append(option).trigger('change');
+            // });
         }
     });
 
-    // --------------------- MODAL CREAR MEDICAMENTO ---------------------
+    // Evento para los botones "Crear medicamento" DENTRO de cada fila del formset
+    $('#detalleAtencionFormset').on('click', '.abrirCrearMedicamentoFilaBtn', function() {
+        currentMedicamentoSelect2 = $(this).closest('.lg\\:col-span-2').find('.medicamento-select2');
+        const modal = document.getElementById('crearMedicamentoModal');
+        const form = document.getElementById('formCrearMedicamento');
+        resetForm(form);
+        // initSelect2DelModalMedicamento(); // Asegúrate que el select2 dentro del modal esté bien
+        toggleModal(modal, true);
+        form.querySelector('input[name="nombre"]').focus();
+    });
     
+    // Botón general "Crear Nuevo Medicamento" (fuera del formset)
+    // Este botón ya está asociado al modal en el código original, pero no tiene contexto de fila.
+    // Lo mantendremos así, y el usuario tendrá que seleccionar el medicamento en una fila manualmente.
+    // O, podríamos hacer que al crear, se añada a la *primera fila vacía* o *nueva fila*.
+    // Por ahora, el `currentMedicamentoSelect2` será null si se usa este botón general.
+     document.getElementById('crearNuevoMedicamentoBtn')?.addEventListener('click', () => {
+        currentMedicamentoSelect2 = null; // No hay un select específico de fila asociado
+        const modal = document.getElementById('crearMedicamentoModal');
+        const form = document.getElementById('formCrearMedicamento');
+        resetForm(form);
+        // initSelect2DelModalMedicamento();
+        toggleModal(modal, true);
+        form.querySelector('input[name="nombre"]').focus();
+    });
+
+
+    // MODAL CREAR MEDICAMENTO (Adaptado)
     (function crearMedicamento() {
     const modal = document.getElementById('crearMedicamentoModal');
     const form = document.getElementById('formCrearMedicamento');
@@ -585,14 +672,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
           toggleModal(modal, false);
           resetForm(form);
-          $('#tipo_medicamento').val(null).trigger('change');
+          $('#tipo_medicamento').val(null).trigger('change'); // Resetear select2 del modal
 
-          // Opcional: actualizar select principal
-          const medicamentoSelect = document.getElementById('medicamento_select');
-          if (medicamentoSelect) {
-            const option = new Option(data.medicamento.nombre, data.medicamento.id, true, true);
-            medicamentoSelect.add(option);
-            $(medicamentoSelect).trigger('change');
+          if (data.status === 'success' && data.medicamento) {
+            // Si currentMedicamentoSelect2 está definido (se hizo clic desde una fila)
+            if (currentMedicamentoSelect2 && currentMedicamentoSelect2.length) {
+                const newOption = new Option(data.medicamento.nombre, data.medicamento.id, true, true);
+                currentMedicamentoSelect2.append(newOption).trigger('change');
+
+                // Actualizar el campo oculto de ID del medicamento para esa fila
+                const prefix = currentMedicamentoSelect2.closest('.detalle-form').data('prefix');
+                $(`#id_${prefix}-medicamento`).val(data.medicamento.id);
+
+            } else {
+                // Si se creó desde el botón general, el usuario deberá seleccionarlo manualmente.
+                // Opcionalmente, podríamos añadirlo a una nueva fila o a la primera vacía.
+                // Por ahora, solo notificamos.
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Medicamento Añadido',
+                    text: `${data.medicamento.nombre} ha sido añadido al sistema. Por favor, selecciónelo en la fila deseada.`,
+                    timer: 3000,
+                    showConfirmButton: true
+                });
+            }
+            // Resetear currentMedicamentoSelect2 para la próxima vez
+            currentMedicamentoSelect2 = null;
           }
         })
         .catch(err => {
@@ -616,41 +721,64 @@ document.addEventListener('DOMContentLoaded', function () {
     (function crearPaciente() {
         const modal = document.getElementById('crearPacienteModal');
         const form = document.getElementById('formCrearPaciente');
+        const pacienteSelect = $('#id_paciente'); // Select2 instance
 
         document.getElementById('abrirCrearPacienteBtn')?.addEventListener('click', () => {
             resetForm(form);
             toggleModal(modal, true);
+            form.querySelector('#id_primer_nombre').focus();
         });
 
         document.getElementById('cancelarCrearPacienteBtn')?.addEventListener('click', () => toggleModal(modal, false));
         modal?.addEventListener('click', e => { if (e.target === modal) toggleModal(modal, false); });
 
-        document.getElementById('guardarNuevoPacienteBtn')?.addEventListener('click', () => {
-            const guardarBtn = event.target;
+        form.addEventListener('submit', function(event) { // Changed to listen to form submit
+            event.preventDefault(); // Prevent default form submission
+            const guardarBtn = form.querySelector('#guardarNuevoPacienteBtn');
             guardarBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
             guardarBtn.disabled = true;
 
             fetch("{% url 'doctor:ajax_create_patient' %}", {
                 method: 'POST',
-                headers: { 'X-CSRFToken': getCSRFToken(form) },
+                headers: { 'X-CSRFToken': getCSRFToken(form) }, // Ensure getCSRFToken works with this form if different from main
                 body: new FormData(form)
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === 'success') {
+                if (data.status === 'success' && data.paciente) {
                     Swal.fire('¡Paciente Creado!', `El paciente ${data.paciente.primer_nombre} ${data.paciente.apellido} ha sido creado.`, 'success');
                     toggleModal(modal, false);
 
-                    document.getElementById('paciente_nombre').value = `${data.paciente.primer_nombre} ${data.paciente.apellido}`;
-                    document.getElementById('id_paciente').value = data.paciente.id;
+                    // Crear nueva opción para Select2
+                    const newOption = new Option(
+                        `${data.paciente.primer_nombre} ${data.paciente.apellido}${data.paciente.dni ? ' - ' + data.paciente.dni : ''}`,
+                        data.paciente.id,
+                        true, // defaultSelected
+                        true  // selected
+                    );
+                    pacienteSelect.append(newOption).trigger('change');
 
+                    // Actualizar la información del paciente seleccionado
                     document.getElementById('infoPacienteSeleccionado').innerHTML = `
                         <p><strong>Cédula:</strong> ${data.paciente.dni || 'N/A'}</p>
                         <p><strong>Edad:</strong> ${data.paciente.edad || 'N/A'} años</p>
                         <p><strong>Teléfono:</strong> ${data.paciente.phone || 'N/A'}</p>
                     `;
+                     // Disparar evento change en el select2 para actualizar cualquier otro listener
+                    pacienteSelect.trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: {
+                                id: data.paciente.id,
+                                text: `${data.paciente.primer_nombre} ${data.paciente.apellido}${data.paciente.dni ? ' - ' + data.paciente.dni : ''}`,
+                                full_data: data.paciente // puedes pasar el objeto completo si es necesario
+                            }
+                        }
+                    });
+
+
                 } else {
-                    mostrarErrores(form, data.errors || {});
+                    mostrarErrores(form, data.errors || {'general': ['No se pudo crear el paciente.']});
                 }
             })
             .catch(error => {
@@ -663,6 +791,47 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
     })();
+
+    // Listener para cuando se selecciona un paciente en el Select2 principal
+    $('#id_paciente').on('select2:select', function (e) {
+        var data = e.params.data;
+        // Si la data completa del paciente no viene en e.params.data,
+        // necesitarías hacer otro AJAX call para obtener detalles o asegurar que ajax_search_patient_by_name devuelva más info.
+        // Por ahora, asumimos que la vista ajax_search_patient_by_name podría ser extendida o que la info básica es suficiente.
+        // Si 'full_data' fue añadido en la creación, podemos usarlo.
+        let pacienteInfo = data.full_data;
+
+        if (pacienteInfo) {
+             document.getElementById('infoPacienteSeleccionado').innerHTML = `
+                <p><strong>Cédula:</strong> ${pacienteInfo.dni || 'N/A'}</p>
+                <p><strong>Edad:</strong> ${pacienteInfo.edad || 'N/A'} años</p>
+                <p><strong>Teléfono:</strong> ${pacienteInfo.phone || 'N/A'}</p>
+            `;
+        } else {
+            // Fallback si full_data no está, se podría hacer un fetch aquí para obtener más datos si es necesario
+            // O simplemente mostrar lo que se tiene:
+            document.getElementById('infoPacienteSeleccionado').innerHTML = `<p class="italic">Detalles adicionales no cargados completamente. Seleccione de nuevo o la búsqueda debe proveer más datos.</p>`;
+            // Para una mejor UX, la vista `ajax_search_patient_by_name` debería devolver todos los campos necesarios
+            // para actualizar `infoPacienteSeleccionado`.
+            // Por ahora, vamos a solicitar los datos del paciente.
+            fetch(`{% url 'doctor:ajax_search_patient_dni' %}?dni=${data.text.split(' - ')[1]}`) // Asume que el DNI está en el texto
+            .then(response => response.json())
+            .then(pacienteData => {
+                if (pacienteData.pacientes && pacienteData.pacientes.length > 0) {
+                    const p = pacienteData.pacientes[0];
+                     document.getElementById('infoPacienteSeleccionado').innerHTML = `
+                        <p><strong>Cédula:</strong> ${p.dni || 'N/A'}</p>
+                        <p><strong>Edad:</strong> ${p.edad || 'N/A'} años</p> {/* Asumiendo que 'edad' se calcula o se añade a la respuesta AJAX */}
+                        <p><strong>Teléfono:</strong> ${p.phone || 'N/A'}</p>
+                    `;
+                } else {
+                    document.getElementById('infoPacienteSeleccionado').innerHTML = `<p class="italic">No se pudieron cargar los detalles del paciente.</p>`;
+                }
+            }).catch(() => {
+                document.getElementById('infoPacienteSeleccionado').innerHTML = `<p class="italic">Error al cargar detalles del paciente.</p>`;
+            });
+        }
+    });
 
 });
 </script>
