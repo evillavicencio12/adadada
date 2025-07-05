@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ view.model_name_title|default:"Gestión" }} - {% if object %}Editar{% else %}Crear{% endif %}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Card -->
+        <div class="bg-white/70 backdrop-blur-sm shadow-2xl rounded-3xl p-8 mb-8 border border-white/20">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-gradient-to-r from-emerald-500 to-teal-500 p-4 rounded-2xl shadow-lg">
+                        <i class="fas fa-pills text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                            {% if object %}Editar Medicamento{% else %}Nuevo Medicamento{% endif %}
+                        </h1>
+                        <p class="text-gray-600 mt-1">Complete la información del medicamento</p>
+                    </div>
+                </div>
+                <a href="{% url 'core:medicamento_list' %}" 
+                   class="group flex items-center space-x-2 bg-white/80 hover:bg-white text-gray-600 hover:text-emerald-600 px-6 py-3 rounded-2xl shadow-lg transition-all duration-300 border border-gray-200 hover:border-emerald-200">
+                    <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform duration-300"></i>
+                    <span class="font-medium">Volver al Listado</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-6 p-4 rounded-2xl shadow-lg {% if message.tags == 'success' %}bg-gradient-to-r from-green-500 to-emerald-500{% elif message.tags == 'error' %}bg-gradient-to-r from-red-500 to-pink-500{% else %}bg-gradient-to-r from-blue-500 to-indigo-500{% endif %} text-white">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %}"></i>
+                        <span class="font-medium">{{ message }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Error Messages -->
+        {% if form.non_field_errors %}
+            <div class="mb-6 p-6 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-2xl shadow-lg">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-red-100 p-2 rounded-full">
+                        <i class="fas fa-exclamation-triangle text-red-500"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-red-800 font-semibold">Error en el formulario</h3>
+                        <p class="text-red-700">{{ form.non_field_errors|join:", " }}</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Form Card -->
+        <div class="bg-white/80 backdrop-blur-sm shadow-2xl rounded-3xl p-8 border border-white/20">
+            <form method="post" enctype="multipart/form-data" novalidate class="space-y-8">
+                {% csrf_token %}
+
+                <!-- Información Básica -->
+                <div class="space-y-6">
+                    <div class="border-l-4 border-emerald-500 pl-4">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Información Básica</h2>
+                        <p class="text-gray-600">Datos principales del medicamento</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Nombre -->
+                        <div class="group">
+                            <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-tag mr-2 text-emerald-500"></i>
+                                {{ form.nombre.label }} {% if form.nombre.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            <div class="relative">
+                                {% render_field form.nombre class+="block w-full px-4 py-3 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white/80 backdrop-blur-sm" placeholder="Nombre comercial o genérico" %}
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-pills text-gray-400"></i>
+                                </div>
+                            </div>
+                            {% if form.nombre.help_text %}<p class="mt-2 text-xs text-gray-500 flex items-center"><i class="fas fa-info-circle mr-1"></i>{{ form.nombre.help_text }}</p>{% endif %}
+                            {% if form.nombre.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.nombre.errors|join:", " }}</p>{% endif %}
+                        </div>
+
+                        <!-- Tipo -->
+                        <div class="group">
+                            <label for="{{ form.tipo.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-layer-group mr-2 text-emerald-500"></i>
+                                {{ form.tipo.label }} {% if form.tipo.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {% render_field form.tipo class+="select2-field block w-full px-4 py-3 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white/80 backdrop-blur-sm" %}
+                            {% if form.tipo.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.tipo.errors|join:", " }}</p>{% endif %}
+                        </div>
+
+                        <!-- Marca -->
+                        <div class="group">
+                            <label for="{{ form.marca_medicamento.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-trademark mr-2 text-emerald-500"></i>
+                                {{ form.marca_medicamento.label }}
+                            </label>
+                            {% render_field form.marca_medicamento class+="select2-field block w-full px-4 py-3 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white/80 backdrop-blur-sm" %}
+                            {% if form.marca_medicamento.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.marca_medicamento.errors|join:", " }}</p>{% endif %}
+                        </div>
+
+                        <!-- Concentración -->
+                        <div class="group">
+                            <label for="{{ form.concentracion.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-vial mr-2 text-emerald-500"></i>
+                                {{ form.concentracion.label }}
+                            </label>
+                            <div class="relative">
+                                {% render_field form.concentracion class+="block w-full px-4 py-3 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white/80 backdrop-blur-sm" placeholder="Ej: 500mg, 10ml/5mg" %}
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-flask text-gray-400"></i>
+                                </div>
+                            </div>
+                            {% if form.concentracion.help_text %}<p class="mt-2 text-xs text-gray-500 flex items-center"><i class="fas fa-info-circle mr-1"></i>{{ form.concentracion.help_text }}</p>{% endif %}
+                            {% if form.concentracion.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.concentracion.errors|join:", " }}</p>{% endif %}
+                        </div>
+
+                        <!-- Vía de Administración -->
+                        <div class="group">
+                            <label for="{{ form.via_administracion.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-route mr-2 text-emerald-500"></i>
+                                {{ form.via_administracion.label }} {% if form.via_administracion.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {% render_field form.via_administracion class+="select2-field block w-full px-4 py-3 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-300 bg-white/80 backdrop-blur-sm" %}
+                            {% if form.via_administracion.help_text %}<p class="mt-2 text-xs text-gray-500 flex items-center"><i class="fas fa-info-circle mr-1"></i>{{ form.via_administracion.help_text }}</p>{% endif %}
+                            {% if form.via_administracion.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.via_administracion.errors|join:", " }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventario y Precio -->
+                <div class="space-y-6">
+                    <div class="border-l-4 border-blue-500 pl-4">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Inventario y Precio</h2>
+                        <p class="text-gray-600">Información de stock y precio del medicamento</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Cantidad -->
+                        <div class="group">
+                            <label for="{{ form.cantidad.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-boxes mr-2 text-blue-500"></i>
+                                {{ form.cantidad.label }} (Stock) {% if form.cantidad.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            <div class="relative">
+                                {% render_field form.cantidad class+="block w-full px-4 py-3 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white/80 backdrop-blur-sm" type="number" min="0" %}
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-hashtag text-gray-400"></i>
+                                </div>
+                            </div>
+                            {% if form.cantidad.help_text %}<p class="mt-2 text-xs text-gray-500 flex items-center"><i class="fas fa-info-circle mr-1"></i>{{ form.cantidad.help_text }}</p>{% endif %}
+                            {% if form.cantidad.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.cantidad.errors|join:", " }}</p>{% endif %}
+                        </div>
+
+                        <!-- Precio -->
+                        <div class="group">
+                            <label for="{{ form.precio.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-dollar-sign mr-2 text-blue-500"></i>
+                                {{ form.precio.label }} {% if form.precio.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 text-lg font-bold">$</span>
+                                </div>
+                                {% render_field form.precio class+="block w-full pl-8 pr-12 py-3 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white/80 backdrop-blur-sm" placeholder="0.00" type="number" step="0.01" min="0" %}
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-money-bill-wave text-gray-400"></i>
+                                </div>
+                            </div>
+                            {% if form.precio.help_text %}<p class="mt-2 text-xs text-gray-500 flex items-center"><i class="fas fa-info-circle mr-1"></i>{{ form.precio.help_text }}</p>{% endif %}
+                            {% if form.precio.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.precio.errors|join:", " }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información Adicional -->
+                <div class="space-y-6">
+                    <div class="border-l-4 border-purple-500 pl-4">
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Información Adicional</h2>
+                        <p class="text-gray-600">Descripción y configuración del medicamento</p>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="group">
+                        <label for="{{ form.descripcion.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-clipboard-list mr-2 text-purple-500"></i>
+                            {{ form.descripcion.label }}
+                        </label>
+                        {% render_field form.descripcion class+="block w-full px-4 py-3 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300 bg-white/80 backdrop-blur-sm resize-none" rows="4" placeholder="Uso, indicaciones, precauciones relevantes..." %}
+                        {% if form.descripcion.help_text %}<p class="mt-2 text-xs text-gray-500 flex items-center"><i class="fas fa-info-circle mr-1"></i>{{ form.descripcion.help_text }}</p>{% endif %}
+                        {% if form.descripcion.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.descripcion.errors|join:", " }}</p>{% endif %}
+                    </div>
+
+                    <!-- Foto -->
+                    <div class="group">
+                        <label for="{{ form.foto.id_for_label }}" class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-camera mr-2 text-purple-500"></i>
+                            {{ form.foto.label }}
+                        </label>
+                        <div class="relative">
+                            {% render_field form.foto class+="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-2xl file:border-0 file:text-sm file:font-semibold file:bg-gradient-to-r file:from-purple-50 file:to-purple-100 file:text-purple-700 hover:file:from-purple-100 hover:file:to-purple-200 file:transition-all file:duration-300 border border-gray-300 rounded-2xl shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white/80 backdrop-blur-sm" %}
+                        </div>
+                        {% if form.foto.help_text %}<p class="mt-2 text-xs text-gray-500 flex items-center"><i class="fas fa-info-circle mr-1"></i>{{ form.foto.help_text }}</p>{% endif %}
+                        {% if form.foto.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.foto.errors|join:", " }}</p>{% endif %}
+                        {% if object.foto %}
+                            <div class="mt-4 p-4 bg-gray-50 rounded-2xl border border-gray-200">
+                                <p class="text-sm text-gray-600 mb-2 flex items-center">
+                                    <i class="fas fa-image mr-2"></i>
+                                    Imagen actual: 
+                                    <a href="{{ object.foto.url }}" target="_blank" class="text-purple-600 hover:text-purple-800 ml-1 font-medium hover:underline">
+                                        {{ object.foto.name|cut:"core/medicamentos/" }}
+                                    </a>
+                                </p>
+                                <img src="{{ object.foto.url }}" alt="Foto actual" class="h-24 w-24 object-cover rounded-xl shadow-md border border-gray-200">
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Checkboxes -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="group">
+                            <div class="flex items-center space-x-3 p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-2xl border border-orange-200">
+                                {% render_field form.comercial class+="h-5 w-5 text-orange-600 bg-white border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 transition-all duration-300" %}
+                                <label for="{{ form.comercial.id_for_label }}" class="text-sm font-semibold text-gray-700 flex items-center">
+                                    <i class="fas fa-store mr-2 text-orange-500"></i>
+                                    {{ form.comercial.label }}
+                                </label>
+                            </div>
+                            {% if form.comercial.help_text %}
+                                <div class="mt-3 p-3 bg-orange-50 rounded-xl border border-orange-200">
+                                    <p class="text-xs text-orange-700 flex items-center">
+                                        <i class="fas fa-info-circle mr-2 text-orange-500"></i>
+                                        <span class="font-medium">{{ form.comercial.help_text }}</span>
+                                    </p>
+                                </div>
+                            {% endif %}
+                            {% if form.comercial.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.comercial.errors|join:", " }}</p>{% endif %}
+                        </div>
+
+                        <div class="group">
+                            <div class="flex items-center space-x-3 p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-2xl border border-green-200">
+                                {% render_field form.activo class+="h-5 w-5 text-green-600 bg-white border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 transition-all duration-300" %}
+                                <label for="{{ form.activo.id_for_label }}" class="text-sm font-semibold text-gray-700 flex items-center">
+                                    <i class="fas fa-toggle-on mr-2 text-green-500"></i>
+                                    {{ form.activo.label }}
+                                </label>
+                            </div>
+                            {% if form.activo.help_text %}
+                                <div class="mt-3 p-3 bg-green-50 rounded-xl border border-green-200">
+                                    <p class="text-xs text-green-700 flex items-center">
+                                        <i class="fas fa-info-circle mr-2 text-green-500"></i>
+                                        <span class="font-medium">{{ form.activo.help_text }}</span>
+                                    </p>
+                                </div>
+                            {% endif %}
+                            {% if form.activo.errors %}<p class="text-red-500 text-sm mt-2 flex items-center"><i class="fas fa-exclamation-circle mr-1"></i>{{ form.activo.errors|join:", " }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="flex justify-end space-x-4 pt-8 border-t border-gray-200">
+    <!-- Botón de prueba 1: Con debug -->
+    <a href="{% url 'core:medicamento_list' %}" 
+       class="debug-button inline-flex items-center justify-center space-x-2 font-bold py-3 px-8 rounded-2xl">
+        <i class="fas fa-times"></i>
+        <span>CANCELAR</span>
+    </a>
+    
+    <!-- Botón de prueba 2: Solo estilos inline -->
+    <button type="submit" 
+            style="background-color: #10b981; color: white; padding: 12px 32px; border-radius: 16px; font-weight: bold; border: none; cursor: pointer;">
+        <i class="fas fa-save" style="color: white; margin-right: 8px;"></i>
+        <span style="color: white;">GUARDAR</span>
+    </button>
+</div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('.select2-field').select2({
+        placeholder: "Seleccione una opción",
+        allowClear: true,
+        width: '100%',
+        theme: 'default'
+    });
+    
+    // Agregar animaciones suaves al scroll
+    $('form').on('submit', function() {
+        $(this).find('button[type="submit"]').addClass('animate-pulse');
+    });
+    
+    // Efectos hover para los campos
+    $('input, textarea, select').on('focus', function() {
+        $(this).closest('.group').addClass('transform scale-105 transition-transform duration-300');
+    }).on('blur', function() {
+        $(this).closest('.group').removeClass('transform scale-105 transition-transform duration-300');
+    });
+});
+</script>
+
+<style>
+    .select2-container--default .select2-selection--single {
+        height: 48px !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 1rem !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(4px) !important;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 46px !important;
+        padding-left: 16px !important;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        top: 12px !important;
+    }
+    
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+    }
+    
+    .select2-dropdown {
+        border-radius: 1rem !important;
+        border: 1px solid #d1d5db !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    }
+    
+    .select2-results__option {
+        padding: 12px 16px !important;
+    }
+    
+    .select2-results__option--highlighted {
+        background-color: #10b981 !important;
+    }
+</style>
+{% endblock %}

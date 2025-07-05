@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Calendario Médico - SaludTotal{% endblock %}
+
+{% block css %}
+<style>
+    #calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.5rem;
+    }
+
+    .day-cell-custom {
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #ccc;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .day-cell-custom.disponible {
+        background-color: #fffbea;
+    }
+
+    .day-cell-custom.ocupado {
+        background-color: #fdecea;
+    }
+
+    .day-cell-custom.sin_atencion {
+        background-color: #f0f0f0;
+        color: #888;
+    }
+
+    .day-cell-custom.dia-actual {
+        border: 2px solid #007bff;
+    }
+
+    .day-number-custom {
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+    }
+
+    .slots-info-custom {
+        font-size: 0.85rem;
+        color: #555;
+    }
+
+    .day-status-custom {
+        font-size: 0.75rem;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+        margin-top: 0.25rem;
+    }
+
+    .summary-item-custom {
+        background: #f9f9f9;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        text-align: center;
+    }
+
+    .summary-number-custom {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <h1 class="text-xl font-bold mb-4">Calendario de Citas Médicas</h1>
+
+    <div class="flex gap-2 mb-4">
+        <select id="year" class="border rounded p-1"></select>
+        <select id="month" class="border rounded p-1"></select>
+        <button onclick="cargarCalendarioDesdeServidor()"
+            class="bg-blue-500 text-black px-4 py-1 rounded">Actualizar</button>
+    </div>
+
+    <div id="summary" class="grid grid-cols-4 gap-4 mb-4"></div>
+
+    <div id="loading-message" class="text-gray-500 text-center mb-4 hidden"></div>
+
+    <div style="display: grid; grid-template-columns: repeat(7, 1fr);" class="text-center font-semibold mb-2">
+        <div>Lunes</div>
+        <div>Martes</div>
+        <div>Miércoles</div>
+        <div>Jueves</div>
+        <div>Viernes</div>
+        <div>Sábado</div>
+        <div>Domingo</div>
+    </div>
+    <div id="calendar-grid" class="grid grid-cols-7 gap-2"></div>
+</div>
+
+<!-- Modal -->
+<div id="slotsModal" class="fixed z-50 inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg shadow-lg p-6 w-96 relative">
+        <h2 id="modal-title" class="text-lg font-semibold mb-4"></h2>
+        <div id="modal-body" class="space-y-2"></div>
+        <button onclick="cerrarModal()" class="absolute top-2 right-2 text-gray-600 hover:text-black">&times;</button>
+    </div>
+</div>
+<a href="{% url 'home' %}"
+    class="bg-blue-700 hover:bg-blue-800 text-black py-2 px-6 rounded-full flex items-center justify-center transition-colors duration-300">
+    <i class="fa-solid fa-house"></i>
+</a>
+{% endblock %}
+
+{% block js %}
+<script>
+    const GENERAR_CALENDARIO_URL = "{% url 'doctor:calendario_api_generar_mes' %}";
+    const SLOTS_DIA_URL = "{% url 'doctor:calendario_api_slots_dia' %}";
+    const AGENDAR_CITA_FORM_URL_BASE = "{% url 'doctor:cita_medica_create' %}";
+    let csrfToken = "{{ csrf_token }}";
+
+    // Inicializar calendario
+    document.addEventListener('DOMContentLoaded', () => {
+        popularSelectoresFecha();
+        cargarCalendarioDesdeServidor();
+    });
+
+    function popularSelectoresFecha() {
+        const yearSelect = document.getElementById('year');
+        const monthSelect = document.getElementById('month');
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+
+        yearSelect.innerHTML = '';
+        for (let i = currentYear - 2; i <= currentYear + 2; i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i;
+            if (i === currentYear) option.selected = true;
+            yearSelect.appendChild(option);
+        }
+
+        monthSelect.innerHTML = '';
+        const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        meses.forEach((mes, index) => {
+            const option = document.createElement('option');
+            option.value = index + 1;
+            option.textContent = mes;
+            if (index + 1 === currentMonth) option.selected = true;
+            monthSelect.appendChild(option);
+        });
+    }
+
+    async function cargarCalendarioDesdeServidor() {
+        const year = document.getElementById('year').value;
+        const month = document.getElementById('month').value;
+        const calendarGrid = document.getElementById('calendar-grid');
+        const loadingMessage = document.getElementById('loading-message');
+        const summaryDiv = document.getElementById('summary');
+
+        calendarGrid.innerHTML = '';
+        loadingMessage.classList.remove('hidden');
+        loadingMessage.textContent = 'Cargando calendario...';
+        summaryDiv.innerHTML = '<p class="text-gray-500 col-span-full text-center">Cargando resumen...</p>';
+
+        try {
+            const response = await fetch(`${GENERAR_CALENDARIO_URL}?year=${year}&month=${month}`);
+            if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+            const data = await response.json();
+
+            if (data.success && data.calendario) {
+                loadingMessage.classList.add('hidden');
+                renderizarCalendario(data.calendario, calendarGrid);
+                renderizarResumen(data.resumen, summaryDiv);
+            } else {
+                loadingMessage.textContent = data.error || 'Error al cargar calendario';
+                summaryDiv.innerHTML = `<p class="text-red-500 col-span-full text-center">${data.error || 'Error desconocido'}</p>`;
+            }
+        } catch (error) {
+            loadingMessage.textContent = `Error de conexión: ${error.message}`;
+            summaryDiv.innerHTML = `<p class="text-red-500 col-span-full text-center">Error: ${error.message}</p>`;
+        }
+    }
+
+    function renderizarResumen(resumen, summaryDiv) {
+        summaryDiv.innerHTML = `
+        <div class="summary-item-custom">
+            <div class="summary-number-custom">${resumen.total_dias || 0}</div>
+            <div>Total Días</div>
+        </div>
+        <div class="summary-item-custom">
+            <div class="summary-number-custom" style="color: #4CAF50;">${resumen.dias_disponibles || 0}</div>
+            <div>Disponibles</div>
+        </div>
+        <div class="summary-item-custom">
+            <div class="summary-number-custom" style="color: #2196F3;">${resumen.dias_ocupados || 0}</div>
+            <div>Ocupados</div>
+        </div>
+        <div class="summary-item-custom">
+            <div class="summary-number-custom" style="color: #B0B0B0;">${resumen.dias_sin_atencion || 0}</div>
+            <div>Sin Atención</div>
+        </div>
+    `;
+    }
+
+    function renderizarCalendario(calendario, calendarGrid) {
+        const { year, month, dias } = calendario;
+        const primerDiaDelMes = new Date(year, month - 1, 1);
+        let diaSemanaPrimerDia = primerDiaDelMes.getDay();
+        if (diaSemanaPrimerDia === 0) diaSemanaPrimerDia = 7;
+
+        for (let i = 1; i < diaSemanaPrimerDia; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'day-cell-custom bg-gray-100';
+            calendarGrid.appendChild(emptyCell);
+        }
+
+        const hoy = new Date();
+
+        dias.forEach(diaData => {
+            const dayCell = document.createElement('div');
+            dayCell.className = `day-cell-custom ${diaData.estado}`;
+            if (esHoy(diaData.fecha, hoy)) dayCell.classList.add('dia-actual');
+
+            dayCell.innerHTML = `
+            <div class="day-number-custom">${diaData.dia}</div>
+            <div class="slots-info-custom">${diaData.slots_libres} de ${diaData.slots_totales}</div>
+            <div class="day-status-custom" style="background-color:${colorDia(diaData.estado)};">
+                ${textoEstado(diaData.estado)}
+            </div>
+        `;
+
+            if (diaData.estado !== 'sin_atencion') {
+                dayCell.style.cursor = 'pointer';
+                dayCell.onclick = () => mostrarSlotsDia(diaData.fecha);
+            } else {
+                dayCell.style.cursor = 'not-allowed';
+            }
+
+            calendarGrid.appendChild(dayCell);
+        });
+    }
+
+    function esHoy(fechaStr, hoy) {
+        const fecha = new Date(fechaStr);
+        return (
+            fecha.getDate() === hoy.getDate() &&
+            fecha.getMonth() === hoy.getMonth() &&
+            fecha.getFullYear() === hoy.getFullYear()
+        );
+    }
+
+    function colorDia(estado) {
+        return estado === 'disponible' ? '#ffffcc' :
+            estado === 'ocupado' ? '#fdd' :
+                '#e0e0e0';
+    }
+
+    function textoEstado(estado) {
+        return estado === 'disponible' ? 'Disponible' :
+            estado === 'ocupado' ? 'Ocupado' :
+                'Sin Atención';
+    }
+
+    async function mostrarSlotsDia(fechaStr) {
+        const modal = document.getElementById('slotsModal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalBody = document.getElementById('modal-body');
+
+        modalTitle.textContent = `Horarios para ${formatearFecha(fechaStr)}`;
+        modalBody.innerHTML = '<p class="text-gray-500 text-center p-4">Cargando...</p>';
+        modal.style.display = 'block';
+
+        try {
+            const response = await fetch(`${SLOTS_DIA_URL}?fecha=${fechaStr}`);
+            if (!response.ok) throw new Error(`Error del servidor: ${response.status}`);
+            const data = await response.json();
+
+            if (data.success && data.slots.length > 0) {
+                modalBody.innerHTML = '';
+                data.slots.forEach(slot => {
+                    const el = document.createElement('div');
+                    el.className = `time-slot-custom ${slot.disponible ? 'disponible' : 'ocupado'}`;
+                    el.textContent = slot.hora;
+                    if (slot.disponible) {
+                        el.onclick = () => redirigirAgendarCita(fechaStr, slot.hora);
+                        el.style.cursor = 'pointer';
+                    }
+                    modalBody.appendChild(el);
+                });
+            } else {
+                modalBody.innerHTML = `<p class="text-gray-500 text-center p-4">${data.mensaje || 'Sin horarios disponibles'}</p>`;
+            }
+        } catch (error) {
+            modalBody.innerHTML = `<p class="text-red-500 text-center p-4">Error: ${error.message}</p>`;
+        }
+    }
+
+    function redirigirAgendarCita(fecha, hora) {
+        window.location.href = `${AGENDAR_CITA_FORM_URL_BASE}?fecha=${fecha}&hora=${hora}`;
+    }
+
+    function formatearFecha(fechaStr) {
+        const [y, m, d] = fechaStr.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function cerrarModal() {
+        const modal = document.getElementById('slotsModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    window.onclick = function (event) {
+        const modal = document.getElementById('slotsModal');
+        if (event.target === modal) cerrarModal();
+    };
+    window.onkeydown = function (event) {
+        if (event.key === "Escape") cerrarModal();
+    };
+
+
+</script>
+{% endblock %}
