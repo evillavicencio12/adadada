@@ -12,3 +12,9 @@ from .medicamento import (
     MarcaMedicamentoListView, MarcaMedicamentoCreateView, MarcaMedicamentoUpdateView, MarcaMedicamentoDeleteView,
     TipoMedicamentoListView, TipoMedicamentoCreateView, TipoMedicamentoUpdateView, TipoMedicamentoDeleteView
 )
+from .TipoGasto import (
+    TipoGastoListView, TipoGastoCreateView, TipoGastoUpdateView, TipoGastoDeleteView
+)
+from .GastoMensual import (
+    GastoMensualListView, GastoMensualCreateView, GastoMensualUpdateView, GastoMensualDeleteView
+)

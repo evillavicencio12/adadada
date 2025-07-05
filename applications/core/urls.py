@@ -3,20 +3,18 @@ from applications.core import views
 from .views.historialclinico import HistorialClinicoCreateView, HistorialClinicoDeleteView, HistorialClinicoDetailView, HistorialClinicoListView, HistorialClinicoUpdateView
 from applications.core.views.paciente import paciente_find, paciente_search_view
 from applications.core.views.medicamento import ajax_create_medicamento, ajax_search_medicamento
-from applications.core.views.GastoMensual import listar_tipos_gasto , crear_tipo_gasto , editar_tipo_gasto , cambiar_estado_tipo_gasto , reporte_gastos_por_tipo , ListarGastosMensuales , crear_gasto_mensual 
+# Se eliminan imports de GastoMensual que ya no se usan directamente aquí
+# from applications.core.views.GastoMensual import listar_tipos_gasto , crear_tipo_gasto , editar_tipo_gasto , cambiar_estado_tipo_gasto , reporte_gastos_por_tipo , ListarGastosMensuales , crear_gasto_mensual
+from applications.core.views import TipoGasto as TipoGastoViews
+from applications.core.views import GastoMensual as GastoMensualViews
+
+
 app_name = 'core'
 
 urlpatterns = [
     # Rutas existentes para Pacientes, Doctores, Especialidades, HistorialClinico...
     path('paciente_find/', views.paciente_find, name='paciente_find'),
     path('pacientes/search/', views.paciente_search_view, name='paciente_search'),
-    # path('pacientes/', views.PacienteListView.as_view(), name='paciente_list'),
-    # path('pacientes/crear/', views.PacienteCreateView.as_view(), name='paciente_create'),
-    # path('pacientes/editar/<int:pk>/', views.PacienteUpdateView.as_view(), name='paciente_update'),
-    # path('pacientes/eliminar/<int:pk>/', views.PacienteDeleteView.as_view(), name='paciente_delete'),
-    # path('ajax/buscar-paciente-dni/', views.buscar_paciente_dni_ajax, name='ajax_buscar_paciente_dni'),
-    # path('ajax/buscar-paciente-id/', views.buscar_paciente_id_ajax, name='ajax_buscar_paciente_id'),
-
 
     path('historialclinico/', HistorialClinicoListView.as_view(), name='historialclinico_list'),
     path('historialclinico/create/', HistorialClinicoCreateView.as_view(), name='historialclinico_create'),
@@ -60,13 +58,17 @@ urlpatterns = [
     path('tipos-medicamentos/editar/<int:pk>/', views.TipoMedicamentoUpdateView.as_view(), name='tipomedicamento_update'),
     path('tipos-medicamentos/eliminar/<int:pk>/', views.TipoMedicamentoDeleteView.as_view(), name='tipomedicamento_delete'),
     
-    path('gastos/', ListarGastosMensuales.as_view(), name='listar_gastos_mensuales'),
-    path('gastos/crear/', crear_gasto_mensual, name='crear_gasto_mensual'),
-    path('gastos/tipos/', listar_tipos_gasto, name='listar_tipos_gasto'),
-    path('gastos/tipos/crear/', crear_tipo_gasto, name='crear_tipo_gasto'),
-    path('gastos/tipos/<int:id>/editar/', editar_tipo_gasto, name='editar_tipo_gasto'),
-    path('gastos/tipos/<int:id>/cambiar_estado/', cambiar_estado_tipo_gasto, name='cambiar_estado_tipo_gasto'),
-    path('gastos/reportes/', reporte_gastos_por_tipo, name='reporte_gastos_por_tipo'),
+    # Rutas para TipoGasto
+    path('tipos-gasto/', TipoGastoViews.TipoGastoListView.as_view(), name='tipogasto_list'),
+    path('tipos-gasto/crear/', TipoGastoViews.TipoGastoCreateView.as_view(), name='tipogasto_create'),
+    path('tipos-gasto/editar/<int:pk>/', TipoGastoViews.TipoGastoUpdateView.as_view(), name='tipogasto_update'),
+    path('tipos-gasto/eliminar/<int:pk>/', TipoGastoViews.TipoGastoDeleteView.as_view(), name='tipogasto_delete'),
+
+    # Rutas para GastoMensual
+    path('gastos-mensuales/', GastoMensualViews.GastoMensualListView.as_view(), name='gastomensual_list'),
+    path('gastos-mensuales/crear/', GastoMensualViews.GastoMensualCreateView.as_view(), name='gastomensual_create'),
+    path('gastos-mensuales/editar/<int:pk>/', GastoMensualViews.GastoMensualUpdateView.as_view(), name='gastomensual_update'),
+    path('gastos-mensuales/eliminar/<int:pk>/', GastoMensualViews.GastoMensualDeleteView.as_view(), name='gastomensual_delete'),
 ]
 
 
