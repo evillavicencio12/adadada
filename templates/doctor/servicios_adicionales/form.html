@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ view.model_name_title|default:"Gestión" }} - {% if object %}Editar{% else %}Crear{% endif %}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 py-12 px-4">
+    <div class="max-w-2xl mx-auto">
+        <!-- Header Card -->
+        <div class="bg-white shadow-2xl rounded-2xl overflow-hidden border border-gray-100">
+            <!-- Header Section -->
+            <div class="bg-gradient-to-r from-teal-600 to-blue-600 px-8 py-6">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-concierge-bell mr-3 text-teal-600"></i>
+                        {% if object %}Editar{% else %}Nuevo{% endif %} Servicio Adicional
+                    </h1>
+                    <a href="{% url 'doctor:servicio_adicional_list' %}" 
+                       class="text-teal-100 hover:text-white transition duration-300 flex items-center group">
+                        <i class="fas fa-arrow-left mr-2 group-hover:-translate-x-1 transition-transform"></i> 
+                        Volver
+                    </a>
+                </div>
+            </div>
+
+            <!-- Messages Section -->
+            {% if messages %}
+                <div class="px-8 pt-6">
+                    {% for message in messages %}
+                        <div class="mb-4 p-4 rounded-lg border-l-4 {% if message.tags == 'success' %}bg-green-50 border-green-400 text-green-800{% elif message.tags == 'error' %}bg-red-50 border-red-400 text-red-800{% else %}bg-blue-50 border-blue-400 text-blue-800{% endif %}">
+                            <div class="flex items-center">
+                                <i class="fas {% if message.tags == 'success' %}fa-check-circle text-green-500{% elif message.tags == 'error' %}fa-exclamation-circle text-red-500{% else %}fa-info-circle text-blue-500{% endif %} mr-3"></i>
+                                <span class="font-medium">{{ message }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Form Section -->
+            <div class="px-8 py-6">
+                {% if form.non_field_errors %}
+                    <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-red-500 mr-3"></i>
+                            <div>
+                                <strong class="font-bold text-red-800">Error:</strong>
+                                <span class="block sm:inline text-red-700">{{ form.non_field_errors|join:", " }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate class="space-y-6">
+                    {% csrf_token %}
+
+                    <!-- Nombre del Servicio -->
+                    <div class="space-y-2">
+                        <label for="{{ form.nombre_servicio.id_for_label }}" 
+                               class="block text-sm font-semibold text-gray-700 flex items-center">
+                            <i class="fas fa-tag text-teal-500 mr-2"></i>
+                            {{ form.nombre_servicio.label }} 
+                            {% if form.nombre_servicio.field.required %}
+                                <span class="text-red-500 ml-1">*</span>
+                            {% endif %}
+                        </label>
+                        {% render_field form.nombre_servicio class+="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200 bg-white text-gray-900 placeholder-gray-400" placeholder="Ej: Consulta General, Radiografía de Tórax" %}
+                        {% if form.nombre_servicio.help_text %}
+                            <p class="text-xs text-gray-500 mt-1 flex items-center">
+                                <i class="fas fa-info-circle text-gray-400 mr-1"></i>
+                                {{ form.nombre_servicio.help_text }}
+                            </p>
+                        {% endif %}
+                        {% if form.nombre_servicio.errors %}
+                            <p class="text-red-600 text-xs mt-1 flex items-center">
+                                <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+                                {{ form.nombre_servicio.errors|join:", " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Costo del Servicio -->
+                    <div class="space-y-2">
+                        <label for="{{ form.costo_servicio.id_for_label }}" 
+                               class="block text-sm font-semibold text-gray-700 flex items-center">
+                            <i class="fas fa-dollar-sign text-green-500 mr-2"></i>
+                            {{ form.costo_servicio.label }} 
+                            {% if form.costo_servicio.field.required %}
+                                <span class="text-red-500 ml-1">*</span>
+                            {% endif %}
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-500 text-sm font-medium">$</span>
+                            </div>
+                            {% render_field form.costo_servicio class+="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200 bg-white text-gray-900 placeholder-gray-400" placeholder="0.00" %}
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <span class="text-gray-400 text-sm">USD</span>
+                            </div>
+                        </div>
+                        {% if form.costo_servicio.help_text %}
+                            <p class="text-xs text-gray-500 mt-1 flex items-center">
+                                <i class="fas fa-info-circle text-gray-400 mr-1"></i>
+                                {{ form.costo_servicio.help_text }}
+                            </p>
+                        {% endif %}
+                        {% if form.costo_servicio.errors %}
+                            <p class="text-red-600 text-xs mt-1 flex items-center">
+                                <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+                                {{ form.costo_servicio.errors|join:", " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="space-y-2">
+                        <label for="{{ form.descripcion.id_for_label }}" 
+                               class="block text-sm font-semibold text-gray-700 flex items-center">
+                            <i class="fas fa-align-left text-blue-500 mr-2"></i>
+                            {{ form.descripcion.label }}
+                        </label>
+                        {% render_field form.descripcion class+="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition duration-200 bg-white text-gray-900 placeholder-gray-400 resize-none" rows="4" placeholder="Detalles adicionales sobre el servicio..." %}
+                        {% if form.descripcion.help_text %}
+                            <p class="text-xs text-gray-500 mt-1 flex items-center">
+                                <i class="fas fa-info-circle text-gray-400 mr-1"></i>
+                                {{ form.descripcion.help_text }}
+                            </p>
+                        {% endif %}
+                        {% if form.descripcion.errors %}
+                            <p class="text-red-600 text-xs mt-1 flex items-center">
+                                <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+                                {{ form.descripcion.errors|join:", " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Estado Activo -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex items-center">
+                                {% render_field form.activo class+="w-5 h-5 text-teal-600 border-2 border-gray-300 rounded focus:ring-teal-500 focus:ring-2 bg-white" %}
+                            </div>
+                            <div class="flex-1">
+                                <label for="{{ form.activo.id_for_label }}" 
+                                       class="text-sm font-semibold text-gray-700 flex items-center cursor-pointer">
+                                    <i class="fas fa-toggle-on text-teal-500 mr-2"></i>
+                                    {{ form.activo.label }}
+                                </label>
+                                {% if form.activo.help_text %}
+                                    <p class="text-xs text-gray-500 mt-1">{{ form.activo.help_text }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if form.activo.errors %}
+                            <p class="text-red-600 text-xs mt-2 flex items-center">
+                                <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+                                {{ form.activo.errors|join:", " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="pt-6 border-t border-gray-200">
+                        <div class="flex justify-end space-x-3">
+                            <a href="{% url 'doctor:servicio_adicional_list' %}" 
+                               class="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition duration-200">
+                                <i class="fas fa-times mr-2"></i>
+                                Cancelar
+                            </a>
+                            <button type="submit" 
+                                    class="inline-flex items-center px-6 py-3 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition duration-200 transform hover:scale-105">
+                                <i class="fas fa-save mr-2"></i>
+                                {% if object %}Actualizar{% else %}Guardar{% endif %} Servicio
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Posible JS para validaciones o interacciones adicionales
+$(document).ready(function() {
+    // Ejemplo: podrías usar cleave.js para formatear el costo
+    // if (typeof Cleave !== 'undefined') {
+    //     new Cleave('{{ form.costo_servicio.id_for_label }}', {
+    //         numeral: true,
+    //         numeralThousandsGroupStyle: 'thousand'
+    //     });
+    // }
+    
+    // Animación sutil para los campos de formulario
+    $('input, textarea').on('focus', function() {
+        $(this).parent().addClass('transform scale-105');
+    }).on('blur', function() {
+        $(this).parent().removeClass('transform scale-105');
+    });
+});
+</script>
+{% endblock %}

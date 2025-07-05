@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citas Médicas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Card Container -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <!-- Card Header -->
+            <div class="bg-blue-600 px-6 py-4 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-calendar-alt"></i>
+                    Citas Médicas
+                </h2>
+                <div class="flex gap-2">
+                    <a href="{% url 'doctor:citas_hoy' %}" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded flex items-center gap-2 text-sm">
+                        <i class="fas fa-clock"></i> Hoy
+                    </a>
+                    <a href="{% url 'doctor:cita_medica_create' %}" class="bg-green-500 hover:bg-green-700 text-white px-3 py-1 rounded flex items-center gap-2 text-sm">
+                        <i class="fas fa-plus"></i> Nueva
+                    </a>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-6">
+                <!-- Filtros -->
+                <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                    <div>
+                        <input type="text" name="search" class="w-full px-3 py-2 border rounded-md" 
+                               placeholder="Buscar paciente..." value="{{ search }}">
+                    </div>
+                    <div>
+                        <select name="estado" class="w-full px-3 py-2 border rounded-md">
+                            <option value="">Todos los estados</option>
+                            {% for value, label in estados_choices %}
+                                <option value="{{ value }}" {% if estado == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <input type="date" name="fecha_desde" class="w-full px-3 py-2 border rounded-md" 
+                               value="{{ fecha_desde|date:'Y-m-d' }}" placeholder="Desde">
+                    </div>
+                    <div>
+                        <input type="date" name="fecha_hasta" class="w-full px-3 py-2 border rounded-md" 
+                               value="{{ fecha_hasta|date:'Y-m-d' }}" placeholder="Hasta">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
+                            <i class="fas fa-search"></i> Filtrar
+                        </button>
+                        <a href="{% url 'doctor:cita_medica_list' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md flex items-center gap-2">
+                            <i class="fas fa-times"></i> Limpiar
+                        </a>
+                    </div>
+                </form>
+
+                <!-- Tabla de citas -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Observaciones</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for cita in page_obj %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ cita.id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="font-medium text-gray-900">{{ cita.paciente.nombre_completo }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ cita.fecha|date:"d/m/Y" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ cita.hora_cita|time:"H:i" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if cita.estado == 'PENDIENTE' %}bg-yellow-100 text-yellow-800
+                                        {% elif cita.estado == 'CONFIRMADA' %}bg-green-100 text-green-800
+                                        {% elif cita.estado == 'CANCELADA' %}bg-red-100 text-red-800
+                                        {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                        {{ cita.get_estado_display }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-500">
+                                    {% if cita.observaciones %}
+                                        {{ cita.observaciones|truncatechars:50 }}
+                                    {% else %}
+                                        <span class="text-gray-400 italic">Sin observaciones</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex space-x-2">
+                                        <a href="{% url 'doctor:cita_medica_detail' cita.pk %}" 
+                                           class="text-blue-600 hover:text-blue-900" title="Ver detalle">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'doctor:cita_medica_update' cita.pk %}" 
+                                           class="text-indigo-600 hover:text-indigo-900" title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'doctor:cita_medica_delete' cita.pk %}" 
+                                           class="text-red-600 hover:text-red-900" title="Eliminar">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                    <div class="flex flex-col items-center justify-center py-8">
+                                        <i class="fas fa-calendar-times text-4xl text-gray-300 mb-2"></i>
+                                        <p class="text-gray-500">No hay citas médicas registradas</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if page_obj.has_other_pages %}
+                <nav class="mt-6 flex items-center justify-between">
+                    <div class="hidden sm:block">
+                        <p class="text-sm text-gray-700">
+                            Mostrando <span class="font-medium">{{ page_obj.start_index }}</span> a 
+                            <span class="font-medium">{{ page_obj.end_index }}</span> de 
+                            <span class="font-medium">{{ page_obj.paginator.count }}</span> resultados
+                        </p>
+                    </div>
+                    <div class="flex-1 flex justify-between sm:justify-end">
+                        {% if page_obj.has_previous %}
+                            <a href="?page=1{% if search %}&search={{ search }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}" 
+                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                <i class="fas fa-angle-double-left mr-1"></i> Primera
+                            </a>
+                            <a href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}" 
+                               class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                <i class="fas fa-angle-left mr-1"></i> Anterior
+                            </a>
+                        {% endif %}
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}" 
+                               class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Siguiente <i class="fas fa-angle-right ml-1"></i>
+                            </a>
+                            <a href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if fecha_desde %}&fecha_desde={{ fecha_desde|date:'Y-m-d' }}{% endif %}{% if fecha_hasta %}&fecha_hasta={{ fecha_hasta|date:'Y-m-d' }}{% endif %}" 
+                               class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                Última <i class="fas fa-angle-double-right ml-1"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Citas Médicas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Card Container -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <!-- Card Header -->
+            <div class="bg-blue-600 px-6 py-4 flex justify-between items-center">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="fas fa-calendar-alt"></i>
+                    {{ title }}
+                </h2>
+                <div class="flex gap-2">
+                    {% if not form %}
+                        <a href="{% url 'doctor:citas_hoy' %}" class="bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded flex items-center gap-2 text-sm">
+                            <i class="fas fa-clock"></i> Hoy
+                        </a>
+                        <a href="{% url 'doctor:cita_medica_create' %}" class="bg-green-500 hover:bg-green-700 text-white px-3 py-1 rounded flex items-center gap-2 text-sm">
+                            <i class="fas fa-plus"></i> Nueva
+                        </a>
+                    {% else %}
+                        <a href="{% url 'doctor:cita_medica_list' %}" class="bg-gray-500 hover:bg-gray-700 text-white px-3 py-1 rounded flex items-center gap-2 text-sm">
+                            <i class="fas fa-arrow-left"></i> Volver
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-6">
+                {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} p-3 rounded {% if message.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if form %}
+                <!-- Formulario para crear/editar -->
+                <form method="post" class="space-y-4">
+    {% csrf_token %}
+    
+    {% for field in form %}
+    <div class="space-y-1">
+        <label class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}
+        <p class="text-xs text-gray-500">{{ field.help_text }}</p>
+        {% endif %}
+        {% for error in field.errors %}
+        <p class="text-sm text-red-600">{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    <!-- Aquí pones los select año y mes -->
+    <div class="space-y-1">
+        <label for="year" class="block text-sm font-medium text-gray-700">Año</label>
+        <select id="year" name="year" class="w-full px-3 py-2 border rounded-md">
+            <option value="2023">2023</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+        </select>
+    </div>
+    <div class="space-y-1">
+        <label for="month" class="block text-sm font-medium text-gray-700">Mes</label>
+        <select id="month" name="month" class="w-full px-3 py-2 border rounded-md">
+            <option value="1">Enero</option>
+            <option value="2">Febrero</option>
+            <option value="3">Marzo</option>
+            <option value="4">Abril</option>
+            <option value="5">Mayo</option>
+            <option value="6">Junio</option>
+            <option value="7">Julio</option>
+            <option value="8">Agosto</option>
+            <option value="9">Septiembre</option>
+            <option value="10">Octubre</option>
+            <option value="11">Noviembre</option>
+            <option value="12">Diciembre</option>
+        </select>
+    </div>
+
+    <div class="flex justify-end space-x-3 pt-4">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
+            <i class="fas fa-save"></i> Guardar
+        </button>
+        <a href="{% if cita %}{% url 'doctor:cita_medica_detail' cita.pk %}{% else %}{% url 'doctor:cita_medica_list' %}{% endif %}" 
+           class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-md flex items-center gap-2">
+            <i class="fas fa-times"></i> Cancelar
+        </a>
+    </div>
+</form>
+
+                {% else %}
+                <!-- Resto del contenido para listado -->
+                <!-- Filtros -->
+                <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                    <!-- ... (mantén tu código de filtros existente) ... -->
+                </form>
+
+                <!-- Tabla de citas -->
+                <div class="overflow-x-auto">
+                    <!-- ... (mantén tu código de tabla existente) ... -->
+                </div>
+
+                <!-- Paginación -->
+                {% if page_obj.has_other_pages %}
+                <!-- ... (mantén tu código de paginación existente) ... -->
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Script para mejorar los selects y datepickers -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mejora los selects
+            const selects = document.querySelectorAll('select');
+            selects.forEach(select => {
+                select.className += ' block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500';
+            });
+            
+            // Mejora los inputs
+            const inputs = document.querySelectorAll('input[type="text"], input[type="date"], input[type="time"], textarea');
+            inputs.forEach(input => {
+                input.className += ' block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500';
+            });
+        });
+    </script>
+</body>
+</html>

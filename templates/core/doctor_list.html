@@ -1,0 +1,158 @@
+{% extends 'home.html' %} 
+{% load static %} {# Para widget_tweaks si se usa, o para otros estáticos #}
+{% load widget_tweaks %} {# Si lo vas a usar para el form de búsqueda, aunque es más común en forms de Django #}
+
+{% block title %}{{ title|default:"Listado de Doctores" }} | SaludTotal{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+
+    {# Bloque para mensajes de Django #}
+    {% include "fragments/messages.html" %}
+
+    <div class="bg-white shadow-xl rounded-2xl p-6 md:p-8 mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
+                <i class="fas fa-user-md text-blue-600 mr-2"></i>{{ title|default:"Listado de Doctores" }}
+            </h1>
+            <div>
+                {% if permissions.add_doctor %} {# Asumiendo que 'permissions' viene del contexto de ListViewMixin #}
+                <a href="{{ create_url|default:request.META.HTTP_REFERER }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-px">
+                    <i class="fas fa-plus mr-2"></i> Nuevo Doctor
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Search Form -->
+        <form method="get" class="mb-6">
+            <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-3">
+                <div class="relative flex-grow w-full md:w-auto">
+                    <input type="text" name="q" class="form-input w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" placeholder="Buscar por nombre, apellido, RUC, código..." value="{{ request.GET.q }}">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+                <button type="submit" class="w-full md:w-auto bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out">
+                    Buscar
+                </button>
+            </div>
+        </form>
+
+        <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombres</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Apellidos</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RUC</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Especialidades</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activo</th>
+                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for doctor in doctores %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ doctor.nombres }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ doctor.apellidos }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ doctor.ruc }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ doctor.codigo_unico_doctor }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                            {% for especialidad in doctor.especialidad.all %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    {{ especialidad.nombre }}
+                                </span>
+                            {% empty %}
+                                <span class="text-gray-500">Ninguna</span>
+                            {% endfor %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ doctor.telefonos }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if doctor.activo %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>Sí
+                                </span>
+                            {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-times-circle mr-1"></i>No
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                            {% if permissions.change_doctor %}
+                            <a href="{% url 'core:doctor_update' doctor.pk %}" class="text-yellow-500 hover:text-yellow-700 transition duration-150 ease-in-out" title="Editar">
+                                <i class="fas fa-pencil-alt fa-lg"></i>
+                            </a>
+                            {% endif %}
+                            {% if permissions.delete_doctor %}
+                            <a href="{% url 'core:doctor_delete' doctor.pk %}" class="text-red-500 hover:text-red-700 transition duration-150 ease-in-out" title="Eliminar">
+                                <i class="fas fa-trash-alt fa-lg"></i>
+                            </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-sm text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <i class="fas fa-folder-open fa-3x text-gray-400 mb-3"></i>
+                                No hay doctores registrados que coincidan con su búsqueda.
+                                {% if not request.GET.q %}
+                                    <a href="{{ create_url|default:'#' }}" class="mt-2 text-blue-600 hover:underline">Crear el primero</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# Paginación (si existe) #}
+        {% if is_paginated %}
+        <div class="mt-8 flex justify-center">
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <span class="sr-only">Anterior</span>
+                        <i class="fas fa-chevron-left h-5 w-5"></i>
+                    </a>
+                {% endif %}
+
+                {% for num in paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <a href="#" aria-current="page" class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                            {{ num }}
+                        </a>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                            {{ num }}
+                        </a>
+                    {% elif num == paginator.page_range.0 or num == paginator.page_range|last %}
+                        <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">...</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                        <span class="sr-only">Siguiente</span>
+                        <i class="fas fa-chevron-right h-5 w-5"></i>
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
+
+{% block js %}
+{{ super }} {# Incluye JS de base.html si es necesario #}
+<script>
+    // Puedes añadir JS específico para esta página aquí si es necesario
+    console.log("Página de listado de doctores cargada.");
+</script>
+{% endblock js %}

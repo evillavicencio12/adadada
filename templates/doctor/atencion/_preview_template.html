@@ -1,0 +1,85 @@
+{% load_get_part %}
+<div class="space-y-4 text-sm">
+    <h4 class="text-lg font-semibold text-gray-800 mb-2 border-b pb-1">Resumen de Atención Médica</h4>
+
+    <!-- Datos del Paciente (asumiendo que ya tienes el nombre y ID) -->
+    {% if atencion_data.paciente_nombre %}
+    <div class="p-3 bg-gray-50 rounded-md">
+        <h5 class="font-semibold text-gray-700">Paciente:</h5>
+        <p>{{ atencion_data.paciente_nombre }}
+            {% if atencion_data.paciente_obj %}
+                (C.I: {{ atencion_data.paciente_obj.dni }})
+            {% elif atencion_data.paciente %}
+                (ID: {{ atencion_data.paciente }})
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Signos Vitales -->
+    <div class="p-3 bg-gray-50 rounded-md">
+        <h5 class="font-semibold text-gray-700 mb-1">Signos Vitales:</h5>
+        <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+            {% if atencion_data.presion_arterial %}<p><strong>P. Arterial:</strong> {{ atencion_data.presion_arterial }}</p>{% endif %}
+            {% if atencion_data.pulso %}<p><strong>Pulso:</strong> {{ atencion_data.pulso }} ppm</p>{% endif %}
+            {% if atencion_data.temperatura %}<p><strong>Temperatura:</strong> {{ atencion_data.temperatura }} °C</p>{% endif %}
+            {% if atencion_data.frecuencia_respiratoria %}<p><strong>Frec. Resp.:</strong> {{ atencion_data.frecuencia_respiratoria }} rpm</p>{% endif %}
+            {% if atencion_data.saturacion_oxigeno %}<p><strong>Sat. O₂:</strong> {{ atencion_data.saturacion_oxigeno }} %</p>{% endif %}
+            {% if atencion_data.peso %}<p><strong>Peso:</strong> {{ atencion_data.peso }} kg</p>{% endif %}
+            {% if atencion_data.altura %}<p><strong>Altura:</strong> {{ atencion_data.altura }} m</p>{% endif %}
+        </div>
+        {% if atencion_data.es_control %}<p class="mt-1"><strong>Es control:</strong> Sí</p>{% endif %}
+    </div>
+
+    <!-- Evaluación Clínica -->
+    <div class="p-3 bg-gray-50 rounded-md">
+        <h5 class="font-semibold text-gray-700 mb-1">Evaluación Clínica:</h5>
+        {% if atencion_data.motivo_consulta %}<p><strong>Motivo:</strong> {{ atencion_data.motivo_consulta|linebreaksbr }}</p>{% endif %}
+        {% if atencion_data.sintomas %}<p><strong>Síntomas:</strong> {{ atencion_data.sintomas|linebreaksbr }}</p>{% endif %}
+        {% if atencion_data.examen_fisico %}<p><strong>Ex. Físico:</strong> {{ atencion_data.examen_fisico|linebreaksbr }}</p>{% endif %}
+        {% if atencion_data.diagnostico_objs %}
+            <p><strong>Diagnósticos:</strong>
+                {% for diag in atencion_data.diagnostico_objs %}
+                    {{ diag.codigo }} - {{ diag.descripcion }}{% if not forloop.last %}; {% endif %}
+                {% endfor %}
+            </p>
+        {% elif atencion_data.diagnostico %}
+             <p><strong>Diagnósticos (IDs):</strong> {{ atencion_data.diagnostico|join:", " }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Plan Terapéutico y Medicamentos -->
+    <div class="p-3 bg-gray-50 rounded-md">
+        <h5 class="font-semibold text-gray-700 mb-1">Plan Terapéutico:</h5>
+        {% if atencion_data.tratamiento %}<p>{{ atencion_data.tratamiento|linebreaksbr }}</p>{% endif %}
+
+        {% if detalles_data %}
+            <h6 class="font-medium text-gray-600 mt-2 mb-1">Medicamentos Recetados:</h6>
+            <ul class="list-disc list-inside pl-2 space-y-1">
+                {% for detalle in detalles_data %}
+                    {% if detalle.medicamento_nombre and not detalle.DELETE %}
+                        <li>
+                            <strong>{{ detalle.medicamento_nombre_resolved|default:detalle.medicamento_nombre }}</strong>
+                            {% if detalle.medicamento_obj and detalle.medicamento_obj.concentracion %}
+                                ({{ detalle.medicamento_obj.concentracion }})
+                            {% endif %}
+                            - Cant: {{ detalle.cantidad|default:"N/A" }}.
+                            Prescripción: {{ detalle.prescripcion|default:"N/A"|linebreaksbr }}
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-gray-500 italic">No se han especificado medicamentos.</p>
+        {% endif %}
+    </div>
+
+    <!-- Exámenes y Comentarios -->
+    <div class="p-3 bg-gray-50 rounded-md">
+        <h5 class="font-semibold text-gray-700 mb-1">Exámenes y Comentarios:</h5>
+        {% if atencion_data.examenes_enviados %}<p><strong>Exámenes Solicitados:</strong> {{ atencion_data.examenes_enviados|linebreaksbr }}</p>{% endif %}
+        {% if atencion_data.comentario_adicional %}<p><strong>Comentario Adicional:</strong> {{ atencion_data.comentario_adicional|linebreaksbr }}</p>{% endif %}
+    </div>
+
+    <p class="text-xs text-gray-500 mt-3 text-center">Esta es una previsualización. Verifique los datos antes de guardar.</p>
+</div>

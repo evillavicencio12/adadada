@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Confirmar Eliminación</h1>
+
+<p>¿Está seguro que desea eliminar el historial clínico de {{ object.paciente }}?</p>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Sí, eliminar</button>
+  <a href="{% url 'historialclinico_list' %}">Cancelar</a>
+</form>
+{% endblock %}

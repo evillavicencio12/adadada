@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title|default:"Confirmar Eliminación" }} | SaludTotal{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+
+    {% include "fragments/messages.html" %}
+
+    <div class="bg-white shadow-xl rounded-2xl p-6 md:p-8 max-w-lg mx-auto">
+        <!-- Breadcrumbs -->
+        <nav class="breadcrumbs text-sm text-gray-600 mb-6 space-x-2">
+            <a href="{% url 'home' %}" class="hover:text-blue-600 flex items-center">
+                <i class="fas fa-home mr-1"></i>Inicio
+            </a>
+            <span>/</span>
+            {# Asumimos que back_url es la lista del objeto a eliminar, o se pasa un breadcrumb_parent_url #}
+            {% if back_url %}
+            <a href="{{ back_url }}" class="hover:text-blue-600">Listado</a>
+            <span>/</span>
+            {% endif %}
+            <span class="font-semibold text-gray-800">{{ title|default:"Confirmar Eliminación" }}</span>
+        </nav>
+        
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">
+            <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>{{ title|default:"Confirmar Eliminación" }}
+        </h1>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="text-center">
+                {% if deletion_blocked %}
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md mb-6" role="alert">
+                        <strong class="font-bold block sm:inline">Acción Bloqueada:</strong>
+                        <span class="block sm:inline">{{ description }}</span>
+                    </div>
+                {% else %}
+                    <p class="text-gray-700 text-lg mb-4">{{ description|default:"¿Está seguro de que desea eliminar este elemento?" }}</p>
+                    {% if object %}
+                        <p class="text-gray-600 mb-6"><strong>Elemento a eliminar:</strong> <span class="font-semibold text-red-600">{{ object }}</span></p>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="pt-6 border-t border-gray-200">
+                <div class="flex justify-center space-x-4">
+                    <a href="{{ back_url }}"
+                        class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-6 rounded-lg shadow-sm hover:shadow transition duration-300 ease-in-out">
+                        <i class="fas fa-arrow-left mr-2"></i> Volver / Cancelar
+                    </a>
+                    {% if not deletion_blocked %}
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-px">
+                            <i class="fas fa-trash-alt mr-2"></i> {{ confirm_button_text|default:"Confirmar Eliminación" }}
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock content %}
+
+{% block js %}
+{{ super }}
+<script>
+    console.log("Página de confirmación de eliminación cargada.");
+</script>
+{% endblock js %}
