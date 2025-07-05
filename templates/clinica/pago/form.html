@@ -1,514 +1,118 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear y Listar Pagos - Sistema Médico</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'primary': '#4f46e5',
-                        'secondary': '#06b6d4',
-                        'success': '#10b981',
-                        'danger': '#ef4444',
-                        'warning': '#f59e0b',
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        .estado-badge {
-            padding: 0.25em 0.6em;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border-radius: 9999px; /* pill shape */
-        }
-        .estado-pagado { background-color: #d1fae5; color: #065f46; }
-        .estado-pendiente { background-color: #fef3c7; color: #92400e; }
-        .estado-cancelado { background-color: #fee2e2; color: #991b1b; }
-    </style>
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-primary to-secondary text-white">
-        <div class="container mx-auto px-4 py-8">
-            <nav class="mb-4">
-                <ol class="flex space-x-2 text-sm">
-                    <li><a href="#" class="hover:text-gray-200 transition-colors"><i class="fas fa-home mr-1"></i>Inicio</a></li>
-                    <li class="text-gray-300">/</li>
-                    <li><a href="#" class="hover:text-gray-200 transition-colors">Pagos</a></li>
-                    <li class="text-gray-300">/</li>
-                    <li class="text-gray-100">Gestionar Pagos</li>
-                </ol>
-            </nav>
-            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center">
-                <div>
-                    <h1 class="text-3xl font-bold mb-2"><i class="fas fa-credit-card mr-3"></i>Gestionar Pagos</h1>
-                    <p class="text-gray-200">Registra un nuevo pago y visualiza los existentes.</p>
-                </div>
-                <div class="mt-4 lg:mt-0">
-                    <a href="#" class="inline-flex items-center px-4 py-2 border border-white/20 rounded-lg hover:bg-white/10 transition-colors">
-                        <i class="fas fa-list-alt mr-2"></i>
-                        Ir a Lista Separada (Opcional)
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
 
-    <!-- Main Content -->
-    <div class="container mx-auto px-4 py-8">
-        <div class="max-w-6xl mx-auto">
-            <!-- Formulario de Creación de Pago -->
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-10 border-t-4 border-primary">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                    <i class="fas fa-plus-circle text-primary mr-3"></i>
-                    Registrar Nuevo Pago
-                </h2>
-                <form id="pagoForm" class="space-y-8">
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div class="lg:col-span-2 space-y-6">
-                            <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-user-md text-primary mr-2"></i>Información de la Atención</h3>
-                                <div class="space-y-4">
-                                    <div>
-                                        <label for="atencion" class="block text-sm font-medium text-gray-700 mb-1">Atención Médica <span class="text-red-500">*</span></label>
-                                        <select id="atencion" name="atencion" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" required>
-                                            <option value="">Selecciona una consulta...</option>
-                                            <option value="1">Juan Pérez - Dr. García (Consulta General)</option>
-                                            <option value="2">María Silva - Dr. López (Cardiología)</option>
-                                            <option value="3">Carlos Ruiz - Dra. Martínez (Dermatología)</option>
-                                            <option value="4">Ana Torres - Dr. Rodríguez (Pediatría)</option>
-                                            <option value="5">Luis Hernández - Dra. Morales (Neurología)</option>
-                                        </select>
-                                        <p class="text-xs text-gray-500 mt-1">Consulta médica asociada a este pago.</p>
-                                    </div>
-                                </div>
-                            </div>
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas {% if object %}fa-edit{% else %}fa-plus-circle{% endif %} me-2"></i>
+                        {% if object %}
+                            {% translate "Editar Pago" %} #{{ object.id|stringformat:"03d" }}
+                        {% else %}
+                            {% translate "Registrar Nuevo Pago" %}
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
 
-                            <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-dollar-sign text-secondary mr-2"></i>Detalles del Pago</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label for="monto" class="block text-sm font-medium text-gray-700 mb-1">Monto <span class="text-red-500">*</span></label>
-                                        <div class="relative">
-                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
-                                            <input type="number" id="monto" name="monto" step="0.01" class="w-full pl-7 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" placeholder="0.00" required>
+                        {{ form|crispy }}
+
+                        {% if object and object.monto_total is not None %}
+                        <div class="alert alert-info mt-3">
+                            <strong>{% translate "Monto Total Calculado:" %}</strong> ${{ object.monto_total|floatformat:2 }}
+                            <br><small>({% translate "Este monto se actualiza automáticamente basado en los detalles del pago." %})</small>
+                        </div>
+                        {% endif %}
+
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+                            <a href="{% if object and object.pk %}{% url 'doctor:pago_detail' object.pk %}{% else %}{% url 'doctor:pago_list' %}{% endif %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i> {% translate "Cancelar" %}
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save me-1"></i> {% translate "Guardar Pago" %}
+                            </button>
+                        </div>
+                    </form>
+
+                    {% if object and object.pk %} {# Solo mostrar detalles si el objeto Pago ya existe #}
+                        <hr class="my-4">
+                        <div>
+                            <h5>{% translate "Detalles de este Pago" %}</h5>
+                            {# Incluir aquí una sub-plantilla para listar y gestionar detalles de pago #}
+                            {# Ejemplo: {% include 'clinica/pago/partials/detalle_pago_inline_list.html' with pago=object %} #}
+
+                            <div id="detalle-pago-list-container" class="mb-3">
+                                {% for detalle in object.detalles_doctor_app.all %}
+                                    <div class="card mb-2">
+                                        <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                                            <div>
+                                                {{ detalle.servicio_adicional.nombre_servicio }} ({{ detalle.cantidad }} x ${{ detalle.precio_unitario|floatformat:2 }})
+                                                {% if detalle.descuento_porcentaje > 0 %} - {% translate "Desc." %} {{ detalle.descuento_porcentaje|floatformat:0 }}%{% endif %}
+                                                {% if detalle.aplica_seguro %} ({% translate "Seguro:" %} ${{ detalle.valor_seguro|floatformat:2 }}){% endif %}
+                                                = <strong>${{ detalle.subtotal|floatformat:2 }}</strong>
+                                            </div>
+                                            <div>
+                                                <a href="{% url 'doctor:detalle_pago_update' detalle.pk %}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i></a>
+                                                <a href="{% url 'doctor:detalle_pago_delete' detalle.pk %}" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label for="metodo_pago" class="block text-sm font-medium text-gray-700 mb-1">Método de Pago <span class="text-red-500">*</span></label>
-                                        <select id="metodo_pago" name="metodo_pago" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" required>
-                                            <option value="">Selecciona método...</option>
-                                            <option value="efectivo">Efectivo</option>
-                                            <option value="tarjeta">Tarjeta de Crédito/Débito</option>
-                                            <option value="transferencia">Transferencia Bancaria</option>
-                                            <option value="cheque">Cheque</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label for="fecha_pago" class="block text-sm font-medium text-gray-700 mb-1">Fecha de Pago <span class="text-red-500">*</span></label>
-                                        <input type="date" id="fecha_pago" name="fecha_pago" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" required>
-                                    </div>
-                                    <div>
-                                        <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado del Pago <span class="text-red-500">*</span></label>
-                                        <select id="estado" name="estado" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" required>
-                                            <option value="pendiente">Pendiente</option>
-                                            <option value="pagado">Pagado</option>
-                                            <option value="cancelado">Cancelado</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div id="transferencia_info" class="hidden mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200 text-sm">
-                                    <h4 class="font-semibold text-blue-800 mb-1 flex items-center"><i class="fas fa-university mr-2"></i>Info Transferencia</h4>
-                                    Número de Cuenta: <strong class="font-mono">0032912643</strong> <button type="button" onclick="copyAccount(event)" class="ml-2 text-blue-600 hover:text-blue-800"><i class="fas fa-copy"></i></button>
-                                </div>
+                                {% empty %}
+                                    <p class="text-muted"><em>{% translate "No hay detalles para este pago todavía." %}</em></p>
+                                {% endfor %}
                             </div>
 
-                            <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-sticky-note text-green-500 mr-2"></i>Información Adicional</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label for="numero_referencia" class="block text-sm font-medium text-gray-700 mb-1">Número de Referencia</label>
-                                        <input type="text" id="numero_referencia" name="numero_referencia" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" placeholder="Ej: TXN123456">
-                                    </div>
-                                    <div>
-                                        <label for="evidencia" class="block text-sm font-medium text-gray-700 mb-1">Evidencia de Pago</label>
-                                        <input type="file" id="evidencia" name="evidencia" accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90">
-                                    </div>
-                                </div>
-                                <div class="mt-4">
-                                    <label for="observaciones" class="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
-                                    <textarea id="observaciones" name="observaciones" rows="3" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm" placeholder="Comentarios adicionales..."></textarea>
-                                </div>
+                            <div class="mt-3">
+                                <a href="{% url 'doctor:detalle_pago_create' %}?pago_id={{ object.pk }}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-plus me-1"></i> {% translate "Añadir Detalle de Pago" %}
+                                </a>
                             </div>
                         </div>
-
-                        <div class="lg:col-span-1">
-                            <div class="bg-white rounded-xl shadow-md p-6 sticky top-8 border border-gray-200">
-                                <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-eye text-purple-500 mr-2"></i>Vista Previa Rápida</h3>
-                                <div class="space-y-3 text-sm">
-                                    <div>
-                                        <label class="block font-medium text-gray-600">Monto Total:</label>
-                                        <div id="montoPreview" class="text-xl font-bold text-primary">$0.00</div>
-                                    </div>
-                                    <div>
-                                        <label class="block font-medium text-gray-600">Estado:</label>
-                                        <div id="estadoPreview" class="estado-badge estado-pendiente"><i class="fas fa-clock mr-1"></i>Pendiente</div>
-                                    </div>
-                                    <div>
-                                        <label class="block font-medium text-gray-600">Método:</label>
-                                        <div id="metodoPreview" class="text-gray-500">No seleccionado</div>
-                                    </div>
-                                    <div id="archivoPreview" class="hidden">
-                                        <label class="block font-medium text-gray-600">Archivo:</label>
-                                        <div class="flex items-center text-green-700"><i class="fas fa-file-image mr-1"></i><span id="archivoNombre" class="text-xs"></span></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-gray-100 rounded-lg p-4 mt-6">
-                        <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
-                            <button type="button" onclick="limpiarFormulario()" class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors flex items-center justify-center">
-                                <i class="fas fa-times mr-2"></i>Limpiar
-                            </button>
-                            <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-primary to-secondary text-white rounded-lg text-sm font-medium hover:from-primary/90 hover:to-secondary/90 transition-all transform hover:scale-105 flex items-center justify-center shadow-md">
-                                <i class="fas fa-save mr-2"></i>Guardar Pago
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Lista de Pagos Existentes -->
-            <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-secondary">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                    <i class="fas fa-list-ul text-secondary mr-3"></i>
-                    Lista de Pagos Registrados
-                </h2>
-
-                <div class="mb-4">
-                    <label for="atencionSearch" class="block text-sm font-medium text-gray-700 mb-1">Buscar por Atención Médica (Paciente/Doctor):</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-search text-gray-400"></i>
-                        </div>
-                        <input type="text" id="atencionSearch" class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent transition-all text-sm" placeholder="Escribe nombre de paciente, doctor o ID de atención...">
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200 text-sm">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th scope="col" class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">ID Pago</th>
-                                <th scope="col" class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Atención (Paciente/Doctor)</th>
-                                <th scope="col" class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Monto</th>
-                                <th scope="col" class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                <th scope="col" class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Fecha Pago</th>
-                                <th scope="col" class="px-4 py-3 text-left font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pagosTableBody" class="bg-white divide-y divide-gray-200">
-                            <!-- Los pagos se mostrarán aquí dinámicamente -->
-                        </tbody>
-                    </table>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
 
-    <script>
-        // Variable global para almacenar los pagos
-        let pagos = [];
-        let contadorPagos = 1;
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar Select2 para campos si es necesario (ej. campo 'atencion')
+    // if (typeof $ !== 'undefined' && $.fn.select2) {
+    //     $('.select2bs4').select2({
+    //         theme: 'bootstrap4' // O el tema que estés usando con crispy-bootstrap4
+    //     });
+    // }
 
-        // Referencias a elementos del formulario
-        const fechaPagoInput = document.getElementById('fecha_pago');
-        const montoInput = document.getElementById('monto');
-        const estadoSelect = document.getElementById('estado');
-        const metodoSelect = document.getElementById('metodo_pago');
-        const evidenciaInput = document.getElementById('evidencia');
-        const montoPreviewEl = document.getElementById('montoPreview');
-        const estadoPreviewEl = document.getElementById('estadoPreview');
-        const metodoPreviewEl = document.getElementById('metodoPreview');
-        const transferenciaInfoEl = document.getElementById('transferencia_info');
-        const archivoPreviewEl = document.getElementById('archivoPreview');
-        const archivoNombreEl = document.getElementById('archivoNombre');
+    const estadoField = document.getElementById('id_estado');
+    const fechaPagoField = document.getElementById('id_fecha_pago');
+    const fechaPagoWrapper = document.getElementById('div_id_fecha_pago'); // Asumiendo Crispy Forms
 
-        // Establecer fecha actual por defecto
-        if (fechaPagoInput) {
-            fechaPagoInput.valueAsDate = new Date();
-        }
-
-        // Funciones de actualización de vista previa
-        function updateMontoPreview() {
-            if (!montoInput || !montoPreviewEl) return;
-            const valor = montoInput.value || '0';
-            const monto = parseFloat(valor);
-            montoPreviewEl.textContent = '$' + (isNaN(monto) ? '0.00' : monto.toFixed(2));
-        }
-
-        function updateEstadoPreview() {
-            if (!estadoSelect || !estadoPreviewEl) return;
-            const estado = estadoSelect.value;
-            const estadoText = estadoSelect.options[estadoSelect.selectedIndex].text;
-
-            estadoPreviewEl.className = 'estado-badge';
-            if (estado === 'pagado') {
-                estadoPreviewEl.classList.add('estado-pagado');
-                estadoPreviewEl.innerHTML = `<i class="fas fa-check-circle mr-1"></i>${estadoText}`;
-            } else if (estado === 'cancelado') {
-                estadoPreviewEl.classList.add('estado-cancelado');
-                estadoPreviewEl.innerHTML = `<i class="fas fa-times-circle mr-1"></i>${estadoText}`;
+    function toggleFechaPagoVisibility() {
+        if (estadoField && fechaPagoField && fechaPagoWrapper) {
+            if (estadoField.value === 'PAGADO') {
+                fechaPagoWrapper.style.display = '';
+                // La obligatoriedad se maneja en el modelo/formulario, pero se puede reforzar visualmente
             } else {
-                estadoPreviewEl.classList.add('estado-pendiente');
-                estadoPreviewEl.innerHTML = `<i class="fas fa-clock mr-1"></i>${estadoText}`;
+                fechaPagoWrapper.style.display = 'none';
+                fechaPagoField.value = ''; // Limpiar si se oculta y no es pagado
             }
         }
+    }
 
-        function updateMetodoPreview() {
-            if (!metodoSelect || !metodoPreviewEl || !transferenciaInfoEl) return;
-            const metodo = metodoSelect.value;
-            const metodoText = metodoSelect.options[metodoSelect.selectedIndex].text;
-
-            if (metodo) {
-                metodoPreviewEl.textContent = metodoText;
-                metodoPreviewEl.className = 'text-gray-800 font-medium';
-            } else {
-                metodoPreviewEl.textContent = 'No seleccionado';
-                metodoPreviewEl.className = 'text-gray-500';
-            }
-
-            transferenciaInfoEl.classList.toggle('hidden', metodo !== 'transferencia');
-        }
-
-        function updateArchivoPreview() {
-            if (!evidenciaInput || !archivoPreviewEl || !archivoNombreEl) return;
-            const archivo = evidenciaInput.files[0];
-            if (archivo) {
-                archivoNombreEl.textContent = archivo.name;
-                archivoPreviewEl.classList.remove('hidden');
-            } else {
-                archivoPreviewEl.classList.add('hidden');
-            }
-        }
-
-        function copyAccount(event) {
-            const accountNumber = '0032912643';
-            navigator.clipboard.writeText(accountNumber).then(() => {
-                const btn = event.currentTarget;
-                const originalIcon = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check text-green-600"></i>';
-                setTimeout(() => {
-                    btn.innerHTML = originalIcon;
-                }, 2000);
-            });
-        }
-
-        // Función para limpiar el formulario
-        function limpiarFormulario() {
-            document.getElementById('pagoForm').reset();
-            fechaPagoInput.valueAsDate = new Date();
-            updateMontoPreview();
-            updateEstadoPreview();
-            updateMetodoPreview();
-            updateArchivoPreview();
-        }
-
-        // Función para agregar un pago a la lista
-        function agregarPago(pagoData) {
-            const pago = {
-                id: contadorPagos++,
-                ...pagoData,
-                fechaCreacion: new Date()
-            };
-            pagos.push(pago);
-            renderizarPagos();
-        }
-
-        // Función para renderizar la tabla de pagos
-        function renderizarPagos(filtro = '') {
-            const tbody = document.getElementById('pagosTableBody');
-
-            const pagosFiltrados = filtro
-                ? pagos.filter(pago =>
-                    pago.pacienteNombre.toLowerCase().includes(filtro.toLowerCase()) ||
-                    pago.doctorNombre.toLowerCase().includes(filtro.toLowerCase()) ||
-                    pago.atencion.toString().includes(filtro)
-                )
-                : pagos;
-
-            if (pagosFiltrados.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-4 py-10 text-center">
-                            <div class="flex flex-col items-center text-gray-500">
-                                <i class="fas fa-folder-open fa-3x mb-3"></i>
-                                <p class="font-semibold">No hay pagos registrados todavía.</p>
-                                <p class="text-xs">Utiliza el formulario de arriba para añadir el primer pago.</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tbody.innerHTML = pagosFiltrados.map(pago => {
-                const estadoIcon = pago.estado === 'pagado' ? 'fas fa-check-circle' :
-                                  pago.estado === 'cancelado' ? 'fas fa-times-circle' : 'fas fa-clock';
-
-                const fechaFormateada = new Date(pago.fecha_pago).toLocaleDateString('es-ES');
-                const horaFormateada = new Date(pago.fecha_pago).toLocaleTimeString('es-ES', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-
-                return `
-                    <tr class="hover:bg-gray-50 transition-colors pago-row">
-                        <td class="px-4 py-3 whitespace-nowrap font-medium text-gray-900">#${pago.id}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <div class="text-gray-900">${pago.pacienteNombre}</div>
-                            <div class="text-xs text-gray-500">${pago.doctorNombre}</div>
-                            <div class="text-xs text-gray-400">ID Atención: ${pago.atencion}</div>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap font-semibold text-primary">$${parseFloat(pago.monto).toFixed(2)}</td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <span class="estado-badge estado-${pago.estado}">
-                                <i class="${estadoIcon} mr-1"></i>
-                                ${pago.estado.charAt(0).toUpperCase() + pago.estado.slice(1)}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <div>${fechaFormateada}</div>
-                            <div class="text-xs text-gray-500">${horaFormateada}</div>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-right">
-                            <div class="flex items-center space-x-2">
-                                <button onclick="editarPago(${pago.id})" class="text-indigo-600 hover:text-indigo-900" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="eliminarPago(${pago.id})" class="text-red-600 hover:text-red-900" title="Eliminar">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // Función para eliminar un pago
-        function eliminarPago(id) {
-            if (confirm(`¿Estás seguro de eliminar el pago #${id}?`)) {
-                pagos = pagos.filter(pago => pago.id !== id);
-                renderizarPagos();
-            }
-        }
-
-        // Función para editar un pago
-        function editarPago(id) {
-            const pago = pagos.find(p => p.id === id);
-            if (pago) {
-                document.getElementById('atencion').value = pago.atencion;
-                document.getElementById('monto').value = pago.monto;
-                document.getElementById('metodo_pago').value = pago.metodo_pago;
-                document.getElementById('fecha_pago').value = pago.fecha_pago;
-                document.getElementById('estado').value = pago.estado;
-                document.getElementById('numero_referencia').value = pago.numero_referencia || '';
-                document.getElementById('observaciones').value = pago.observaciones || '';
-
-                updateMontoPreview();
-                updateEstadoPreview();
-                updateMetodoPreview();
-
-                pagos = pagos.filter(p => p.id !== id);
-                renderizarPagos();
-
-                document.getElementById('pagoForm').scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-
-        // Event listeners
-        if (montoInput) montoInput.addEventListener('input', updateMontoPreview);
-        if (estadoSelect) estadoSelect.addEventListener('change', updateEstadoPreview);
-        if (metodoSelect) metodoSelect.addEventListener('change', updateMetodoPreview);
-        if (evidenciaInput) evidenciaInput.addEventListener('change', updateArchivoPreview);
-
-        // Inicializar previews
-        updateMontoPreview();
-        updateEstadoPreview();
-        updateMetodoPreview();
-
-        // Manejo del envío del formulario
-        const pagoForm = document.getElementById('pagoForm');
-        if (pagoForm) {
-            pagoForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                // Validar campos obligatorios
-                let valid = true;
-                const requiredFields = this.querySelectorAll('[required]');
-                requiredFields.forEach(field => {
-                    if (!field.value.trim()) {
-                        field.classList.add('border-red-500', 'bg-red-50');
-                        valid = false;
-                    } else {
-                        field.classList.remove('border-red-500', 'bg-red-50');
-                    }
-                });
-
-                if (!valid) {
-                    alert('Por favor complete todos los campos obligatorios.');
-                    return;
-                }
-
-                // Obtener datos del formulario
-                const formData = new FormData(this);
-                const atencionSelect = document.getElementById('atencion');
-                const atencionText = atencionSelect.options[atencionSelect.selectedIndex].text;
-                const [pacienteNombre, doctorInfo] = atencionText.split(' - ');
-
-                const pagoData = {
-                    atencion: formData.get('atencion'),
-                    pacienteNombre: pacienteNombre,
-                    doctorNombre: doctorInfo,
-                    monto: formData.get('monto'),
-                    metodo_pago: formData.get('metodo_pago'),
-                    fecha_pago: formData.get('fecha_pago'),
-                    estado: formData.get('estado'),
-                    numero_referencia: formData.get('numero_referencia'),
-                    observaciones: formData.get('observaciones')
-                };
-
-                // Agregar pago
-                agregarPago(pagoData);
-
-                // Limpiar formulario
-                limpiarFormulario();
-
-                // Mostrar mensaje de éxito
-                alert('Pago guardado exitosamente!');
-
-                // Scroll a la tabla de pagos
-                document.getElementById('pagosTableBody').scrollIntoView({ behavior: 'smooth' });
-            });
-        }
-
-        // Búsqueda en la tabla
-        const atencionSearchInput = document.getElementById('atencionSearch');
-        if (atencionSearchInput) {
-            atencionSearchInput.addEventListener('input', function() {
-                renderizarPagos(this.value);
-            });
-        }
-    </script>
-</body>
-</html>
+    if (estadoField) {
+        toggleFechaPagoVisibility();
+        estadoField.addEventListener('change', toggleFechaPagoVisibility);
+    }
+});
+</script>
+{% endblock %}

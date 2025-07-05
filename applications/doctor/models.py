@@ -214,12 +214,36 @@ class DetallePago(AuditModel):
 
     def actualizar_total_pago_padre(self): # Renombrado para claridad
         if self.pago_id: # Asegurarse que el pago existe
-            total = DetallePago.objects.filter(pago=self.pago).aggregate(
-                total=models.Sum('subtotal')
-            )['total'] or Decimal('0.00')
-            pago_obj = Pago.objects.get(id=self.pago_id) # Obtener la instancia del pago
-            pago_obj.monto_total = total
-            pago_obj.save()
+            try:
+                pago_obj = Pago.objects.get(id=self.pago_id) # Obtener la instancia del pago
+                total = DetallePago.objects.filter(pago=pago_obj).aggregate(
+                    total_calculado=models.Sum('subtotal')
+                )['total_calculado'] or Decimal('0.00')
+
+                if pago_obj.monto_total != total:
+                    pago_obj.monto_total = total
+                    pago_obj.save(update_fields=['monto_total', 'date_updated', 'user_updated']) # Especificar campos para evitar recursión y actualizar user_updated
+            except Pago.DoesNotExist:
+                # Manejar el caso donde el pago no existe, aunque es improbable si self.pago_id está seteado.
+                pass # O loggear un error
+
+    def delete(self, *args, **kwargs):
+        pago_afectado_id = self.pago_id
+        super().delete(*args, **kwargs)
+        if pago_afectado_id:
+            try:
+                pago_obj = Pago.objects.get(id=pago_afectado_id)
+                total = DetallePago.objects.filter(pago=pago_obj).aggregate(
+                    total_calculado=models.Sum('subtotal')
+                )['total_calculado'] or Decimal('0.00')
+
+                if pago_obj.monto_total != total:
+                    pago_obj.monto_total = total
+                    # Quién es user_updated aquí? Si es parte de un request, debería pasarse.
+                    # Por ahora, se actualizará solo el monto y date_updated.
+                    pago_obj.save(update_fields=['monto_total', 'date_updated'])
+            except Pago.DoesNotExist:
+                pass
 
 
     class Meta:

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %} {# Para static si usas alguna imagen o CSS específico aquí #}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>
+                        {% translate "Detalle del Pago" %} #{{ pago.id|stringformat:"03d" }}
+                    </h4>
+                    <div>
+                        <a href="{% url 'doctor:pago_update' pago.pk %}" class="btn btn-sm btn-light me-2" title="{% translate 'Editar Pago' %}">
+                            <i class="fas fa-edit"></i> {% translate "Editar" %}
+                        </a>
+                        <a href="{% url 'doctor:pago_list' %}" class="btn btn-sm btn-outline-light" title="{% translate 'Volver a la Lista de Pagos' %}">
+                            <i class="fas fa-list"></i> {% translate "Lista" %}
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>{% translate "ID de Pago:" %}</strong> #{{ pago.id|stringformat:"03d" }}</p>
+                            {% if pago.atencion %}
+                            <p><strong>{% translate "Atención Médica:" %}</strong>
+                                <a href="#"> {# Reemplazar con url 'doctor:atencion_detail' pago.atencion.pk si existe #}
+                                    {{ pago.atencion }}
+                                </a>
+                            </p>
+                            {% if pago.atencion.paciente %}
+                            <p><strong>{% translate "Paciente:" %}</strong> {{ pago.atencion.paciente.nombre_completo }} ({{ pago.atencion.paciente.dni }})</p>
+                            {% endif %}
+                            {% else %}
+                            <p><strong>{% translate "Atención Médica:" %}</strong> <span class="text-muted">{% translate "No especificada" %}</span></p>
+                            {% endif %}
+                            <p><strong>{% translate "Método de Pago:" %}</strong> {{ pago.get_metodo_pago_display }}</p>
+                            <p><strong>{% translate "Estado:" %}</strong>
+                                <span class="badge bg-{% if pago.estado == 'PAGADO' %}success{% elif pago.estado == 'PENDIENTE' %}warning text-dark{% else %}danger{% endif %}">
+                                    {{ pago.get_estado_display }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>{% translate "Monto Total:" %}</strong> <span class="fs-5 fw-bold text-primary">${{ pago.monto_total|floatformat:2 }}</span></p>
+                            <p><strong>{% translate "Fecha de Creación:" %}</strong> {{ pago.date_creation|date:"d/m/Y H:i" }}</p>
+                            {% if pago.fecha_pago %}
+                            <p><strong>{% translate "Fecha de Pago:" %}</strong> {{ pago.fecha_pago|date:"d/m/Y H:i" }}</p>
+                            {% endif %}
+                            {% if pago.nombre_pagador %}
+                            <p><strong>{% translate "Pagado por:" %}</strong> {{ pago.nombre_pagador }}</p>
+                            {% endif %}
+                            {% if pago.referencia_externa %}
+                            <p><strong>{% translate "Referencia Externa:" %}</strong> {{ pago.referencia_externa }}</p>
+                            {% endif %}
+                            <p><strong>{% translate "Activo:" %}</strong>
+                                {% if pago.activo %}
+                                    <i class="fas fa-check-circle text-success"></i> {% translate "Sí" %}
+                                {% else %}
+                                    <i class="fas fa-times-circle text-danger"></i> {% translate "No" %}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if pago.observaciones %}
+                    <div class="mb-3">
+                        <h5>{% translate "Observaciones del Pago:" %}</h5>
+                        <p class="text-muted" style="white-space: pre-wrap;">{{ pago.observaciones }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if pago.evidencia_pago %}
+                    <div class="mb-3">
+                        <h5>{% translate "Evidencia de Pago:" %}</h5>
+                        <a href="{{ pago.evidencia_pago.url }}" target="_blank">
+                            <img src="{{ pago.evidencia_pago.url }}" alt="{% translate 'Evidencia de Pago' %}" class="img-thumbnail" style="max-width: 300px; max-height: 300px;">
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <div>
+                        <h5>{% translate "Detalles de este Pago" %}</h5>
+                        <div id="detalle-pago-list-container" class="mb-3">
+                            {% for detalle in pago.detalles_doctor_app.all %}
+                                <div class="card mb-2">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="card-title mb-1">{{ detalle.servicio_adicional.nombre_servicio }}</h6>
+                                                <p class="card-text mb-0">
+                                                    <small>
+                                                        {% translate "Cantidad:" %} {{ detalle.cantidad }} &times;
+                                                        {% translate "P. Unit.:" %} ${{ detalle.precio_unitario|floatformat:2 }}
+                                                        {% if detalle.descuento_porcentaje > 0 %}
+                                                        | {% translate "Desc.:" %} {{ detalle.descuento_porcentaje|floatformat:0 }}%
+                                                        {% endif %}
+                                                    </small>
+                                                </p>
+                                                {% if detalle.aplica_seguro %}
+                                                <p class="card-text mb-0">
+                                                    <small>
+                                                        <i class="fas fa-shield-alt text-info"></i> {% translate "Seguro:" %} {{ detalle.descripcion_seguro }} - {% translate "Valor Cubierto:" %} ${{ detalle.valor_seguro|floatformat:2 }}
+                                                    </small>
+                                                </p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="text-end">
+                                                <p class="fw-bold fs-5 mb-1">${{ detalle.subtotal|floatformat:2 }}</p>
+                                                <div>
+                                                    <a href="{% url 'doctor:detalle_pago_update' detalle.pk %}" class="btn btn-sm btn-outline-primary py-0 px-1" title="{% translate 'Editar Detalle' %}"><i class="fas fa-edit"></i></a>
+                                                    <a href="{% url 'doctor:detalle_pago_delete' detalle.pk %}" class="btn btn-sm btn-outline-danger py-0 px-1" title="{% translate 'Eliminar Detalle' %}"><i class="fas fa-trash"></i></a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted"><em>{% translate "No hay detalles para este pago." %}</em></p>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-3">
+                            <a href="{% url 'doctor:detalle_pago_create' %}?pago_id={{ pago.pk }}" class="btn btn-sm btn-info">
+                                <i class="fas fa-plus me-1"></i> {% translate "Añadir Nuevo Detalle de Pago" %}
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="card-footer text-muted text-sm">
+                    {% translate "Creado por:" %} {{ pago.user_creation|default:"N/A" }} {% translate "el" %} {{ pago.date_creation|date:"d/m/Y H:i" }}.
+                    {% if pago.user_updated %}
+                        {% translate "Última actualización por:" %} {{ pago.user_updated }} {% translate "el" %} {{ pago.date_updated|date:"d/m/Y H:i" }}.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

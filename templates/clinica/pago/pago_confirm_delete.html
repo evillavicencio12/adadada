@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">{% translate "Confirmar Eliminación de Pago" %}</h4>
+                </div>
+                <div class="card-body">
+                    <p>
+                        {% blocktranslate trimmed with id=object.id monto=object.monto_total atencion=object.atencion %}
+                        ¿Estás seguro de que deseas eliminar el pago con ID <strong>#{{ id }}</strong>
+                        por un monto de <strong>${{ monto }}</strong>?
+                        {% if atencion %}
+                        Asociado a la atención de: <strong>{{ atencion }}</strong>.
+                        {% endif %}
+                        {% endblocktranslate %}
+                    </p>
+                    <p class="text-danger"><strong>{% translate "¡Esta acción no se puede deshacer!" %}</strong></p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'doctor:pago_list' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-1"></i> {% translate "Cancelar" %}
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash-alt me-1"></i> {% translate "Eliminar" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
