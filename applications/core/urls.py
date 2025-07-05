@@ -7,6 +7,7 @@ from applications.core.views.medicamento import ajax_create_medicamento, ajax_se
 # from applications.core.views.GastoMensual import listar_tipos_gasto , crear_tipo_gasto , editar_tipo_gasto , cambiar_estado_tipo_gasto , reporte_gastos_por_tipo , ListarGastosMensuales , crear_gasto_mensual
 from applications.core.views import TipoGasto as TipoGastoViews
 from applications.core.views import GastoMensual as GastoMensualViews
+from applications.core.views import tiposangre_views, cargo_views
 
 
 app_name = 'core'
@@ -69,6 +70,18 @@ urlpatterns = [
     path('gastos-mensuales/crear/', GastoMensualViews.GastoMensualCreateView.as_view(), name='gastomensual_create'),
     path('gastos-mensuales/editar/<int:pk>/', GastoMensualViews.GastoMensualUpdateView.as_view(), name='gastomensual_update'),
     path('gastos-mensuales/eliminar/<int:pk>/', GastoMensualViews.GastoMensualDeleteView.as_view(), name='gastomensual_delete'),
+
+    # URLs para TipoSangre
+    path('tiposangre/', tiposangre_views.TipoSangreListView.as_view(), name='tiposangre_list'),
+    path('tiposangre/crear/', tiposangre_views.TipoSangreCreateView.as_view(), name='tiposangre_create'),
+    path('tiposangre/editar/<int:pk>/', tiposangre_views.TipoSangreUpdateView.as_view(), name='tiposangre_update'),
+    path('tiposangre/eliminar/<int:pk>/', tiposangre_views.TipoSangreDeleteView.as_view(), name='tiposangre_delete'),
+
+    # URLs para Cargo
+    path('cargo/', cargo_views.CargoListView.as_view(), name='cargo_list'),
+    path('cargo/crear/', cargo_views.CargoCreateView.as_view(), name='cargo_create'),
+    path('cargo/editar/<int:pk>/', cargo_views.CargoUpdateView.as_view(), name='cargo_update'),
+    path('cargo/eliminar/<int:pk>/', cargo_views.CargoDeleteView.as_view(), name='cargo_delete'),
 ]
 
 

@@ -18,3 +18,9 @@ from .TipoGasto import (
 from .GastoMensual import (
     GastoMensualListView, GastoMensualCreateView, GastoMensualUpdateView, GastoMensualDeleteView
 )
+from .tiposangre_views import (
+    TipoSangreListView, TipoSangreCreateView, TipoSangreUpdateView, TipoSangreDeleteView
+)
+from .cargo_views import (
+    CargoListView, CargoCreateView, CargoUpdateView, CargoDeleteView
+)
