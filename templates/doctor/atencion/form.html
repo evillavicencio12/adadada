@@ -395,50 +395,82 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+    const icon = btn ? btn.querySelector('i') : null;
 
-    recognition.lang = 'es-ES'; // Configurar idioma a español de España (ajustar según preferencia)
-    recognition.interimResults = true; // Mostrar resultados parciales mientras habla
-    recognition.continuous = false; // Termina después de una pausa; si es true, sigue hasta stop()
+    recognition.lang = 'es-ES';
+    recognition.interimResults = true;
+    recognition.continuous = false;
 
     let isRecognizing = false;
+    let originalIconClass = icon ? icon.className : 'fas fa-microphone';
+    const recordingIconClass = 'fas fa-stop-circle animate-pulse text-red-500';
 
     if (btn) {
         btn.addEventListener('click', function() {
             if (isRecognizing) {
                 recognition.stop();
-                // No es necesario cambiar isRecognizing aquí, onend lo hará
-                return;
+            } else {
+                if (textarea) textarea.focus();
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error("Error al iniciar reconocimiento: ", e);
+                    // Podría ser que ya esté corriendo y haya entrado en un mal estado.
+                    // Intentar abortar y limpiar.
+                    try { recognition.abort(); } catch (abortError) {}
+                    isRecognizing = false;
+                    if (icon) icon.className = originalIconClass;
+                     alert("No se pudo iniciar el reconocimiento de voz. Verifique los permisos del micrófono y que no haya otra instancia activa.");
+                }
             }
-            if (textarea) textarea.focus(); // Dar foco al textarea
-            recognition.start();
         });
     }
 
-
     recognition.onstart = function() {
         isRecognizing = true;
-        if (btn) btn.classList.add('text-red-500', 'animate-pulse'); // Cambio visual
-        console.log('Grabando...');
+        if (icon) {
+            icon.className = recordingIconClass;
+        }
+        btn.title = "Detener grabación";
+        console.log('Grabación iniciada...');
     };
 
     recognition.onerror = function(event) {
         console.error('Error en reconocimiento:', event.error);
+        let userMessage = 'Error en el reconocimiento de voz.';
         if (event.error === 'no-speech') {
+            userMessage = 'No se detectó voz. Inténtelo de nuevo.';
             console.warn('No se detectó voz.');
-            // Aquí podrías mostrar un mensaje al usuario
         } else if (event.error === 'audio-capture') {
+            userMessage = 'Problema con el micrófono. Asegúrese de que está conectado y funcionando.';
             console.warn('Problema con el micrófono.');
-            // Aquí podrías mostrar un mensaje al usuario
         } else if (event.error === 'not-allowed') {
+            userMessage = 'Permiso para micrófono denegado. Por favor, habilite el acceso al micrófono en la configuración de su navegador.';
             console.warn('Permiso para micrófono denegado.');
-            // Aquí podrías mostrar un mensaje al usuario pidiendo permisos
+        } else if (event.error === 'network') {
+            userMessage = 'Error de red durante el reconocimiento de voz. Verifique su conexión a internet.';
+            console.warn('Error de red.');
+        } else if (event.error === 'aborted') {
+            // Esto puede pasar si se llama a recognition.stop() o recognition.abort()
+            // No necesariamente un error que mostrar al usuario si fue intencional.
+            console.log('Reconocimiento abortado.');
+            userMessage = ''; // No mostrar mensaje si fue abortado programáticamente.
         }
-        // isRecognizing se actualizará en onend
+
+        if (userMessage && event.error !== 'aborted') { // No mostrar alerta si fue abortado (ej. por click en stop)
+            // Considerar mostrar esto en un elemento no-bloqueante en lugar de alert.
+            // alert(userMessage);
+            console.warn("Mensaje para el usuario (no mostrado vía alert): " + userMessage);
+        }
+        // onend se encargará de resetear el estado de isRecognizing y el icono.
     };
 
     recognition.onend = function() {
         isRecognizing = false;
-        if (btn) btn.classList.remove('text-red-500', 'animate-pulse');
+        if (icon) {
+            icon.className = originalIconClass;
+        }
+        if (btn) btn.title = "Grabar comentario por voz";
         console.log('Reconocimiento finalizado.');
     };
 
@@ -455,18 +487,297 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Actualizar el textarea. Podrías tener un span para el interim_transcript si quieres
         if (textarea) {
-            // Si hay texto final, lo añadimos con un espacio.
-            // Si no hay texto final pero sí intermedio, podríamos mostrarlo (quizás en otro color o con ...)
-            // Por simplicidad, solo añadimos el texto final.
             if (final_transcript) {
-                 textarea.value += final_transcript.trim() + '. '; // Añade punto y espacio
+                const currentText = textarea.value;
+                // Añadir un espacio si el textarea no está vacío y no termina ya con un espacio.
+                const prefix = (currentText.length > 0 && currentText.slice(-1) !== ' ') ? ' ' : '';
+                textarea.value += prefix + final_transcript.trim() + ' '; // Añade la transcripción y un espacio.
             }
         }
-        console.log('Interim: ', interim_transcript);
-        console.log('Final: ', final_transcript);
+        // Para depuración:
+        // console.log('Interim: ', interim_transcript);
+        // console.log('Final: ', final_transcript);
     };
+
+    // --- Crear Nuevo Paciente Modal Logic ---
+    const crearPacienteBtn = document.getElementById('crearPacienteBtn');
+    const crearPacienteModal = document.getElementById('crearPacienteModal');
+    const cancelarCrearPacienteBtn = document.getElementById('cancelarCrearPacienteBtn');
+    const guardarNuevoPacienteBtn = document.getElementById('guardarNuevoPacienteBtn');
+    const formCrearPaciente = document.getElementById('formCrearPaciente');
+
+    if (crearPacienteBtn && crearPacienteModal && cancelarCrearPacienteBtn && guardarNuevoPacienteBtn && formCrearPaciente) {
+        crearPacienteBtn.addEventListener('click', () => {
+            formCrearPaciente.reset(); // Reset form fields
+            // Clear previous errors if any
+            const errorMessages = crearPacienteModal.querySelectorAll('.form-error-message');
+            errorMessages.forEach(msg => msg.remove());
+            crearPacienteModal.classList.remove('hidden');
+        });
+
+        cancelarCrearPacienteBtn.addEventListener('click', () => {
+            crearPacienteModal.classList.add('hidden');
+        });
+
+        guardarNuevoPacienteBtn.addEventListener('click', () => {
+            const formData = new FormData(formCrearPaciente);
+            const submitButton = guardarNuevoPacienteBtn;
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+            submitButton.disabled = true;
+
+            // Clear previous errors
+            const errorMessages = crearPacienteModal.querySelectorAll('.form-error-message');
+            errorMessages.forEach(msg => msg.remove());
+
+            fetch("{% url 'doctor:ajax_create_patient' %}", { // Assumes this URL name exists
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    messages.success('Paciente creado con éxito: ' + data.paciente.Primer_nombre + ' ' + data.paciente.apellido);
+                    crearPacienteModal.classList.add('hidden');
+
+                    // Update main form's patient fields
+                    document.getElementById('{{ form.paciente_nombre.id_for_label }}').value = data.paciente.Primer_nombre + ' ' + data.paciente.apellido;
+                    document.getElementById('{{ form.paciente.id_for_label }}').value = data.paciente.id;
+
+                    // Update infoPacienteSeleccionado div
+                    const infoDiv = document.getElementById('infoPacienteSeleccionado');
+                    if (infoDiv) {
+                        infoDiv.innerHTML = `
+                            <p><strong>Cédula:</strong> ${data.paciente.dni || 'N/A'}</p>
+                            <p><strong>Edad:</strong> ${data.paciente.edad || 'N/A'} años</p> {# Assuming 'edad' is returned #}
+                            <p><strong>Teléfono:</strong> ${data.paciente.phone || 'N/A'}</p>
+                        `;
+                        // Trigger a change event if other scripts depend on it
+                        const pacienteNombreInput = document.getElementById('{{ form.paciente_nombre.id_for_label }}');
+                        if(pacienteNombreInput) pacienteNombreInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                     // SweetAlert2 success message
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Paciente Creado!',
+                        text: `El paciente ${data.paciente.Primer_nombre} ${data.paciente.apellido} ha sido creado y seleccionado.`,
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+
+
+                } else if (data.status === 'error') {
+                    console.error('Error al crear paciente:', data.errors);
+                    if (typeof data.errors === 'object' && data.errors !== null) {
+                        Object.keys(data.errors).forEach(field => {
+                            const inputField = formCrearPaciente.querySelector(`[name="${field}"]`);
+                            const errorList = data.errors[field];
+                            if (inputField && errorList.length > 0) {
+                                let errorDiv = inputField.parentElement.querySelector('.form-error-message');
+                                if (!errorDiv) {
+                                    errorDiv = document.createElement('p');
+                                    errorDiv.className = 'text-red-500 text-xs italic mt-1 form-error-message';
+                                    inputField.parentElement.appendChild(errorDiv);
+                                }
+                                errorDiv.textContent = errorList.map(e => e.message || e).join(' ');
+                            }
+                        });
+                         Swal.fire({
+                            icon: 'error',
+                            title: 'Error al Crear Paciente',
+                            html: "Por favor, corrija los errores en el formulario.<br><pre class='text-left text-sm'>" + JSON.stringify(data.errors, null, 2) + "</pre>",
+                        });
+                    } else {
+                         Swal.fire({
+                            icon: 'error',
+                            title: 'Error Inesperado',
+                            text: data.errors || 'Ocurrió un error al crear el paciente.',
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Conexión',
+                    text: 'No se pudo conectar con el servidor. Intente de nuevo.',
+                });
+            })
+            .finally(() => {
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
+            });
+        });
+    }
+    // --- End Crear Nuevo Paciente Modal Logic ---
+
+    // --- Crear Nuevo Medicamento Modal Logic ---
+    const crearMedicamentoBtn = document.getElementById('crearNuevoMedicamentoBtn');
+    const crearMedicamentoModal = document.getElementById('crearMedicamentoModal');
+    const cancelarCrearMedicamentoBtn = document.getElementById('cancelarCrearMedicamentoBtn');
+    const guardarNuevoMedicamentoBtn = document.getElementById('guardarNuevoMedicamentoBtn');
+    const formCrearMedicamento = document.getElementById('formCrearMedicamento');
+    // const selectTipoMedicamentoModal = $('#tipo_medicamento_modal'); // Initialize with Select2 if used
+
+    if (crearMedicamentoBtn && crearMedicamentoModal && cancelarCrearMedicamentoBtn && guardarNuevoMedicamentoBtn && formCrearMedicamento) {
+        crearMedicamentoBtn.addEventListener('click', () => {
+            formCrearMedicamento.reset();
+            // if (selectTipoMedicamentoModal.data('select2')) { // Reset Select2 if initialized
+            //     selectTipoMedicamentoModal.val(null).trigger('change');
+            // }
+            const errorMessages = crearMedicamentoModal.querySelectorAll('.form-error-message');
+            errorMessages.forEach(msg => msg.remove());
+            crearMedicamentoModal.classList.remove('hidden');
+        });
+
+        cancelarCrearMedicamentoBtn.addEventListener('click', () => {
+            crearMedicamentoModal.classList.add('hidden');
+        });
+
+        guardarNuevoMedicamentoBtn.addEventListener('click', () => {
+            const formData = new FormData(formCrearMedicamento);
+            const submitButton = guardarNuevoMedicamentoBtn;
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Guardando...';
+            submitButton.disabled = true;
+
+            const errorMessages = crearMedicamentoModal.querySelectorAll('.form-error-message');
+            errorMessages.forEach(msg => msg.remove());
+
+            fetch("{% url 'doctor:ajax_create_medicamento' %}", { // Assumes 'doctor:ajax_create_medicamento'
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    crearMedicamentoModal.classList.add('hidden');
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Medicamento Creado!',
+                        html: `El medicamento <strong>${data.medicamento_nombre}</strong> (ID: ${data.medicamento_id}) ha sido creado.<br>Ya puede buscarlo y seleccionarlo en la receta.`,
+                        confirmButtonText: 'Entendido'
+                    });
+                    // Optional: Add to the <select> or trigger a refresh of an autocomplete source
+                    // For now, user will have to search for it.
+                    // If a specific formset row input triggered this, you might try to populate it:
+                    // E.g., if you stored a reference to the input:
+                    // if (window.activeMedicamentoInput) {
+                    //    window.activeMedicamentoInput.value = data.medicamento_text; // or data.medicamento_nombre
+                    //    const idField = window.activeMedicamentoInput.closest('.detalle-form').querySelector('input[name$="-medicamento"]');
+                    //    if (idField) idField.value = data.medicamento_id;
+                    //    window.activeMedicamentoInput = null; // Clear reference
+                    // }
+
+                } else if (data.status === 'error') {
+                    console.error('Error al crear medicamento:', data.message, data.errors);
+                    let errorTitle = 'Error al Crear Medicamento';
+                    let errorMessageHtml = '';
+
+                    if (data.message) {
+                        errorMessageHtml += `<p>${data.message}</p>`;
+                    } else {
+                        errorMessageHtml += "<p>Por favor, corrija los errores en el formulario.</p>";
+                    }
+
+                    let fieldErrors = data.errors;
+                    if (typeof data.errors === 'string') {
+                        try {
+                            fieldErrors = JSON.parse(data.errors); // For errors from form.errors.as_json()
+                        } catch (e) {
+                            console.warn("Could not parse errors string:", data.errors);
+                            errorMessageHtml += `<p class="mt-2">Detalles del error: ${data.errors}</p>`;
+                            fieldErrors = null; // Prevent further processing if parsing failed
+                        }
+                    }
+
+                    if (typeof fieldErrors === 'object' && fieldErrors !== null) {
+                        errorMessageHtml += "<ul class='list-disc list-inside text-left text-sm mt-2'>";
+                        Object.keys(fieldErrors).forEach(field => {
+                            // The field name in errors might be 'nombre' but in form is 'nombre_medicamento_modal'
+                            // Need to find the corresponding input. The view's field_map is backend-side.
+                            // For simplicity, we'll just list errors, attaching to fields can be tricky with name mismatches.
+                            // Or, ensure modal names directly match form field names used in MedicamentoForm.
+                            // Assuming modal names are like 'nombre_medicamento_modal', etc.
+                            // And form field names are 'nombre', 'tipo', etc.
+                            // The current backend already maps them.
+                            const inputFieldKey = Object.keys(formCrearMedicamento.elements).find(key => {
+                                const el = formCrearMedicamento.elements[key];
+                                // Check if element name (e.g. "nombre_medicamento_modal") contains the error field key (e.g. "nombre")
+                                return el.name && el.name.includes(field);
+                            });
+                            const inputField = inputFieldKey ? formCrearMedicamento.elements[inputFieldKey] : null;
+
+                            const errorList = fieldErrors[field]; // This is usually a list of error objects/strings
+                            errorList.forEach(errObj => {
+                                const message = (typeof errObj === 'string') ? errObj : (errObj.message || JSON.stringify(errObj));
+                                errorMessageHtml += `<li><strong>${field}</strong>: ${message}</li>`;
+                                if (inputField && inputField.parentElement) {
+                                    let errorDiv = inputField.parentElement.querySelector('.form-error-message');
+                                    if (!errorDiv) {
+                                        errorDiv = document.createElement('p');
+                                        errorDiv.className = 'text-red-500 text-xs italic mt-1 form-error-message';
+                                        // Insert after the input field
+                                        inputField.parentElement.insertBefore(errorDiv, inputField.nextSibling);
+                                    }
+                                    errorDiv.textContent = message; // Display first error for the field
+                                }
+                            });
+                        });
+                        errorMessageHtml += "</ul>";
+                    } else if (data.errors && typeof data.errors === 'string' && !fieldErrors) { // If parsing failed but original string exists
+                         // Handled by initial errorMessageHtml if parsing failed
+                    }
+
+
+                    if (!errorMessageHtml && !data.message && !data.errors) {
+                         errorMessageHtml = 'Ocurrió un error inesperado al crear el medicamento.';
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: errorTitle,
+                        html: errorMessageHtml,
+                    });
+
+                } else if (data.message && !data.status) { // Catch-all for other error structures
+                     Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: data.message
+                    });
+                } else { // Fallback for completely unexpected structure
+                     Swal.fire({
+                            icon: 'error',
+                            title: 'Error Inesperado',
+                            text: 'Ocurrió un error al crear el medicamento.'
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                 Swal.fire({
+                    icon: 'error',
+                    title: 'Error de Conexión',
+                    text: 'No se pudo conectar con el servidor. Intente de nuevo.',
+                });
+            })
+            .finally(() => {
+                submitButton.innerHTML = originalButtonText;
+                submitButton.disabled = false;
+            });
+        });
+    }
+    // --- End Crear Nuevo Medicamento Modal Logic ---
 });
 </script>
 {% endblock js %}

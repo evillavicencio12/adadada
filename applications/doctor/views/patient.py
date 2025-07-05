@@ -121,6 +121,13 @@ def ajax_create_patient(request):
     if form.is_valid():
         try:
             patient = form.save()
+            # Assuming 'edad' is a property on the Patient model that calculates age
+            edad = patient.edad if hasattr(patient, 'edad') else None
+            if edad is None and patient.birth_date: # Fallback if 'edad' property doesn't exist but birth_date does
+                today = date.today()
+                born = patient.birth_date
+                edad = today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
             return JsonResponse({
                 'status': 'success',
                 'paciente': {
@@ -129,17 +136,25 @@ def ajax_create_patient(request):
                     'apellido': patient.apellido,
                     'dni': patient.dni,
                     'birth_date': patient.birth_date.strftime('%Y-%m-%d') if patient.birth_date else None,
-                    'phone': patient.phone,
-                    'email': patient.email,
-                    # Add any other fields needed by 'seleccionarPaciente' JS function
+                    'phone': patient.phone or "", # Ensure not None for JS
+                    'email': patient.email or "", # Ensure not None for JS
+                    'edad': edad
                 }
             })
         except Exception as e:
-            return JsonResponse({'status': 'error', 'errors': str(e)}, status=500)
+            # Log the full error for debugging
+            print(f"Error saving patient: {e}") # Consider proper logging
+            return JsonResponse({'status': 'error', 'errors': f'Error interno del servidor: {str(e)}'}, status=500)
     else:
-        # Convert form.errors to a more AJAX-friendly format if needed
-        # For now, sending as a JSON string.
-        return JsonResponse({'status': 'error', 'errors': json.dumps(form.errors)}, status=400)
+        # Convert form.errors (which is an ErrorDict) to a more AJAX-friendly format
+        # The JS expects something like: {'field_name': [{'message': 'error text', 'code': '...'}], ...}
+        # form.errors.as_json() converts it to a JSON string, which then needs to be parsed by JS.
+        # A better way is to return a dict directly.
+        error_dict = {}
+        for field, error_list in form.errors.items():
+            error_dict[field] = [{'message': error.message, 'code': error.code} for error in error_list]
+
+        return JsonResponse({'status': 'error', 'errors': error_dict}, status=400)
 
 
 @require_GET
