@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% load static %}
+{% block content %}
+<section class="dark:bg-gray-900">
+    <div class="container mx-auto px-4 py-12">
+        <div class="text-center mb-10" data-aos="fade-up">
+            <h1 class="text-4xl font-extrabold text-black-800 dark:text-black uppercase tracking-wider">
+                {{ title }}
+            </h1>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="max-w-2xl mx-auto mb-6" data-aos="fade-up" data-aos-delay="100">
+            <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 rounded-lg shadow">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-red-800 dark:text-red-200 font-semibold text-lg">
+                            Se encontraron errores en el formulario:
+                        </h3>
+                        <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                            <ul class="list-disc list-inside space-y-1">
+                                {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="post" class="space-y-8" novalidate>
+            {% csrf_token %}
+            <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 md:p-10" data-aos="fade-up" data-aos-delay="200">
+
+                <!-- Campo Tipo de Sangre -->
+                <div class="mb-6 field-container {% if form.tipo.errors %}has-error{% endif %}">
+                    <label for="{{ form.tipo.id_for_label }}"
+                           class="block mb-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+                        {{ form.tipo.label }}
+                        {% if form.tipo.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    <div class="relative">
+                        {{ form.tipo }}
+                        {% if form.tipo.errors %}
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.tipo.errors %}
+                    <div class="mt-2 text-xs text-red-600 dark:text-red-400 space-y-1">
+                        {% for error in form.tipo.errors %}
+                        <div class="flex items-center">
+                            <i class="fas fa-times-circle mr-1.5"></i>
+                            {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Campo Descripción -->
+                <div class="mb-8 field-container {% if form.descripcion.errors %}has-error{% endif %}">
+                    <label for="{{ form.descripcion.id_for_label }}"
+                           class="block mb-2 text-sm font-medium text-white-900 dark:text-white-300">
+                        {{ form.descripcion.label }}
+                        {% if form.descripcion.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    <div class="relative">
+                        {{ form.descripcion }}
+                        {% if form.descripcion.errors %}
+                        <div class="absolute top-3 right-0 pr-3 flex items-center pointer-events-none">
+                            <i class="fas fa-exclamation-circle text-red-500"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if form.descripcion.errors %}
+                    <div class="mt-2 text-xs text-red-600 dark:text-red-400 space-y-1">
+                        {% for error in form.descripcion.errors %}
+                        <div class="flex items-center">
+                            <i class="fas fa-times-circle mr-1.5"></i>
+                            {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="flex flex-col md:flex-row justify-center items-center mt-10 space-y-4 md:space-y-0 md:space-x-6">
+                    <button type="submit"
+                            class="w-full md:w-auto flex items-center justify-center px-8 py-3 text-base font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition duration-150 ease-in-out transform hover:scale-105">
+                        <i class="fas fa-save mr-2"></i> {{ grabar }}
+                    </button>
+                    <a href="{{ back_url }}"
+                       class="w-full md:w-auto flex items-center justify-center px-8 py-3 text-base font-medium text-white-700 bg-red-200 border border-transparent rounded-lg shadow-sm hover:bg-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 dark:text-gray-300 dark:bg-red-700 dark:hover:bg-red-600 dark:focus:ring-offset-gray-800 transition duration-150 ease-in-out">
+                        <i class="fas fa-times mr-2"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>
+
+<style>
+/* Estilos para inputs y textareas generales del formulario */
+.field-container input[type="text"],
+.field-container textarea {
+    background-color: #f9fafb; /* bg-gray-50 */
+    border: 1px solid #d1d5db; /* border-gray-300 */
+    color: #111827; /* text-gray-900 */
+    font-size: 0.875rem; /* text-sm */
+    border-radius: 0.5rem; /* rounded-lg */
+    padding: 0.625rem; /* p-2.5 */
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.field-container input[type="text"]:focus,
+.field-container textarea:focus {
+    outline: none;
+    border-color: #3b82f6; /* focus:border-blue-500 */
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); /* focus:ring-blue-500 (adaptado) */
+}
+
+/* Estilos para modo oscuro */
+.dark .field-container input[type="text"],
+.dark .field-container textarea {
+    background-color: #374151; /* dark:bg-gray-700 */
+    border-color: #4b5563; /* dark:border-gray-600 */
+    color: #f3f4f6; /* dark:text-gray-200 */
+}
+
+.dark .field-container input[type="text"]:focus,
+.dark .field-container textarea:focus {
+    border-color: #60a5fa; /* dark:focus:border-blue-400 */
+    box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.4);
+}
+
+/* Estilos para campos con error */
+.field-container.has-error input[type="text"],
+.field-container.has-error textarea {
+    border-color: #ef4444 !important; /* border-red-500 */
+    background-color: #fef2f2 !important; /* bg-red-50 */
+    color: #991b1b !important; /* text-red-900 */
+}
+.field-container.has-error input[type="text"]:focus,
+.field-container.has-error textarea:focus {
+    border-color: #dc2626 !important; /* focus:border-red-600 */
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Estilos para modo oscuro con error */
+.dark .field-container.has-error input[type="text"],
+.dark .field-container.has-error textarea {
+    background-color: rgba(153, 27, 27, 0.2) !important; /* dark:bg-red-900/20 (aproximado) */
+    color: #fca5a5 !important; /* dark:text-red-300 */
+    border-color: #ef4444 !important; /* dark:border-red-500 */
+}
+.dark .field-container.has-error input[type="text"]:focus,
+.dark .field-container.has-error textarea:focus {
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* Ajuste específico para el textarea si es necesario */
+.field-container textarea {
+    min-height: 80px; /* Ajusta según necesidad */
+}
+</style>
+{% endblock %}

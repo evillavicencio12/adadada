@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto p-6">
+  <h1 class="text-3xl font-bold mb-6 text-center">Historiales Clínicos</h1>
+
+  <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+    <thead class="bg-blue-600 text-white">
+      <tr>
+        <th class="py-3 px-6 text-left">Paciente</th>
+        <th class="py-3 px-6 text-left">Antecedentes</th>
+        <th class="py-3 px-6 text-center">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for historial in historiales %}
+      <tr class="border-b hover:bg-gray-100">
+        <td class="py-4 px-6">{{ historial.paciente.nombre_completo }}</td>
+        <td class="py-4 px-6 truncate max-w-xs" title="{{ historial.antecedentes }}">{{ historial.antecedentes|truncatechars:50 }}</td>
+        <td class="py-4 px-6 text-center">
+          <button 
+            class="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition duration-300"
+            onclick="toggleDetails('details-{{ historial.id }}')"
+          >
+            Ver detalles
+          </button>
+        </td>
+      </tr>
+      <tr id="details-{{ historial.id }}" class="hidden bg-gray-50">
+        <td colspan="3" class="py-4 px-6 text-gray-700">
+          <strong>Alergias:</strong> {{ historial.alergias|default:"No registra" }} <br>
+          <strong>Enfermedades crónicas:</strong> {{ historial.enfermedades_cronicas|default:"No registra" }} <br>
+          <strong>Fecha creación:</strong> {{ historial.fecha_creacion|date:"d/m/Y H:i" }}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="3" class="py-6 text-center text-gray-500">No hay historiales clínicos registrados.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  function toggleDetails(id) {
+    const element = document.getElementById(id);
+    if (element.classList.contains('hidden')) {
+      element.classList.remove('hidden');
+    } else {
+      element.classList.add('hidden');
+    }
+  }
+</script>
+{% endblock %}

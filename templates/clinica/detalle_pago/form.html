@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<style>
+    /* Re-using some of the styles from detalle_pago_list.html for consistency */
+    /* You might want to move these to a shared CSS file if "base.html" doesn't cover them */
+    :root {
+        --primary-color: #4f46e5;
+        --primary-light: #6366f1;
+        --secondary-color: #f8fafc;
+        --danger-color: #ef4444;
+        --success-color: #10b981; /* Added success color */
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --border-light: #e5e7eb;
+        --border-medium: #d1d5db;
+        --shadow-light: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.07);
+        --border-radius-sm: 0.375rem; /* 6px */
+        --border-radius-md: 0.75rem;  /* 12px */
+        --border-radius-lg: 1rem;    /* 16px */
+    }
+
+    body { /* Assuming base.html might not have this specific background */
+        background-color: #f9fafb;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .form-container-custom {
+        max-width: 800px; /* Max width for the form */
+        margin: 2rem auto;
+        padding: 2rem;
+        background-color: white;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-medium);
+        border: 1px solid var(--border-light);
+    }
+
+    .form-header-custom {
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .form-header-custom h2 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .form-header-custom h2 i {
+        color: var(--primary-color);
+    }
+    
+    /* Styling for crispy forms if needed, assuming bootstrap5 template pack handles most */
+    .form-floating>.form-control:focus~label,
+    .form-floating>.form-control:not(:placeholder-shown)~label,
+    .form-floating>.form-select~label {
+        color: var(--primary-color); /* Ensure floating labels are visible and themed */
+    }
+
+    .form-check-input:checked {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .btn-success-custom {
+        background-color: var(--success-color);
+        border: none;
+        border-radius: var(--border-radius-md);
+        padding: 0.65rem 1.25rem;
+        font-weight: 600;
+        color: white;
+        transition: all 0.2s ease-in-out;
+        box-shadow: var(--shadow-light);
+    }
+    .btn-success-custom:hover {
+        background-color: #059669; /* Darker success */
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    .btn-outline-secondary-custom {
+        border-color: var(--border-medium);
+        color: var(--text-secondary);
+        border-radius: var(--border-radius-md);
+        padding: 0.65rem 1.25rem;
+        font-weight: 500;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-outline-secondary-custom:hover {
+        background-color: var(--secondary-color);
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    /* For disabled fields */
+    .form-group-disabled {
+        opacity: 0.6;
+        pointer-events: none; /* Optional: makes fields truly non-interactive */
+    }
+    .form-group-disabled .form-control,
+    .form-group-disabled .form-select {
+        background-color: #f3f4f6; /* Lighter background for disabled */
+    }
+
+    /* Form section styling */
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background-color: #f9fafb;
+        border-radius: var(--border-radius-md);
+        border: 1px solid var(--border-light);
+    }
+
+    .form-section h4 {
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-section h4 i {
+        color: var(--primary-color);
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .form-row .form-field {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .form-row .form-field-small {
+        flex: 0 0 150px;
+    }
+
+    .subtotal-display {
+        background-color: #f0f9ff;
+        border: 2px dashed var(--primary-color);
+        border-radius: var(--border-radius-md);
+        padding: 1rem;
+        text-align: center;
+        margin-top: 1rem;
+    }
+
+    .subtotal-display .amount {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--primary-color);
+    }
+
+    .subtotal-display .label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="form-container-custom">
+        <div class="form-header-custom">
+            <h2>
+                <i class="fas fa-file-invoice-dollar"></i>
+                {% if object %}
+                    {% translate "Edit Detalle de Pago" %} #{{ object.id|stringformat:"03d" }}
+                {% else %}
+                    {% translate "Crear Nuevo Detalle de Pago" %}
+                {% endif %}
+            </h2>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="form-row">
+    <div class="form-field" style="display:flex; align-items:center; gap:0.5rem;">
+        {{ form.pago|as_crispy_field }}
+        <a href="{% url 'doctor:pago_create' %}" target="_blank" class="btn btn-sm btn-outline-primary" title="{% trans 'Crear nuevo Pago' %}">
+            <i class="fas fa-plus"></i>
+        </a>
+        <a href="{% url 'doctor:pago_list' %}" target="_blank" class="btn btn-sm btn-outline-secondary" title="{% trans 'Listar Pagos' %}">
+            <i class="fas fa-list"></i>
+        </a>
+    </div>
+    <div class="form-field" style="display:flex; align-items:center; gap:0.5rem;">
+        {{ form.servicio_adicional|as_crispy_field }}
+        <a href="{% url 'doctor:servicio_adicional_create' %}" target="_blank" class="btn btn-sm btn-outline-primary" title="{% trans 'Crear nuevo Servicio Adicional' %}">
+            <i class="fas fa-plus"></i>
+        </a>
+        <a href="{% url 'doctor:servicio_adicional_list' %}" target="_blank" class="btn btn-sm btn-outline-secondary" title="{% trans 'Listar Servicios Adicionales' %}">
+            <i class="fas fa-list"></i>
+        </a>
+    </div>
+</div>
+
+            <!-- Pricing Section -->
+            <div class="form-section">
+                <h4>
+                    <i class="fas fa-calculator"></i>
+                    {% translate "Información de Precios" %}
+                </h4>
+                
+                <div class="form-row">
+                    <div class="form-field-small">
+                        {{ form.cantidad|as_crispy_field }}
+                    </div>
+                    <div class="form-field">
+                        {{ form.precio_unitario|as_crispy_field }}
+                    </div>
+                    <div class="form-field-small">
+                        {{ form.descuento_porcentaje|as_crispy_field }}
+                    </div>
+                </div>
+                
+                <!-- Subtotal Display -->
+                <div class="subtotal-display">
+                    <div class="label">{% translate "Subtotal Calculado" %}</div>
+                    <div class="amount" id="subtotal-display">$0.00</div>
+                    <small class="text-muted">{% translate "Se calcula automáticamente" %}</small>
+                </div>
+            </div>
+
+            <!-- Insurance Section -->
+            <div class="form-section">
+                <h4>
+                    <i class="fas fa-shield-alt"></i>
+                    {% translate "Información de Seguro" %}
+                </h4>
+                
+                <div class="mb-3">
+                    {{ form.aplica_seguro|as_crispy_field }}
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-field">
+                        {{ form.valor_seguro|as_crispy_field }}
+                    </div>
+                    <div class="form-field">
+                        {{ form.descripcion_seguro|as_crispy_field }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="mt-4 pt-4 border-top d-flex justify-content-end gap-2">
+                <a href="{% url 'doctor:detalle_pago_list' %}" class="btn btn-outline-secondary-custom">
+                    <i class="fas fa-times me-1"></i>
+                    {% translate "Cancel" %}
+                </a>
+                <button type="submit" class="btn btn-success-custom">
+                    <i class="fas fa-check-circle me-1"></i>
+                    {% translate "Save" %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }} {# Ensures any JS from base.html is also included #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const aplicaSeguroCheckbox = document.querySelector('#id_aplica_seguro');
+    
+    // It's safer to find these relative to the form or a common parent,
+    // or ensure Crispy Forms generates consistent IDs for these wrappers.
+    // For now, assuming default crispy structure: form > div > div > input
+    // A common structure for a Crispy field is: <div id="div_id_field_name" class="mb-3"> ... <input id="id_field_name"> ... </div>
+    
+    const valorSeguroFieldWrapper = document.querySelector('#div_id_valor_seguro'); // Crispy default wrapper ID
+    const descripcionSeguroFieldWrapper = document.querySelector('#div_id_descripcion_seguro'); // Crispy default wrapper ID
+
+    const valorSeguroField = document.querySelector('#id_valor_seguro');
+    const descripcionSeguroField = document.querySelector('#id_descripcion_seguro');
+
+    // Fields for subtotal calculation
+    const cantidadField = document.querySelector('#id_cantidad');
+    const precioUnitarioField = document.querySelector('#id_precio_unitario');
+    const descuentoPorcentajeField = document.querySelector('#id_descuento_porcentaje');
+    const subtotalDisplay = document.querySelector('#subtotal-display');
+
+    function toggleSeguroFields() {
+        if (!aplicaSeguroCheckbox || !valorSeguroField || !descripcionSeguroField || !valorSeguroFieldWrapper || !descripcionSeguroFieldWrapper) {
+            console.warn('Uno o más campos de seguro no se encontraron en el DOM. Verifica los IDs.');
+            return;
+        }
+        
+        const isChecked = aplicaSeguroCheckbox.checked;
+        
+        valorSeguroField.disabled = !isChecked;
+        descripcionSeguroField.disabled = !isChecked;
+        
+        if (!isChecked) {
+            valorSeguroField.value = ''; // Clear value if not applicable
+            descripcionSeguroField.value = ''; // Clear value if not applicable
+        }
+        
+        // Add/remove classes for visual styling of the wrapper
+        if (valorSeguroFieldWrapper) {
+            if (isChecked) {
+                valorSeguroFieldWrapper.classList.remove('form-group-disabled');
+            } else {
+                valorSeguroFieldWrapper.classList.add('form-group-disabled');
+            }
+        }
+        if (descripcionSeguroFieldWrapper) {
+            if (isChecked) {
+                descripcionSeguroFieldWrapper.classList.remove('form-group-disabled');
+            } else {
+                descripcionSeguroFieldWrapper.classList.add('form-group-disabled');
+            }
+        }
+        
+        // Recalculate subtotal when insurance status changes
+        calculateSubtotal();
+    }
+    
+    function calculateSubtotal() {
+        if (!cantidadField || !precioUnitarioField || !descuentoPorcentajeField || !subtotalDisplay) {
+            return;
+        }
+        
+        const cantidad = parseFloat(cantidadField.value) || 0;
+        const precioUnitario = parseFloat(precioUnitarioField.value) || 0;
+        const descuentoPorcentaje = parseFloat(descuentoPorcentajeField.value) || 0;
+        const valorSeguro = parseFloat(valorSeguroField?.value) || 0;
+        const aplicaSeguro = aplicaSeguroCheckbox?.checked || false;
+        
+        // Determine base price
+        let precioBase = precioUnitario;
+        if (aplicaSeguro && valorSeguro > 0) {
+            precioBase = valorSeguro;
+        }
+        
+        // Calculate discount
+        const descuento = (descuentoPorcentaje / 100) * precioBase;
+        const precioConDescuento = precioBase - descuento;
+        
+        // Calculate subtotal
+        const subtotal = precioConDescuento * cantidad;
+        
+        // Update display
+        subtotalDisplay.textContent = `$${subtotal.toFixed(2)}`;
+        
+        // Add visual feedback for positive amounts
+        if (subtotal > 0) {
+            subtotalDisplay.style.color = 'var(--success-color)';
+        } else {
+            subtotalDisplay.style.color = 'var(--text-secondary)';
+        }
+    }
+    
+    // Initialize
+    if (aplicaSeguroCheckbox) {
+        toggleSeguroFields(); // Initial state
+        aplicaSeguroCheckbox.addEventListener('change', toggleSeguroFields);
+    } else {
+        console.warn('Checkbox "aplica_seguro" no encontrado.');
+    }
+    
+    // Add event listeners for real-time calculation
+    if (cantidadField) cantidadField.addEventListener('input', calculateSubtotal);
+    if (precioUnitarioField) precioUnitarioField.addEventListener('input', calculateSubtotal);
+    if (descuentoPorcentajeField) descuentoPorcentajeField.addEventListener('input', calculateSubtotal);
+    if (valorSeguroField) valorSeguroField.addEventListener('input', calculateSubtotal);
+    
+    // Initial calculation
+    calculateSubtotal();
+});
+</script>
+{% endblock %}

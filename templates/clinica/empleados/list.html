@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Empleado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+    <div class="max-w-7xl mx-auto"> <!-- Changed max-width for a wider layout -->
+        <!-- Header Section -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border border-slate-200">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+                <div class="flex items-center space-x-4">
+                    <div class="p-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zm-10 3a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-800">Gestión de Empleados</h2>
+                        <p class="text-slate-600">Crear, ver y administrar empleados</p>
+                    </div>
+                </div>
+                <button 
+                    onclick="navegarAPaginaPrincipal()" 
+                    class="bg-slate-500 hover:bg-slate-600 text-white px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    <span>Volver a Principal</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Employee Form Section -->
+        <div id="employee-form-section" class="mb-12">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-sm font-medium text-slate-600">Progreso del formulario</span>
+                    <span class="text-sm font-medium text-blue-600" id="progress-text">0% completado</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500 ease-out" style="width: 0%" id="progress-bar"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-8 py-6 border-b border-slate-200">
+                    <h3 class="text-xl font-semibold text-slate-800 flex items-center">
+                        <svg class="w-6 h-6 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span id="form-title">Registrar Nuevo Empleado</span>
+                    </h3>
+                    <p class="text-slate-600 mt-2">Los campos marcados con <span class="text-red-500">*</span> son obligatorios</p>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" id="empleado-form" class="p-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Información Personal -->
+                        <div class="space-y-6">
+                            <div class="border-l-4 border-blue-500 pl-4">
+                                <h4 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    Datos Personales
+                                </h4>
+                            </div>
+                            <div class="form-group">
+                                <label for="nombre_completo" class="block text-sm font-semibold text-slate-700 mb-2 flex items-center">Nombre Completo <span class="text-red-500">*</span></label>
+                                <input type="text" name="nombre_completo" id="nombre_completo" class="form-input w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ingrese el nombre completo" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cedula_ecuatoriana" class="block text-sm font-semibold text-slate-700 mb-2 flex items-center">Cédula Ecuatoriana <span class="text-red-500">*</span></label>
+                                <input type="text" name="cedula_ecuatoriana" id="cedula_ecuatoriana" class="form-input w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="1234567890" maxlength="10" pattern="[0-9]{10}" required>
+                                <div class="mt-2 text-xs text-slate-500">Ingrese 10 dígitos sin espacios ni guiones</div>
+                            </div>
+                            <div class="form-group">
+                                <label for="email" class="block text-sm font-semibold text-slate-700 mb-2 flex items-center">Correo Electrónico <span class="text-red-500">*</span></label>
+                                <input type="email" name="email" id="email" class="form-input w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ejemplo@empresa.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="foto_perfil" class="block text-sm font-semibold text-slate-700 mb-2 flex items-center">Foto de Perfil (Opcional)</label>
+                                <input type="file" name="foto_perfil" id="foto_perfil" accept="image/*" class="form-input block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <div class="mt-1 text-xs text-slate-500">Sube una imagen (ej: JPG, PNG).</div>
+                                <img id="foto-perfil-preview" class="mt-3 w-24 h-24 rounded-md object-cover hidden border border-slate-200 shadow-sm" src="#" alt="Vista previa de foto de perfil" />
+                            </div>
+                        </div>
+                        <!-- Información Laboral -->
+                        <div class="space-y-6">
+                            <div class="border-l-4 border-emerald-500 pl-4">
+                                <h4 class="text-lg font-semibold text-slate-800 mb-4 flex items-center">
+                                    <svg class="w-5 h-5 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6"/>
+                                    </svg>
+                                    Información Laboral
+                                </h4>
+                            </div>
+                            <div class="form-group">
+                                <label for="cargo" class="block text-sm font-semibold text-slate-700 mb-2 flex items-center">Cargo <span class="text-red-500">*</span></label>
+                                <input type="text" name="cargo" id="cargo" class="form-input w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Ej: Desarrollador, Gerente, Analista" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="departamento" class="block text-sm font-semibold text-slate-700 mb-2 flex items-center">Departamento <span class="text-red-500">*</span></label>
+                                <select name="departamento" id="departamento" class="form-input w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                    <option value="">Seleccione un departamento</option>
+                                    <option value="IT">Tecnología</option>
+                                    <option value="HR">Recursos Humanos</option>
+                                    <option value="FIN">Finanzas</option>
+                                    <option value="MKT">Marketing</option>
+                                    <option value="OPS">Operaciones</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="salario" class="block text-sm font-semibold text-slate-700 mb-2 flex items-center">Salario <span class="text-red-500">*</span></label>
+                                <div class="relative">
+                                    <input type="number" name="salario" id="salario" class="form-input w-full pl-7 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00" min="0" step="0.01" required>
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span class="text-slate-500 text-sm">$</span></div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="fecha_ingreso" class="block text-sm font-semibold text-slate-700 mb-2 flex items-center">Fecha de Ingreso <span class="text-red-500">*</span></label>
+                                <input type="date" name="fecha_ingreso" id="fecha_ingreso" class="form-input w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Form Actions -->
+                    <div class="mt-12 pt-8 border-t border-slate-200">
+                        <div class="flex flex-col sm:flex-row justify-end space-y-4 sm:space-y-0 sm:space-x-4">
+                            <button type="button" onclick="limpiarFormulario()" class="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                <span>Limpiar Formulario</span>
+                            </button>
+                            <button type="submit" id="submit-btn" class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <span>Guardar Empleado</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Search Bar for Employee List -->
+        <div class="mb-6 bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+            <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <div class="relative flex-grow w-full sm:w-auto">
+                    <input type="text" id="employee-search-input" placeholder="Buscar por Nombre o Cédula..." class="form-input w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                </div>
+                <button onclick="clearEmployeeSearch()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium px-5 py-3 rounded-lg transition-colors duration-200 flex items-center space-x-2 w-full sm:w-auto justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <span>Limpiar</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Employee List Section -->
+        <div id="employee-list-section" class="mt-12 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+            <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-8 py-6 border-b border-slate-200">
+                <h3 class="text-xl font-semibold text-slate-800 flex items-center">
+                    <svg class="w-6 h-6 mr-3 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    Lista de Empleados
+                </h3>
+            </div>
+            <div class="p-8 overflow-x-auto">
+                <table class="w-full" id="employee-table">
+                    <thead><tr class="bg-slate-100"><th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Nombre</th><th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Cédula</th><th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Cargo</th><th class="px-6 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">Acciones</th></tr></thead>
+                    <tbody id="employee-table-body" class="bg-white divide-y divide-slate-200">
+                        <tr id="no-employees-row"><td colspan="4" class="px-6 py-8 text-center text-slate-500">No hay empleados registrados aún.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Employee Detail Modal -->
+        <div id="employee-detail-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-auto transform transition-all duration-300 opacity-0 scale-95">
+                <div class="p-6"><div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-200"><h3 class="text-2xl font-semibold text-slate-800">Detalles del Empleado</h3><button onclick="cerrarModal('employee-detail-modal')" class="text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div><div id="employee-detail-content" class="space-y-4"></div><div class="mt-6 pt-4 border-t border-slate-200 flex justify-end"><button onclick="cerrarModal('employee-detail-modal')" class="bg-slate-500 hover:bg-slate-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors duration-200">Cerrar</button></div></div>
+            </div>
+        </div>
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-confirm-modal" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-auto transform transition-all duration-300 opacity-0 scale-95"><div class="p-6"><div class="flex items-start mb-4"><div class="flex-shrink-0 mr-4 p-2 bg-red-100 rounded-full"><svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"></path></svg></div><div><h3 class="text-xl font-semibold text-slate-800">Confirmar Eliminación</h3><p class="text-sm text-slate-600 mt-1">Esta acción no se puede deshacer.</p></div></div><p class="text-slate-700 mb-6" id="delete-confirm-message">¿Está seguro de que desea eliminar a este empleado?</p><div class="flex justify-end space-x-3"><button onclick="cerrarModal('delete-confirm-modal')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-5 py-2 rounded-lg font-medium transition-colors duration-200">Cancelar</button><button id="execute-delete-btn" onclick="executeDeleteEmployee()" class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-medium shadow-md hover:shadow-lg transition-colors duration-200">Eliminar</button></div></div></div>
+        </div>
+        <!-- Loading Modal -->
+        <div id="loading-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4"><div class="text-center"><div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div><h3 class="text-lg font-semibold text-slate-800 mb-2">Guardando empleado...</h3><p class="text-slate-600">Por favor espere un momento</p></div></div></div>
+        <!-- Success Modal -->
+        <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 opacity-0 scale-95"><div class="p-6"><div class="flex items-center mb-4"><div class="flex-shrink-0"><div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center"><svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div></div><div class="ml-4"><h3 class="text-lg font-semibold text-slate-900">¡Éxito!</h3><p class="text-sm text-slate-600" id="success-message-text">El empleado ha sido guardado correctamente</p></div></div><div class="flex justify-end space-x-3"><button onclick="cerrarModal('success-modal')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition-colors duration-200">Aceptar</button></div></div></div></div>
+        <!-- Error Modal -->
+        <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center"><div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 opacity-0 scale-95"><div class="p-6"><div class="flex items-center mb-4"><div class="flex-shrink-0"><div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center"><svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div></div><div class="ml-4"><h3 class="text-lg font-semibold text-slate-900">Error</h3><p class="text-sm text-slate-600" id="error-message">Ha ocurrido un error</p></div></div><div class="flex justify-end space-x-3"><button onclick="cerrarModal('error-modal')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors duration-200">Cerrar</button></div></div></div></div>
+    </div>
+</div>
+
+<script>
+    // Variables globales
+    let employees = []; 
+    let currentEditingEmployeeId = null; 
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const form = document.getElementById('empleado-form');
+    const requiredInputs = Array.from(form.querySelectorAll('.form-input[required]'));
+    let totalRequiredFields = requiredInputs.length;
+    const formTitle = document.getElementById('form-title');
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeForm();
+        loadEmployeesFromLocalStorage(); 
+        renderEmployeeList(); 
+
+        const searchInput = document.getElementById('employee-search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                renderEmployeeList(e.target.value);
+            });
+        }
+        // Ensure modals can be closed by backdrop click
+        ['employee-detail-modal', 'delete-confirm-modal', 'loading-modal', 'success-modal', 'error-modal'].forEach(modalId => {
+            const modalElement = document.getElementById(modalId);
+            if (modalElement) {
+                modalElement.addEventListener('click', function(event) {
+                    if (event.target === modalElement) {
+                        if (modalId !== 'loading-modal') { // Don't allow backdrop click for loading
+                           cerrarModal(modalId);
+                           if (modalId === 'delete-confirm-modal') employeeIdToDelete = null;
+                        }
+                    }
+                });
+            }
+        });
+    });
+
+    function clearEmployeeSearch() {
+        const searchInput = document.getElementById('employee-search-input');
+        if (searchInput) searchInput.value = '';
+        renderEmployeeList(); 
+    }
+
+    function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (error) => reject(error);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function editEmployee(employeeId) {
+        console.log("[DEBUG] editEmployee: Called with ID", employeeId);
+        const employeeToEdit = employees.find(emp => emp.id === employeeId);
+        if (!employeeToEdit) {
+            console.error("Empleado no encontrado para editar con ID:", employeeId);
+            mostrarModal('error-modal', 'No se pudo encontrar el empleado para editar.');
+            return;
+        }
+        currentEditingEmployeeId = employeeId; 
+        console.log("[DEBUG] editEmployee: currentEditingEmployeeId SET TO", currentEditingEmployeeId);
+
+        form.nombre_completo.value = employeeToEdit.nombre_completo;
+        form.cedula_ecuatoriana.value = employeeToEdit.cedula_ecuatoriana;
+        form.email.value = employeeToEdit.email;
+        form.cargo.value = employeeToEdit.cargo;
+        form.departamento.value = employeeToEdit.departamento;
+        form.salario.value = employeeToEdit.salario;
+        form.fecha_ingreso.value = employeeToEdit.fecha_ingreso;
+        
+        const fotoPerfilPreview = document.getElementById('foto-perfil-preview');
+        const fotoPerfilInput = document.getElementById('foto_perfil');
+        fotoPerfilInput.value = null; 
+
+        if (employeeToEdit.foto_perfil_data_url) {
+            fotoPerfilPreview.src = employeeToEdit.foto_perfil_data_url;
+            fotoPerfilPreview.classList.remove('hidden');
+        } else {
+            fotoPerfilPreview.src = '#';
+            fotoPerfilPreview.classList.add('hidden');
+        }
+
+        const submitButton = document.getElementById('submit-btn');
+        if(formTitle) formTitle.textContent = 'Actualizar Información del Empleado';
+        submitButton.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg> <span>Actualizar Empleado</span>`;
+        
+        document.getElementById('employee-form-section').scrollIntoView({ behavior: 'smooth' });
+        form.nombre_completo.focus(); 
+        calculateProgress(); 
+    }
+
+    function saveEmployeesToLocalStorage() {
+        try {
+            localStorage.setItem('employees', JSON.stringify(employees));
+        } catch (e) {
+            console.error("Error saving to localStorage:", e);
+            mostrarModal('error-modal', 'No se pudo guardar la lista de empleados localmente.');
+        }
+    }
+
+    function loadEmployeesFromLocalStorage() {
+        const storedEmployees = localStorage.getItem('employees');
+        if (storedEmployees) {
+            try {
+                employees = JSON.parse(storedEmployees);
+            } catch (e) {
+                console.error("Error parsing from localStorage:", e);
+                employees = [];
+            }
+        }
+    }
+
+    function initializeForm() {
+        requiredInputs.forEach(input => {
+            input.addEventListener('input', () => { validateField(input); calculateProgress(); });
+            input.addEventListener('blur', () => validateField(input)); 
+            input.addEventListener('focus', function() { this.classList.add('ring-2', 'ring-blue-500', 'border-transparent'); this.classList.remove('border-slate-300'); });
+            input.addEventListener('blur', function() { this.classList.remove('ring-2', 'ring-blue-500', 'border-transparent'); if (!this.classList.contains('border-red-500')) this.classList.add('border-slate-300');});
+        });
+        calculateProgress(); 
+        form.addEventListener('submit', handleFormSubmit);
+        const fotoPerfilInput = document.getElementById('foto_perfil');
+        const fotoPerfilPreview = document.getElementById('foto-perfil-preview');
+        if (fotoPerfilInput && fotoPerfilPreview) {
+            fotoPerfilInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) { fotoPerfilPreview.src = e.target.result; fotoPerfilPreview.classList.remove('hidden'); }
+                    reader.readAsDataURL(file);
+                } else {
+                    fotoPerfilPreview.src = '#'; fotoPerfilPreview.classList.add('hidden');
+                    if (file) { alert("Por favor, seleccione un archivo de imagen válido."); fotoPerfilInput.value = ""; }
+                }
+            });
+        }
+    }
+
+    function calculateProgress() {
+        let filledAndValidFields = 0;
+        requiredInputs.forEach(input => { if (input.value.trim() !== '' && input.checkValidity()) filledAndValidFields++; });
+        const percentage = totalRequiredFields > 0 ? (filledAndValidFields / totalRequiredFields) * 100 : 0;
+        if (progressBar) progressBar.style.width = `${percentage}%`;
+        if (progressText) progressText.textContent = `${Math.round(percentage)}% completado`;
+    }
+
+    function validateField(input) {
+        const parentDiv = input.closest('.form-group');
+        if (!parentDiv) {
+            // console.warn("[DEBUG] validateField: No .form-group parent found for input:", input.id); // Optional: keep for debugging if needed
+            return; 
+        }
+
+        let errorDiv = parentDiv.querySelector('.error-message-custom');
+
+        if (!errorDiv) {
+            // console.log("[DEBUG] validateField: Creating new errorDiv for input:", input.id); // Optional: keep for debugging
+            errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message-custom text-red-500 text-xs mt-1';
+            parentDiv.appendChild(errorDiv); // Always append as a direct child of .form-group
+        }
+
+        if (input.checkValidity()) {
+            errorDiv.textContent = ''; 
+            errorDiv.style.display = 'none';
+            input.classList.remove('border-red-500', 'focus:ring-red-500');
+            input.classList.add('border-slate-300');
+            // Only remove focus styling if the element is NOT the active one
+            if (document.activeElement !== input) {
+                 input.classList.remove('focus:ring-blue-500', 'focus:border-transparent');
+            }
+        } else {
+            input.classList.remove('border-slate-300'); // Remove default border before adding error/focus ones
+            // Do not remove focus:ring-blue-500 if it's there from focus, let focus:ring-red-500 override
+            input.classList.add('border-red-500', 'focus:ring-red-500'); 
+            errorDiv.style.display = 'block';
+            
+            if (input.validity.valueMissing) {
+                errorDiv.textContent = 'Este campo es obligatorio.';
+            } else if (input.validity.patternMismatch) {
+                errorDiv.textContent = input.name === "cedula_ecuatoriana" ? 'La cédula debe contener 10 dígitos numéricos.' : 'Por favor, siga el formato requerido.';
+            } else if (input.validity.typeMismatch) {
+                 errorDiv.textContent = input.type === "email" ? 'Ingrese un correo electrónico válido.' : 'Por favor, ingrese un valor válido para este campo.';
+            } else if (input.validity.tooShort) {
+                errorDiv.textContent = `Debe tener al menos ${input.minLength} caracteres.`;
+            } else if (input.validity.rangeUnderflow) {
+                 errorDiv.textContent = `El valor debe ser mayor o igual a ${input.min}.`;
+            } else if (input.validity.rangeOverflow) {
+                 errorDiv.textContent = `El valor debe ser menor o igual a ${input.max}.`;
+            } else {
+                 errorDiv.textContent = 'Valor inválido.';
+            }
+        }
+    }
+    
+    async function handleFormSubmit(event) {
+        event.preventDefault(); 
+        console.log("[DEBUG] handleFormSubmit: Called. currentEditingEmployeeId =", currentEditingEmployeeId);
+
+        let isFormValid = true;
+        requiredInputs.forEach(input => {
+            validateField(input);
+            if (!input.checkValidity()) isFormValid = false;
+        });
+
+        if (!isFormValid) {
+            const firstInvalidInput = requiredInputs.find(input => !input.checkValidity());
+            if (firstInvalidInput) firstInvalidInput.focus();
+            mostrarModal('error-modal', 'Por favor, corrija los errores resaltados en el formulario.');
+            return;
+        }
+
+        mostrarModal('loading-modal');
+        
+        const fotoInput = form.foto_perfil;
+        const file = fotoInput.files && fotoInput.files[0];
+        let processedFotoDataUrl = null; 
+
+        if (file && file.type.startsWith('image/')) {
+            try {
+                processedFotoDataUrl = await readFileAsDataURL(file);
+                console.log("[DEBUG] handleFormSubmit: Processed new photo data URL.");
+            } catch (error) {
+                console.error("[DEBUG] handleFormSubmit: Error reading file:", error);
+                cerrarModal('loading-modal');
+                mostrarModal('error-modal', 'Error al procesar la imagen de perfil.');
+                return;
+            }
+        }
+
+        let successMessage = 'Empleado guardado correctamente.';
+
+        if (currentEditingEmployeeId !== null) {
+            console.log("[DEBUG] handleFormSubmit: Entering UPDATE path for ID:", currentEditingEmployeeId);
+            const employeeIndex = employees.findIndex(emp => emp.id === currentEditingEmployeeId);
+            
+            if (employeeIndex > -1) {
+                const existingEmployee = employees[employeeIndex];
+                const updatedEmployee = {
+                    id: existingEmployee.id, 
+                    nombre_completo: form.nombre_completo.value.trim(),
+                    cedula_ecuatoriana: form.cedula_ecuatoriana.value.trim(),
+                    email: form.email.value.trim(),
+                    cargo: form.cargo.value.trim(),
+                    departamento: form.departamento.value,
+                    salario: parseFloat(form.salario.value),
+                    fecha_ingreso: form.fecha_ingreso.value,
+                    foto_perfil_data_url: existingEmployee.foto_perfil_data_url 
+                };
+
+                if (processedFotoDataUrl) { 
+                    updatedEmployee.foto_perfil_data_url = processedFotoDataUrl;
+                    console.log("[DEBUG] handleFormSubmit: New photo updated for employee.");
+                } else if (file && !processedFotoDataUrl) {
+                    console.warn("[DEBUG] handleFormSubmit: Invalid new file selected for photo update; existing photo retained.");
+                } else if (!file) {
+                    console.log("[DEBUG] handleFormSubmit: No new file selected for photo; existing photo retained.");
+                }
+                
+                employees[employeeIndex] = updatedEmployee; 
+                
+                console.log("[DEBUG] SUCCESSFULLY UPDATED EMPLOYEE AT INDEX:", employeeIndex, employees[employeeIndex]);
+                successMessage = 'Empleado actualizado correctamente.';
+            } else {
+                console.error("[DEBUG] FATAL ERROR: Employee ID to update (", currentEditingEmployeeId, ") not found in array.");
+                cerrarModal('loading-modal');
+                mostrarModal('error-modal', 'Error crítico: No se encontró el empleado para actualizar.');
+                return; 
+            }
+        } else {
+            console.log("[DEBUG] handleFormSubmit: Entering CREATE path.");
+            const newEmployeeEntry = {
+                id: Date.now(), 
+                nombre_completo: form.nombre_completo.value.trim(),
+                cedula_ecuatoriana: form.cedula_ecuatoriana.value.trim(),
+                email: form.email.value.trim(),
+                cargo: form.cargo.value.trim(),
+                departamento: form.departamento.value,
+                salario: parseFloat(form.salario.value),
+                fecha_ingreso: form.fecha_ingreso.value,
+                foto_perfil_data_url: processedFotoDataUrl 
+            };
+            employees.push(newEmployeeEntry);
+            console.log("[DEBUG] SUCCESSFULLY CREATED NEW EMPLOYEE:", newEmployeeEntry);
+        }
+        
+        saveEmployeesToLocalStorage();
+        renderEmployeeList(); 
+        
+        const fotoPerfilPreview = document.getElementById('foto-perfil-preview');
+        form.reset(); 
+        if (fotoPerfilPreview) {
+            fotoPerfilPreview.src = '#';
+            fotoPerfilPreview.classList.add('hidden');
+        }
+
+        if (currentEditingEmployeeId !== null) { 
+            const submitButton = document.getElementById('submit-btn');
+            if(formTitle) formTitle.textContent = 'Registrar Nuevo Empleado';
+            if (submitButton) {
+                 submitButton.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> <span>Guardar Empleado</span>`;
+            }
+            currentEditingEmployeeId = null; 
+            console.log("[DEBUG] handleFormSubmit: Edit mode reset.");
+        }
+        calculateProgress(); 
+        
+        requiredInputs.forEach(input => {
+            input.classList.remove('border-red-500', 'focus:ring-red-500');
+            input.classList.add('border-slate-300');
+            const parentDiv = input.closest('.form-group');
+            if (parentDiv) {
+                let errorDiv = parentDiv.querySelector('.error-message-custom');
+                if (errorDiv) {
+                    errorDiv.textContent = '';
+                    errorDiv.style.display = 'none';
+                }
+            }
+        });
+        if(requiredInputs.length > 0 && requiredInputs[0]) requiredInputs[0].focus();
+        
+        cerrarModal('loading-modal'); 
+        const successModalMessageElement = document.querySelector('#success-modal .text-sm.text-slate-600');
+        // Ensure the ID of the success message paragraph is correct
+        const successMessageP = document.getElementById('success-message-text') || successModalMessageElement; 
+        if (successMessageP) {
+            successMessageP.textContent = successMessage;
+        }
+        mostrarModal('success-modal');
+        console.log("[DEBUG] handleFormSubmit: Process completed.");
+    }
+
+    function renderEmployeeList(searchTerm = '') {
+        const tableBody = document.getElementById('employee-table-body');
+        tableBody.innerHTML = ''; 
+        const searchTermLower = searchTerm.toLowerCase();
+        const filteredEmployees = employees.filter(emp => 
+            emp.nombre_completo.toLowerCase().includes(searchTermLower) ||
+            emp.cedula_ecuatoriana.includes(searchTermLower) // Cedula is already string of numbers
+        );
+        if (filteredEmployees.length === 0) {
+            let message = employees.length === 0 ? "No hay empleados registrados aún." : "No se encontraron empleados que coincidan con su búsqueda.";
+            tableBody.innerHTML = `<tr id="no-employees-row"><td colspan="4" class="px-6 py-8 text-center text-slate-500">${message}</td></tr>`;
+            return;
+        }
+        filteredEmployees.forEach((employee, index) => {
+            const row = tableBody.insertRow();
+            row.className = (index % 2 === 0 ? 'bg-white' : 'bg-slate-50') + " hover:bg-blue-50 transition-colors duration-150";
+            row.insertCell().innerHTML = `<div class="flex items-center"><div class="flex-shrink-0 h-10 w-10">${employee.foto_perfil_data_url ? `<img class="h-10 w-10 rounded-full object-cover" src="${employee.foto_perfil_data_url}" alt="Foto">` : `<div class="h-10 w-10 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 font-semibold">${employee.nombre_completo.substring(0,1).toUpperCase()}</div>`}</div><div class="ml-4"><div class="text-sm font-medium text-slate-900">${employee.nombre_completo}</div><div class="text-xs text-slate-500">${employee.email}</div></div></div>`;
+            row.cells[0].className = "px-6 py-4 whitespace-nowrap text-sm text-slate-700";
+            row.insertCell().innerHTML = `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${employee.cedula_ecuatoriana}</span>`;
+            row.cells[1].className = "px-6 py-4 whitespace-nowrap text-sm text-slate-700";
+            row.insertCell().innerHTML = `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">${employee.cargo}</span>`;
+            row.cells[2].className = "px-6 py-4 whitespace-nowrap text-sm text-slate-700";
+            const actionsCell = row.insertCell();
+            actionsCell.className = "px-6 py-4 whitespace-nowrap text-center text-sm font-medium";
+            actionsCell.innerHTML = `
+                <button onclick="showEmployeeDetails(${employee.id})" class="text-emerald-600 hover:text-emerald-800 p-1.5 rounded-full hover:bg-emerald-100 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
+                <button onclick="editEmployee(${employee.id})" class="text-amber-600 hover:text-amber-800 ml-2 p-1.5 rounded-full hover:bg-amber-100 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                <button onclick="confirmDeleteEmployee(${employee.id}, '${employee.nombre_completo.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 ml-2 p-1.5 rounded-full hover:bg-red-100 transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+            `;
+        });
+    }
+
+    function showEmployeeDetails(employeeId) {
+        const employee = employees.find(emp => emp.id === employeeId);
+        if (!employee) { console.error("Empleado no encontrado con ID:", employeeId); mostrarModal('error-modal', 'No se pudo encontrar la info.'); return; }
+        const detailContent = document.getElementById('employee-detail-content');
+        detailContent.innerHTML = ''; 
+        const profilePicDiv = document.createElement('div'); profilePicDiv.className = 'flex justify-center mb-6';
+        const profileImg = document.createElement('img'); profileImg.className = 'w-32 h-32 rounded-full object-cover border-4 border-blue-200 shadow-lg';
+        if (employee.foto_perfil_data_url) { profileImg.src = employee.foto_perfil_data_url; profileImg.alt = `Foto de ${employee.nombre_completo}`; }
+        else { profileImg.alt = "Sin foto"; profileImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(employee.nombre_completo)}&background=random&size=128&color=fff&font-size=0.33`; }
+        profilePicDiv.appendChild(profileImg); detailContent.appendChild(profilePicDiv);
+        const createDetailItem = (l, v) => { const d = document.createElement('div'); d.className = 'grid grid-cols-3 gap-4 py-2 border-b border-slate-100'; const s1 = document.createElement('span'); s1.className = 'text-sm font-semibold text-slate-600 col-span-1'; s1.textContent = l + ':'; d.appendChild(s1); const s2 = document.createElement('span'); s2.className = 'text-sm text-slate-800 col-span-2'; s2.textContent = v || 'N/A'; d.appendChild(s2); return d; };
+        const departmentMap = {"IT": "Tecnología", "HR": "Recursos Humanos", "FIN": "Finanzas", "MKT": "Marketing", "OPS": "Operaciones"};
+        const displayDepartamento = departmentMap[employee.departamento] || employee.departamento;
+        const fechaIngreso = employee.fecha_ingreso ? new Date(employee.fecha_ingreso + 'T00:00:00') : null;
+        
+        detailContent.appendChild(createDetailItem('Nombre Completo', employee.nombre_completo));
+        detailContent.appendChild(createDetailItem('Cédula', employee.cedula_ecuatoriana));
+        detailContent.appendChild(createDetailItem('Correo Electrónico', employee.email));
+        detailContent.appendChild(createDetailItem('Cargo', employee.cargo));
+        detailContent.appendChild(createDetailItem('Departamento', displayDepartamento));
+        detailContent.appendChild(createDetailItem('Salario', `$${parseFloat(employee.salario).toFixed(2)}`));
+        detailContent.appendChild(createDetailItem('Fecha de Ingreso', fechaIngreso ? fechaIngreso.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'));
+        mostrarModal('employee-detail-modal');
+    }
+
+    let employeeIdToDelete = null; 
+    function confirmDeleteEmployee(employeeId, employeeName) {
+        employeeIdToDelete = employeeId;
+        const messageElement = document.getElementById('delete-confirm-message');
+        if (messageElement) messageElement.textContent = `¿Está seguro de que desea eliminar a "${employeeName.replace(/"/g, '\\"')}"? Esta acción no se puede deshacer.`;
+        mostrarModal('delete-confirm-modal');
+    }
+
+    function executeDeleteEmployee() {
+        if (employeeIdToDelete !== null) {
+            employees = employees.filter(emp => emp.id !== employeeIdToDelete);
+            saveEmployeesToLocalStorage(); renderEmployeeList(document.getElementById('employee-search-input').value); //Pass search term
+            cerrarModal('delete-confirm-modal'); employeeIdToDelete = null; 
+            console.log("Empleado eliminado.");
+        }
+    }
+    
+    function mostrarModal(modalId, message = null) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        if (message && modalId === 'error-modal') { const el = modal.querySelector('#error-message'); if (el) el.textContent = message; }
+        if (message && modalId === 'success-modal') { const el = modal.querySelector('#success-message-text'); if (el) el.textContent = message; }
+        modal.classList.remove('hidden'); modal.classList.add('flex');
+        requestAnimationFrame(() => { const mc = modal.querySelector('.transform'); if (mc) { mc.classList.remove('opacity-0', 'scale-95'); mc.classList.add('opacity-100', 'scale-100'); }});
+    }
+
+    function cerrarModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
+        const modalContent = modal.querySelector('.transform');
+        if (modalContent) {
+            modalContent.classList.remove('opacity-100', 'scale-100'); modalContent.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('flex');}, 300);
+        } else { modal.classList.add('hidden'); modal.classList.remove('flex');}
+    }
+
+    function navegarAPaginaPrincipal() {
+        console.log("[DEBUG] navPrin: Called. Navigating to '/'.");
+        try { window.location.href = '/'; } catch (e) { console.error("[DEBUG] navPrin: Error - ", e); alert("Error al navegar."); }
+    }
+
+    function limpiarFormulario() {
+        console.log("[DEBUG] limpiarForm: Called.");
+        try {
+            form.reset(); 
+            const fotoPerfilInput = document.getElementById('foto_perfil');
+            const fotoPerfilPreview = document.getElementById('foto-perfil-preview');
+            if (fotoPerfilInput) fotoPerfilInput.value = null; 
+            if (fotoPerfilPreview) { fotoPerfilPreview.classList.add('hidden'); fotoPerfilPreview.src = '#'; }
+            calculateProgress(); 
+            requiredInputs.forEach(input => {
+                input.classList.remove('border-red-500', 'focus:ring-red-500'); input.classList.add('border-slate-300');
+                if (document.activeElement !== input) input.classList.remove('focus:ring-blue-500', 'focus:border-transparent');
+                const parentDiv = input.closest('.form-group');
+                if (parentDiv) { const errDiv = parentDiv.querySelector('.error-message-custom'); if (errDiv) { errDiv.textContent = ''; errDiv.style.display = 'none';}}
+            });
+            if (currentEditingEmployeeId !== null) {
+                currentEditingEmployeeId = null; 
+                const submitButton = document.getElementById('submit-btn');
+                if(formTitle) formTitle.textContent = 'Registrar Nuevo Empleado';
+                if (submitButton) submitButton.innerHTML = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> <span>Guardar Empleado</span>`;
+                console.log("[DEBUG] limpiarForm: Edit mode reset.");
+            }
+            if (requiredInputs.length > 0 && requiredInputs[0]) requiredInputs[0].focus(); 
+            console.log("[DEBUG] limpiarForm: Success.");
+        } catch (e) { console.error("[DEBUG] limpiarForm: Error - ", e); }
+    }
+</script>
+</body>
+</html>
+
+[end of manage_employees.html]

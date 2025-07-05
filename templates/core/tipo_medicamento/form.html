@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}{{ view.model_name_title|default:"Gestión" }} - {% if object %}Editar{% else %}Crear{% endif %}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 py-8">
+    <div class="container mx-auto px-4">
+        <!-- Breadcrumb -->
+        <nav class="mb-8">
+            <ol class="flex items-center space-x-2 text-sm text-gray-600">
+                <li>
+                    <a href="{% url 'core:tipomedicamento_list' %}" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                        <i class="fas fa-list mr-1"></i>
+                        Tipos de Medicamentos
+                    </a>
+                </li>
+                <li>
+                    <i class="fas fa-chevron-right text-gray-400"></i>
+                </li>
+                <li class="text-gray-700 font-medium">
+                    {% if object %}Editar{% else %}Nuevo{% endif %} Tipo
+                </li>
+            </ol>
+        </nav>
+
+        <!-- Main Card -->
+        <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl border border-gray-200/50 overflow-hidden max-w-3xl mx-auto">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-gray-800 to-gray-900 px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-tags text-gray-100 text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-100">
+                                {% if object %}Editar{% else %}Nuevo{% endif %} Tipo de Medicamento
+                            </h1>
+                            <p class="text-gray-300 text-sm mt-1">
+                                {% if object %}Modifica los datos del tipo de medicamento{% else %}Registra un nuevo tipo de medicamento{% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <a href="{% url 'core:tipomedicamento_list' %}" 
+                       class="text-gray-300 hover:text-gray-100 transition-colors duration-200 flex items-center gap-2 bg-gray-700/50 px-4 py-2 rounded-lg">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>Volver</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                <div class="px-8 pt-6">
+                    {% for message in messages %}
+                        <div class="mb-4 p-4 rounded-xl shadow-sm {% if message.tags == 'success' %}bg-emerald-50 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 border border-red-200{% else %}bg-blue-50 border border-blue-200{% endif %}">
+                            <div class="flex items-center gap-2">
+                                {% if message.tags == 'success' %}
+                                    <i class="fas fa-check-circle text-emerald-600"></i>
+                                    <span class="text-emerald-800 font-medium">{{ message }}</span>
+                                {% elif message.tags == 'error' %}
+                                    <i class="fas fa-exclamation-circle text-red-600"></i>
+                                    <span class="text-red-800 font-medium">{{ message }}</span>
+                                {% else %}
+                                    <i class="fas fa-info-circle text-blue-600"></i>
+                                    <span class="text-blue-800 font-medium">{{ message }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Form Content -->
+            <div class="px-8 py-6">
+                {% if form.non_field_errors %}
+                    <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl mb-6" role="alert">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle text-red-600"></i>
+                            <div>
+                                <strong class="font-semibold">Error en el formulario:</strong>
+                                <span class="block sm:inline">{{ form.non_field_errors|join:", " }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate class="space-y-6">
+                    {% csrf_token %}
+
+                    <!-- Nombre Field -->
+                    <div class="space-y-2">
+                        <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-semibold text-gray-700">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-tag text-indigo-600"></i>
+                                {{ form.nombre.label }}
+                                {% if form.nombre.field.required %}
+                                    <span class="text-red-500">*</span>
+                                {% endif %}
+                            </div>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-prescription-bottle text-gray-400"></i>
+                            </div>
+                            {% render_field form.nombre class+="pl-10 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200" placeholder="Ej: Analgésico, Antibiótico, Antinflamatorio..." %}
+                        </div>
+                        {% if form.nombre.help_text %}
+                            <p class="text-xs text-gray-500 flex items-center gap-1">
+                                <i class="fas fa-info-circle"></i>
+                                {{ form.nombre.help_text }}
+                            </p>
+                        {% endif %}
+                        {% if form.nombre.errors %}
+                            <p class="text-red-600 text-sm flex items-center gap-1">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.nombre.errors|join:", " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Descripción Field -->
+                    <div class="space-y-2">
+                        <label for="{{ form.descripcion.id_for_label }}" class="block text-sm font-semibold text-gray-700">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-align-left text-indigo-600"></i>
+                                {{ form.descripcion.label }}
+                            </div>
+                        </label>
+                        {% render_field form.descripcion class+="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 resize-none" rows="4" placeholder="Describe las características y propiedades de este tipo de medicamento..." %}
+                        {% if form.descripcion.help_text %}
+                            <p class="text-xs text-gray-500 flex items-center gap-1">
+                                <i class="fas fa-info-circle"></i>
+                                {{ form.descripcion.help_text }}
+                            </p>
+                        {% endif %}
+                        {% if form.descripcion.errors %}
+                            <p class="text-red-600 text-sm flex items-center gap-1">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.descripcion.errors|join:", " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Estado Activo Field -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex items-center">
+                                {% render_field form.activo class+="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 focus:ring-2" %}
+                            </div>
+                            <div class="flex-1">
+                                <label for="{{ form.activo.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-toggle-on text-indigo-600"></i>
+                                        {{ form.activo.label }}
+                                    </div>
+                                </label>
+                                {% if form.activo.help_text %}
+                                    <p class="mt-1 text-xs text-gray-500">{{ form.activo.help_text }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if form.activo.errors %}
+                            <p class="text-red-600 text-sm mt-2 flex items-center gap-1">
+                                <i class="fas fa-exclamation-circle"></i>
+                                {{ form.activo.errors|join:", " }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 mt-8">
+                        <div class="flex items-center justify-end space-x-4">
+                            <a href="{% url 'core:tipomedicamento_list' %}" 
+                               class="bg-gray-500 hover:bg-gray-600 text-gray-100 font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2">
+                                <i class="fas fa-times"></i>
+                                <span>Cancelar</span>
+                            </a>
+                            <button type="submit" 
+                                    class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-gray-100 font-semibold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2">
+                                <i class="fas fa-save"></i>
+                                <span>{% if object %}Actualizar{% else %}Guardar{% endif %} Tipo</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="max-w-3xl mx-auto mt-8">
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-lightbulb text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-blue-900 mb-2">Consejos para crear tipos de medicamentos</h3>
+                        <ul class="text-sm text-blue-800 space-y-1">
+                            <li>• Utiliza nombres descriptivos y claros para facilitar la identificación</li>
+                            <li>• Incluye una descripción detallada de las características del tipo</li>
+                            <li>• Mantén activos solo los tipos que se utilizan actualmente</li>
+                            <li>• Evita duplicar tipos de medicamentos existentes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

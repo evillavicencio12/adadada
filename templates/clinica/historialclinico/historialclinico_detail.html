@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Historial Clínico de {{ object.paciente }}</h1>
+
+<ul>
+  <li><strong>Antecedentes:</strong> {{ object.antecedentes }}</li>
+  <li><strong>Alergias:</strong> {{ object.alergias }}</li>
+  <li><strong>Enfermedades Crónicas:</strong> {{ object.enfermedades_cronicas }}</li>
+  <li><strong>Fecha de Creación:</strong> {{ object.fecha_creacion|date:"d/m/Y H:i" }}</li>
+</ul>
+
+<a href="{% url 'historialclinico_update' object.pk %}">Editar</a> |
+<a href="{% url 'historialclinico_list' %}">Volver al listado</a>
+{% endblock %}

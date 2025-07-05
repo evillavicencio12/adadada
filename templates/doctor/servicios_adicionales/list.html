@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block title %}Listado de Servicios Adicionales{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div class="container mx-auto px-4 md:px-0 py-8">
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 space-y-4 md:space-y-0">
+            <div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-slate-800 to-blue-600 bg-clip-text text-transparent">
+                    Servicios Adicionales
+                </h1>
+                <p class="text-slate-600 mt-2">Gestiona los servicios adicionales disponibles</p>
+            </div>
+            {% if perms.doctor.add_serviciosadicionales %}
+            <a href="{% url 'doctor:servicio_adicional_create' %}"
+                class="ml-auto inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-slate-800 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <i class="fas fa-plus mr-2 text-slate-800"></i>
+                Nuevo Servicio
+            </a>
+            {% endif %}
+        </div>
+
+        <!-- Filtros -->
+        <div class="mb-8">
+            <form method="get" class="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-2xl p-6 shadow-lg">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="space-y-2">
+                        <label for="q_servicio" class="block text-slate-700 text-sm font-semibold">
+                            Buscar Servicio
+                        </label>
+                        <input type="text" 
+                               name="q" 
+                               id="q_servicio" 
+                               value="{{ request.GET.q }}" 
+                               class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                               placeholder="Nombre o descripción">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="activo_filter" class="block text-slate-700 text-sm font-semibold">
+                            Estado
+                        </label>
+                        <select name="activo" 
+                                id="activo_filter" 
+                                class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200">
+                            <option value="">Todos los estados</option>
+                            <option value="true" {% if request.GET.activo == 'true' %}selected{% endif %}>Activo</option>
+                            <option value="false" {% if request.GET.activo == 'false' %}selected{% endif %}>Inactivo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-6 flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                    <button type="submit" 
+                            class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+                        <i class="fas fa-filter mr-2 text-slate-800"></i>
+                        <span class="text-slate-800">Filtrar</span>
+                    </button>
+                    <a href="{% url 'doctor:servicio_adicional_list' %}" 
+                       class="inline-flex items-center justify-center px-6 py-3 bg-slate-500 hover:bg-slate-600 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300">
+                        <i class="fas fa-eraser mr-2 text-slate-800"></i>
+                        <span class="text-slate-800">Limpiar</span>
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Mensajes -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-6 p-4 rounded-xl border-l-4 shadow-lg {% if message.tags == 'success' %}bg-emerald-50 border-emerald-500 text-emerald-800{% elif message.tags == 'error' %}bg-red-50 border-red-500 text-red-800{% else %}bg-blue-50 border-blue-500 text-blue-800{% endif %}">
+                    <div class="flex items-center">
+                        <i class="fas {% if message.tags == 'success' %}fa-check-circle text-emerald-500{% elif message.tags == 'error' %}fa-exclamation-circle text-red-500{% else %}fa-info-circle text-blue-500{% endif %} mr-3"></i>
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Tabla de Servicios -->
+        <div class="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gradient-to-r from-slate-800 to-slate-700">
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-100 uppercase tracking-wider">
+                                Nombre del Servicio
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-100 uppercase tracking-wider">
+                                Costo
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-100 uppercase tracking-wider">
+                                Descripción
+                            </th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-slate-100 uppercase tracking-wider">
+                                Estado
+                            </th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-slate-100 uppercase tracking-wider">
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        {% for servicio in servicios %}
+                        <tr class="hover:bg-slate-50/50 transition-colors duration-200">
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-semibold text-slate-900">
+                                    {{ servicio.nombre_servicio }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-slate-700 font-medium">
+                                    ${{ servicio.costo_servicio|floatformat:2 }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-slate-600 max-w-xs">
+                                    {{ servicio.descripcion|default:"N/A"|truncatewords:15 }}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {% if servicio.activo %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        <i class="fas fa-check mr-1"></i>
+                                        Activo
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                        <i class="fas fa-times mr-1"></i>
+                                        Inactivo
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-3">
+                                    {% if perms.doctor.change_serviciosadicionales %}
+                                    <a href="{% url 'doctor:servicio_adicional_update' servicio.pk %}" 
+                                       class="inline-flex items-center justify-center w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-colors duration-200" 
+                                       title="Editar">
+                                        <i class="fas fa-edit text-sm"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if perms.doctor.delete_serviciosadicionales %}
+                                    <a href="{% url 'doctor:servicio_adicional_delete' servicio.pk %}" 
+                                       class="inline-flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors duration-200" 
+                                       title="Eliminar">
+                                        <i class="fas fa-trash-alt text-sm"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center space-y-4">
+                                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
+                                        <i class="fas fa-concierge-bell text-slate-400 text-2xl"></i>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <h3 class="text-lg font-semibold text-slate-900">
+                                            No hay servicios adicionales
+                                        </h3>
+                                        <p class="text-slate-600 max-w-sm">
+                                            {% if request.GET %}
+                                                No se encontraron servicios con los filtros aplicados.
+                                            {% else %}
+                                                No hay servicios adicionales registrados en el sistema.
+                                            {% endif %}
+                                        </p>
+                                        {% if request.GET %}
+                                        <a href="{% url 'doctor:servicio_adicional_list' %}" 
+                                           class="inline-flex items-center text-teal-600 hover:text-teal-800 font-medium transition-colors duration-200">
+                                            <i class="fas fa-arrow-left mr-2"></i>
+                                            Limpiar filtros
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        {% if is_paginated %}
+        <div class="mt-8 flex justify-center">
+            <nav class="flex items-center space-x-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   class="inline-flex items-center justify-center w-10 h-10 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm">
+                    <i class="fas fa-chevron-left text-sm"></i>
+                </a>
+                {% endif %}
+                
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="inline-flex items-center justify-center w-10 h-10 bg-teal-500 text-white rounded-lg font-semibold shadow-md">
+                        {{ num }}
+                    </span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                       class="inline-flex items-center justify-center w-10 h-10 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm">
+                        {{ num }}
+                    </a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   class="inline-flex items-center justify-center w-10 h-10 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 shadow-sm">
+                    <i class="fas fa-chevron-right text-sm"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Posible JS para Select2 si se usa en filtros más complejos
+// $(document).ready(function() {
+//     $('#activo_filter').select2({ // Ejemplo
+//         minimumResultsForSearch: Infinity, // Ocultar búsqueda si no es necesaria
+//         width: '100%'
+//     });
+// });
+</script>
+{% endblock %}

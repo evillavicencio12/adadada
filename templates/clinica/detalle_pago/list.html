@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles de Pago - Gestión Clínica</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-light: #6366f1;
+            --secondary-color: #f8fafc;
+            --accent-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --border-light: #e5e7eb;
+            --border-medium: #d1d5db;
+            --shadow-light: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.07);
+            --shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --border-radius-sm: 0.375rem; /* 6px */
+            --border-radius-md: 0.75rem;  /* 12px */
+            --border-radius-lg: 1rem;    /* 16px */
+        }
+
+        body {
+            background-color: #f9fafb; /* Lighter gray for a softer look */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .main-container {
+            max-width: 1600px; /* Increased max-width for wider screens */
+            margin: 0 auto;
+            padding: 1.5rem; /* Adjusted padding */
+        }
+
+        .header-section {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem 2rem; /* Adjusted padding */
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-light);
+        }
+
+        .page-title {
+            font-size: 2rem; /* Slightly reduced */
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem; /* Reduced gap */
+        }
+
+        .page-title i {
+            color: var(--primary-color);
+            font-size: 1.75rem; /* Slightly reduced */
+        }
+
+        .btn-primary-custom {
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: var(--border-radius-md);
+            padding: 0.65rem 1.25rem; /* Adjusted padding */
+            font-weight: 600;
+            color: white;
+            transition: all 0.2s ease-in-out;
+            box-shadow: var(--shadow-light);
+        }
+
+        .btn-primary-custom:hover {
+            background-color: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .btn-outline-secondary-custom {
+            border-color: var(--border-medium);
+            color: var(--text-secondary);
+            border-radius: var(--border-radius-md);
+            padding: 0.65rem 1.25rem;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-outline-secondary-custom:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+
+        .table-container {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--border-light);
+        }
+
+        .table-modern {
+            margin: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+
+        .table-modern thead th {
+            background-color: #f9fafb; /* Lighter header */
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+            border-bottom: 2px solid var(--border-light); /* Stronger bottom border */
+            font-size: 0.8rem; /* Smaller font */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-align: left; /* Default align left */
+        }
+        
+        .table-modern thead th.text-end { text-align: right; }
+        .table-modern thead th.text-center { text-align: center; }
+
+
+        .table-modern tbody tr {
+            transition: background-color 0.2s ease-in-out;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .table-modern tbody tr:hover {
+            background-color: #f0f9ff; /* Light blue hover */
+        }
+
+        .table-modern tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .table-modern tbody td {
+            padding: 1rem 1.25rem;
+            vertical-align: middle;
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            text-align: left; /* Default align left */
+        }
+        .table-modern tbody td.text-end { text-align: right; }
+        .table-modern tbody td.text-center { text-align: center; }
+
+        .badge-modern {
+            padding: 0.4rem 0.8rem; /* Adjusted padding */
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            font-size: 0.7rem; /* Smaller font */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid transparent;
+        }
+
+        .badge-success-custom {
+            background-color: #ecfdf5; /* Lighter green */
+            color: #065f46; /* Darker green text */
+            border-color: #a7f3d0;
+        }
+
+        .badge-secondary-custom {
+            background-color: #f3f4f6; /* Lighter gray */
+            color: #374151; /* Darker gray text */
+            border-color: #d1d5db;
+        }
+
+        .btn-action {
+            border: none;
+            border-radius: var(--border-radius-sm);
+            padding: 0.5rem;
+            width: 32px; /* Smaller buttons */
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease-in-out;
+            margin: 0 0.15rem; /* Reduced margin */
+            color: white; /* Icon color */
+        }
+        
+        .btn-action i { font-size: 0.875rem; }
+
+        .btn-edit-custom {
+            background-color: var(--warning-color);
+        }
+        .btn-edit-custom:hover {
+            background-color: #d97706; /* Darker warning */
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-light);
+        }
+
+        .btn-delete-custom {
+            background-color: var(--danger-color);
+        }
+        .btn-delete-custom:hover {
+            background-color: #dc2626; /* Darker danger */
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .btn-danger-custom {
+            background-color: var(--danger-color);
+            border: none;
+            border-radius: var(--border-radius-md);
+            padding: 0.65rem 1.25rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-danger-custom:hover {
+            background-color: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+
+        .stats-card {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-light);
+            transition: all 0.2s ease-in-out;
+            position: relative; /* For potential icon overlays or badges */
+        }
+
+        .stats-card:hover {
+            transform: translateY(-3px); /* Subtle hover effect */
+            box-shadow: var(--shadow-medium);
+        }
+
+        .stats-value {
+            font-size: 1.75rem; /* Slightly reduced */
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 0 0 0.25rem 0; /* Added bottom margin */
+        }
+
+        .stats-label {
+            font-size: 0.8rem; /* Smaller font */
+            color: var(--text-secondary);
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .pagination-modern {
+            background: white;
+            border-radius: var(--border-radius-md);
+            padding: 0.75rem; /* Reduced padding */
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-light);
+            margin-top: 2rem;
+            display: flex; /* Using flex for alignment */
+            justify-content: center;
+        }
+
+        .pagination-modern .page-link {
+            border: 1px solid var(--border-light); /* Visible border */
+            padding: 0.6rem 0.9rem; /* Adjusted padding */
+            color: var(--text-primary);
+            background: transparent;
+            border-radius: var(--border-radius-sm);
+            margin: 0 0.2rem;
+            transition: all 0.2s ease-in-out;
+            font-size: 0.875rem;
+        }
+
+        .pagination-modern .page-link:hover {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+
+        .pagination-modern .page-item.active .page-link {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .pagination-modern .page-item.disabled .page-link {
+            color: var(--text-secondary);
+            background-color: var(--secondary-color);
+            border-color: var(--border-light);
+        }
+
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem; /* Adjusted padding */
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-light);
+            margin-top: 2rem; /* Added margin */
+        }
+
+        .empty-state i {
+            font-size: 3rem; /* Slightly reduced */
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            color: var(--text-primary);
+            margin-bottom: 0.75rem; /* Reduced margin */
+            font-size: 1.25rem;
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem; /* Reduced margin */
+            font-size: 0.9rem;
+        }
+
+        .filters-section {
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-light);
+        }
+
+        .form-control-modern, .form-select-modern {
+            border: 1px solid var(--border-medium); /* Standard border */
+            border-radius: var(--border-radius-sm);
+            padding: 0.65rem 1rem; /* Adjusted padding */
+            transition: all 0.2s ease-in-out;
+            font-size: 0.875rem;
+        }
+        .form-control-modern:focus, .form-select-modern:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.15); /* Softer focus */
+        }
+        
+        .form-label-custom {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary); /* Darker label */
+            margin-bottom: 0.375rem; /* Spacing below label */
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out; /* Faster animation */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); } /* Subtle transform */
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Modal Styles */
+        .modal-content-custom {
+            border-radius: var(--border-radius-lg);
+            border: none;
+            box-shadow: var(--shadow-large);
+        }
+        .modal-header-custom {
+            border-bottom: 1px solid var(--border-light);
+            padding: 1rem 1.5rem;
+        }
+        .modal-header-custom .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+        .modal-body-custom {
+            padding: 1.5rem;
+            font-size: 0.95rem;
+        }
+        .modal-footer-custom {
+            border-top: 1px solid var(--border-light);
+            padding: 1rem 1.5rem;
+            background-color: #f9fafb; /* Footer background */
+            border-bottom-left-radius: var(--border-radius-lg);
+            border-bottom-right-radius: var(--border-radius-lg);
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+            .page-title {
+                font-size: 1.5rem;
+            }
+            .page-title i {
+                font-size: 1.35rem;
+            }
+            .stats-value {
+                font-size: 1.5rem;
+            }
+            .header-section {
+                padding: 1rem 1.5rem;
+            }
+            .filters-section, .table-container, .stats-card {
+                padding: 1rem;
+            }
+            .table-modern thead th, .table-modern tbody td {
+                padding: 0.75rem;
+                font-size: 0.8rem;
+            }
+            .btn-primary-custom, .btn-outline-secondary-custom {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header Section -->
+        <div class="header-section fade-in">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h1 class="page-title">
+                    <i class="fas fa-receipt"></i>
+                    Detalles de Pago
+                </h1>
+                {% comment %} Assuming 'doctor:detalle_pago_create' is your Django URL name {% endcomment %}
+                <a href="{% url 'doctor:detalle_pago_create' %}" class="btn btn-primary-custom">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Crear Nuevo Detalle
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        {% comment %} These could be dynamically generated or hardcoded as per your app's logic {% endcomment %}
+        <div class="row mb-4">
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="stats-card fade-in" style="animation-delay: 0.1s;">
+                    <p class="stats-value">248</p> {# Or {{ total_detalles }} #}
+                    <p class="stats-label">Total Detalles</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="stats-card fade-in" style="animation-delay: 0.2s;">
+                    <p class="stats-value">$12,450.00</p> {# Or {{ total_facturado|floatformat:2 }} #}
+                    <p class="stats-label">Total Facturado</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="stats-card fade-in" style="animation-delay: 0.3s;">
+                    <p class="stats-value">89</p> {# Or {{ con_seguro_count }} #}
+                    <p class="stats-label">Con Seguro</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="stats-card fade-in" style="animation-delay: 0.4s;">
+                    <p class="stats-value">15%</p> {# Or {{ descuento_promedio|floatformat:0 }}% #}
+                    <p class="stats-label">Descuento Promedio</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="filters-section fade-in" style="animation-delay: 0.5s;">
+            <form method="GET" action=""> {# Action can point to the current page to apply filters #}
+                <div class="row align-items-end">
+                    <div class="col-md-4 mb-3">
+                        <label for="searchServicio" class="form-label-custom fw-semibold">Buscar por Servicio</label>
+                        <input type="text" name="servicio" id="searchServicio" class="form-control form-control-modern" placeholder="Nombre del servicio..." value="{{ request.GET.servicio }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="filterSeguro" class="form-label-custom fw-semibold">Filtrar por Seguro</label>
+                        <select name="seguro" id="filterSeguro" class="form-select form-select-modern">
+                            <option value="">Todos</option>
+                            <option value="si" {% if request.GET.seguro == "si" %}selected{% endif %}>Con Seguro</option>
+                            <option value="no" {% if request.GET.seguro == "no" %}selected{% endif %}>Sin Seguro</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <button type="submit" class="btn btn-primary-custom w-100">
+                            <i class="fas fa-search me-2"></i>
+                            Buscar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Table Section -->
+        <div class="table-container fade-in" style="animation-delay: 0.6s;">
+            <div class="table-responsive">
+                <table class="table table-modern">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Referencia</th>
+                            <th>Servicio</th>
+                            <th class="text-end">Cantidad</th>
+                            <th class="text-end">Precio Unit.</th>
+                            <th class="text-end">Descuento</th>
+                            <th class="text-center">Seguro</th>
+                            <th class="text-end">Valor Seg.</th>
+                            <th>Descripción Seguro</th>
+                            <th class="text-end">Subtotal</th>
+                            <th class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% comment %} Loop through your payment details here. Example: {% for detalle in page_obj %} {% endcomment %}
+                        {% for detalle in detalles_pago %} {# Assuming 'detalles_pago' is the context variable for your list of items #}
+                        <tr>
+                            <td><span class="fw-semibold text-primary">#{{ detalle.id|stringformat:"03d" }}</span></td>
+                            <td>
+                                <a href="#" class="text-decoration-none fw-semibold">{{ detalle.referencia_pago.numero_referencia }}</a> {# Adjust to your model #}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {# You might want a dynamic icon based on service type #}
+                                    <i class="fas fa-briefcase-medical text-primary me-2"></i> 
+                                    {{ detalle.servicio.nombre }} {# Adjust to your model #}
+                                </div>
+                            </td>
+                            <td class="text-end fw-semibold">{{ detalle.cantidad }}</td>
+                            <td class="text-end">${{ detalle.precio_unitario|floatformat:2 }}</td>
+                            <td class="text-end text-success">{{ detalle.descuento_aplicado|floatformat:0 }}%</td>
+                            <td class="text-center">
+                                {% if detalle.aplica_seguro %}
+                                    <span class="badge badge-modern badge-success-custom">Sí</span>
+                                {% else %}
+                                    <span class="badge badge-modern badge-secondary-custom">No</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{% if detalle.aplica_seguro %}${{ detalle.valor_seguro|floatformat:2 }}{% else %}-{% endif %}</td>
+                            <td>
+                                <span class="text-truncate d-inline-block" style="max-width: 150px;">
+                                    {% if detalle.aplica_seguro and detalle.descripcion_seguro %}{{ detalle.descripcion_seguro }}{% else %}-{% endif %}
+                                </span>
+                            </td>
+                            <td class="text-end fw-bold text-primary">${{ detalle.subtotal|floatformat:2 }}</td> {# Assuming you have a subtotal property/method #}
+                            <td class="text-center">
+                                <a href="{% url 'doctor:detalle_pago_update' detalle.id %}" class="btn btn-action btn-edit-custom" title="Editar">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-action btn-delete-custom" title="Eliminar"
+                                        data-bs-toggle="modal" data-bs-target="#confirmDeleteModal"
+                                        data-delete-url="{% url 'doctor:detalle_pago_delete' detalle.id %}"
+                                        data-item-name="Detalle #{{ detalle.id|stringformat:"03d" }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="11">
+                                <div class="empty-state my-4">
+                                    <i class="fas fa-file-invoice-dollar fa-3x text-muted mb-3"></i>
+                                    <h3>No hay detalles de pago</h3>
+                                    <p>Aún no se han registrado detalles de pago. <a href="{% url 'doctor:detalle_pago_create' %}" class="alert-link">Crea el primero</a>.</p>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        
+                        <!-- Example Static Rows (Remove once dynamic data is in place) -->
+                        <tr>
+                            <td><span class="fw-semibold text-primary">#001</span></td>
+                            <td><a href="#" class="text-decoration-none fw-semibold">P-2025001</a></td>
+                            <td><div class="d-flex align-items-center"><i class="fas fa-stethoscope text-primary me-2"></i>Consulta General</div></td>
+                            <td class="text-end fw-semibold">2</td>
+                            <td class="text-end">$45.00</td>
+                            <td class="text-end text-success">10%</td>
+                            <td class="text-center"><span class="badge badge-modern badge-success-custom">Sí</span></td>
+                            <td class="text-end">$15.00</td>
+                            <td><span class="text-truncate d-inline-block" style="max-width: 120px;">Seguro Médico Premium</span></td>
+                            <td class="text-end fw-bold text-primary">$81.00</td>
+                            <td class="text-center">
+                                <a href="#" class="btn btn-action btn-edit-custom" title="Editar"><i class="fas fa-edit"></i></a>
+                                <button class="btn btn-action btn-delete-custom" title="Eliminar" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="#" data-item-name="Detalle #001"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                         <tr>
+                            <td><span class="fw-semibold text-primary">#002</span></td>
+                            <td><a href="#" class="text-decoration-none fw-semibold">P-2025002</a></td>
+                            <td><div class="d-flex align-items-center"><i class="fas fa-x-ray text-primary me-2"></i>Radiografía</div></td>
+                            <td class="text-end fw-semibold">1</td>
+                            <td class="text-end">$120.00</td>
+                            <td class="text-end text-success">5%</td>
+                            <td class="text-center"><span class="badge badge-modern badge-secondary-custom">No</span></td>
+                            <td class="text-end">-</td>
+                            <td>-</td>
+                            <td class="text-end fw-bold text-primary">$114.00</td>
+                            <td class="text-center">
+                                <a href="#" class="btn btn-action btn-edit-custom" title="Editar"><i class="fas fa-edit"></i></a>
+                                <button class="btn btn-action btn-delete-custom" title="Eliminar" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-delete-url="#" data-item-name="Detalle #002"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        <!-- End Example Static Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="pagination-modern fade-in" style="animation-delay: 0.7s;">
+            <nav aria-label="Navegación de página">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Anterior">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true"><i class="fas fa-chevron-left"></i></a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active" aria-current="page"><a class="page-link" href="#">{{ num }}</a></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                        {% elif num == page_obj.paginator.page_range.0 or num == page_obj.paginator.page_range|last %}
+                            {% if num == page_obj.paginator.page_range.0 and page_obj.number|add:'-3' > num %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% elif num == page_obj.paginator.page_range|last and page_obj.number|add:'3' < num %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                             <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="Siguiente">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true"><i class="fas fa-chevron-right"></i></a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        <!-- Back Button -->
+        <div class="mt-4 fade-in" style="animation-delay: 0.8s;">
+            <a href="{% url 'doctor:detalle_pago_list' %}" class="btn btn-outline-secondary-custom">
+                <i class="fas fa-arrow-left me-2"></i>
+                Volver a la Lista
+            </a>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-content-custom">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body modal-body-custom">
+                    <p>¿Está seguro de que desea eliminar <strong id="itemNameToDelete">este detalle</strong>?</p>
+                    <p class="text-danger"><small>Esta acción no se puede deshacer.</small></p>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn btn-outline-secondary-custom" data-bs-dismiss="modal">Cancelar</button>
+                    <form id="deleteForm" method="POST" action=""> {# Action will be set by JS #}
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger-custom">
+                            <i class="fas fa-trash me-2"></i>Eliminar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animaciones de entrada secuenciales
+            const fadeInElements = document.querySelectorAll('.fade-in');
+            fadeInElements.forEach((element, index) => {
+                if (!element.style.animationDelay) { // Apply only if not already set
+                    element.style.animationDelay = `${index * 0.05}s`;
+                }
+            });
+
+            // Delete Modal Handler
+            const confirmDeleteModal = document.getElementById('confirmDeleteModal');
+            if (confirmDeleteModal) {
+                const deleteForm = document.getElementById('deleteForm');
+                const itemNameElement = document.getElementById('itemNameToDelete');
+
+                confirmDeleteModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget; // Button that triggered the modal
+                    const deleteUrl = button.getAttribute('data-delete-url');
+                    const itemName = button.getAttribute('data-item-name') || 'este detalle';
+                    
+                    if (deleteForm) {
+                        deleteForm.setAttribute('action', deleteUrl);
+                    }
+                    if (itemNameElement) {
+                        itemNameElement.textContent = itemName;
+                    }
+                });
+            }
+
+            // Tooltip initialization for action buttons
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            });
+        });
+
+        // Simple real-time filter logging (can be expanded)
+        const searchInput = document.querySelector('input[placeholder="Nombre del servicio..."]');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                // This is where you'd typically debounce and make an AJAX request or filter client-side
+                // For now, it just logs. The form submission handles the actual filtering.
+                console.log('Buscando servicio:', this.value);
+            });
+        }
+    </script>
+</body>
+</html>
