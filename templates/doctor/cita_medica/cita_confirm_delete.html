@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    Confirmar Eliminación de Cita - SaludTotal
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden max-w-lg mx-auto">
+        <div class="bg-red-600 px-6 py-4">
+            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                Confirmar Eliminación
+            </h2>
+        </div>
+
+        <div class="p-6 text-center">
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="p-3 rounded {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <p class="text-gray-700 text-lg mb-2">
+                ¿Estás seguro de que deseas eliminar la cita médica para:
+            </p>
+            <p class="text-xl font-semibold text-gray-900">
+                {{ cita.paciente.primer_nombre }} {{ cita.paciente.apellido }}
+            </p>
+            <p class="text-gray-600 mb-6">
+                Programada para el <strong>{{ cita.fecha|date:"d \d\e F \d\e Y" }}</strong> a las <strong>{{ cita.hora_cita|time:"H:i A" }}</strong>?
+            </p>
+            <p class="text-sm text-red-500 mb-6">Esta acción no se puede deshacer.</p>
+
+            <form method="post" action="{% url 'doctor:cita_medica_delete' cita.pk %}">
+                {% csrf_token %}
+                <div class="flex justify-center items-center space-x-4">
+                    <a href="{{ request.META.HTTP_REFERER|default:(% url 'doctor:cita_medica_detail' cita.pk %) }}" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-md text-sm font-medium">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+                        <i class="fas fa-trash-alt mr-2"></i>Sí, Eliminar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
